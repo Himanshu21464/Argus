@@ -76,18 +76,23 @@ No external runtime dependencies for the M1 kernel.
 | **M4** | months 9–12 | ⏳ planned | Lensing pass — proves the IR generalizes |
 | **M5** | months 12–18 | ⏳ planned | Interferometric imaging pass — three sub-fields, one kernel, substrate claim |
 
-### What v0.3.0 (M2-complete) adds over v0.2.0
+### What v0.3.5 (M2-complete) adds over v0.2.0
 - **Verified Hui-Armstrong-Wray Voigt** (~1e-6 accuracy) replacing pseudo-Voigt (1%).
   Tested against analytic Gaussian/Lorentzian limits, numerical convolution,
-  Lorentz asymptotic wing, and dual-number derivatives vs central finite differences.
-- **`argus::Hitran`** — fixed-width 160-char HITRAN .par parser.
+  Lorentz asymptotic wing, dual-number derivatives vs central finite differences,
+  and an independent closed-form reference (`std::erfc`, 1e-15 accurate).
+- **`argus::Hitran`** — fixed-width 160-char HITRAN .par parser with file I/O.
 - **`argus::Partition`** — TIPS-anchored Q(T) for H2O, CO2, CH4, CO, NH3.
 - **Full HITRAN intensity scaling** — `S(T) = S(296) · Q(296)/Q(T) · exp(-c2 E"·Δ(1/T)) · induced_emission`.
-- **Bundled real HITRAN H2O test fixture** (16 lines, 2.7 μm + 1.4 μm bands).
-- **5 new hard tests + 1 new example** — see CHANGELOG.
+- **Self-broadening + pressure shift**: γ_total = γ_air·(1-VMR) + γ_self·VMR; nu_eff = nu0 + δ_air·P_atm.
+- **Bundled real HITRAN test fixtures** — 16 H2O lines (2.7 μm + 1.4 μm bands) + 10 CO2 lines (4.3 μm band).
+- **`argus::guillot()`** — Guillot 2010 analytic hot-Jupiter T-P profile.
+- **`argus::CloudDeckOpacity`** — canonical gray cloud-deck retrieval model.
+- **9 new hard tests** since v0.2.0 (4→20 total) — see CHANGELOG.
+- **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-11 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+20 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 | test | what it asserts |
 |---|---|
@@ -96,12 +101,21 @@ No external runtime dependencies for the M1 kernel.
 | `test_ir` | content-address determinism, graph topology |
 | `test_geometry` | chord path = 2r at b=0, hydrostatic z(P) to 1e-9 |
 | `test_voigt` | analytic limits, symmetry, area-normalisation, numerical convolution, asymptotic wing, autograd vs FD |
+| `test_voigt_reference` | independent closed-form check via `std::erfc` (1e-15 ref) |
 | `test_line_list` | line-shape ordering, sum rules |
+| `test_self_broadening` | γ_self contribution + δ_air pressure shift |
 | `test_dual` | arithmetic, exp/log/sqrt, chain rule |
 | `test_partition` | TIPS anchors at 296/1000/2000 K, monotonicity, throw on bad input |
 | `test_hitran` | round-trip parse, CR/LF tolerance, malformed rejection, filter |
 | `test_real_h2o` | end-to-end with real HITRAN: sum rule, T-dependence, VMR monotonicity, saturation |
+| `test_multi_molecule` | H2O + CO2 in one atmosphere, additivity, band positions |
 | `test_finite_diff` | autograd ∂/∂σ, ∂/∂γ, ∂/∂x, ∂/∂S vs central FD to 1e-5 |
+| `test_stress` | 15 edge cases: malformed, single-layer, extreme T/P, empty, garbage |
+| `test_file_io` | HITRAN .par round-trip via `/tmp` file |
+| `test_reproducibility` | bit-exact forward-model output across calls |
+| `test_benchmark` | wall-time baseline (~1.7 ms / forward call, ~9 ns / Voigt) |
+| `test_guillot` | Guillot 2010 T-P: skin temperature, monotonicity, hot/cold transit |
+| `test_clouds` | gray cloud deck: zero above P_cloud, opaque below, transit-depth ordering |
 
 ## Design principles
 
