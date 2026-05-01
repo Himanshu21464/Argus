@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.2 — 2026-05-01 — Multi-molecule end-to-end
+
+Adds a real CO2 line fixture and a hard multi-molecule end-to-end test
+that runs both H2O and CO2 in the same atmosphere, verifying additive
+optical depth and correctly-positioned absorption bands.
+
+### Added
+- **`argus::test_data::kCO2Lines`** — 10 hand-curated real HITRAN CO2
+  lines from the 4.3 μm asymmetric stretch fundamental band (most
+  abundant 12C-16O2 isotopologue).
+- **`test_multi_molecule`** — H2O + CO2 in a single atmosphere.
+  Asserts:
+  * cross-section additivity across opacity kernels
+  * H2O dominates at H2O band centres (3651, 7099 cm⁻¹)
+  * CO2 dominates at CO2 4.3 μm Q-branch (2363 cm⁻¹)
+  * combined optical depth ≥ either species alone (no destructive
+    interference, sanity check)
+  * continuum window (5500 cm⁻¹) shows less absorption than band centres
+
+### Validated
+15/15 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. All 3 examples build warning-free and run end-to-end.
+
+---
+
 ## 0.3.1 — 2026-05-01 — M2 polish
 
 Adds three more hard test suites — bringing the total to 14 — covering

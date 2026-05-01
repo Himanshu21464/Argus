@@ -53,3 +53,7 @@ add_test(NAME file_io COMMAND test_file_io)
 add_executable(test_reproducibility test_reproducibility.cpp)
 target_link_libraries(test_reproducibility PRIVATE argus_core)
 add_test(NAME reproducibility COMMAND test_reproducibility)
+
+add_executable(test_multi_molecule test_multi_molecule.cpp)
+target_link_libraries(test_multi_molecule PRIVATE argus_core)
+add_test(NAME multi_molecule COMMAND test_multi_molecule)

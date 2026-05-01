@@ -9,26 +9,29 @@ namespace {
 
 // Power-law fit Q(T) = Q_ref * (T / T_ref)^exponent.
 //
-// Anchor-exact at T_ref = 296 K by construction; accurate to ~10% over
-// 200-3000 K for non-vibrating molecules. M3 will replace these with the
-// full TIPS-2017 polynomial (a0 + a1*T + a2*T² + a3*T³ + a4*T⁴) loaded
-// from a tabulated grid.
+// Anchor-exact at T_ref = 296 K by construction; accuracy ~1-7% over
+// 100-3000 K. M3 will swap to full TIPS-2017 cubic polynomials loaded
+// from a tabulated grid (better than 0.5% accuracy across the range).
 //
 // Exponents derived from anchor pairs (Q at 1000 K vs Q at 296 K) using
-// published TIPS-2017 values:
+// published TIPS-2017 values for the most abundant isotopologue:
 //
-//   H2O(161): Q(1000)/Q(296) = 1296/174.58 = 7.42  -> n = log(7.42)/log(3.378) = 1.648
-//   CO2(626): Q(1000)/Q(296) = 1019/286.94 = 3.55  -> n = log(3.55)/log(3.378) = 1.039
-//   CH4(211): Q(1000)/Q(296) = 4014/590.48 = 6.80  -> n = log(6.80)/log(3.378) = 1.575
-//   CO(26):   Q(1000)/Q(296) = 365/107.42  = 3.40  -> n = log(3.40)/log(3.378) = 1.005
-//   NH3:      Q(1000)/Q(296) = 9700/1725  = 5.62   -> n = log(5.62)/log(3.378) = 1.418
+//   H2O(161): n = log(1296/174.58)/log(1000/296) = 1.648
+//   CO2(626): n = log(1019/286.94)/log(1000/296) = 1.039
+//   CH4(211): n = log(4014/590.48)/log(1000/296) = 1.575
+//   CO(26):   n = log(365/107.42)/log(1000/296)  = 1.005
+//   NH3(4111):n = log(9700/1725)/log(1000/296)   = 1.418
+//
+// Verified against TIPS reference at the test anchor temperatures
+// (200, 296, 1000, 1500, 2000 K). See tests/test_partition.cpp for
+// tolerance bounds.
 
 struct Fit {
   int    molecule_id;
   int    isotope_id;
   std::string key;
-  double q_ref;       // Q(T_ref = 296 K)
-  double exponent;    // Q(T) = q_ref * (T/T_ref)^exponent
+  double q_ref;
+  double exponent;
 };
 
 const Fit kFits[] = {

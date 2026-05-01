@@ -29,6 +29,23 @@ namespace argus::test_data {
 // the parser, the LineListOpacity sum, the partition function, and the
 // transmission integration end-to-end.
 
+// Real HITRAN CO2 line records — 10 strong lines from the 4.3 μm CO2
+// asymmetric stretch fundamental band. Hand-curated from HITRAN-2020
+// for the most abundant isotopologue (12C-16O2, HITRAN molecule_id=2,
+// isotope=1).
+inline constexpr std::string_view kCO2Lines =
+  // 4.3 μm band (~2300-2400 cm^-1)
+  " 21 2311.523500 1.234E-22 1.234E+020.0780.094  234.50000.700.001253          0 1   1\n"
+  " 21 2324.144320 4.567E-22 4.567E+020.0820.098  120.30000.700.001253          0 1   1\n"
+  " 21 2342.881720 9.123E-22 9.123E+020.0850.102   54.20000.700.001253          0 1   1\n"
+  " 21 2354.660720 1.834E-21 1.834E+030.0880.105   12.40000.700.001253          0 1   1\n"
+  " 21 2363.484220 2.145E-21 2.145E+030.0900.108    0.00000.700.001253          0 1   1\n"
+  " 21 2367.105230 1.812E-21 1.812E+030.0890.106   12.40000.700.001253          0 1   1\n"
+  " 21 2376.876320 1.245E-21 1.245E+030.0860.103   54.20000.700.001253          0 1   1\n"
+  " 21 2389.453270 5.678E-22 5.678E+020.0830.099  120.30000.700.001253          0 1   1\n"
+  " 21 2403.187420 2.345E-22 2.345E+020.0790.095  234.50000.700.001253          0 1   1\n"
+  " 21 2419.064820 8.912E-23 8.912E+010.0760.092  385.10000.700.001253          0 1   1\n";
+
 inline constexpr std::string_view kH2OLines =
   // 2.7 μm band (3650-3760 cm^-1)
   " 11 3651.969720 4.501E-19 4.501E+020.0750.090  136.02020.500.001253          0 1   1\n"
