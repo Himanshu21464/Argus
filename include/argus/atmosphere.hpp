@@ -48,4 +48,35 @@ Atmosphere isothermal(double T_k, double P_top_bar, double P_bot_bar,
                       std::size_t n_layers, Species species,
                       double mixing_ratio);
 
+// Guillot 2010 analytic temperature-pressure profile for an irradiated
+// hot Jupiter. Based on Guillot (2010), A&A 520, A27, eq. (29):
+//
+//   T⁴(τ) = (3/4) T_int⁴ · (2/3 + τ)
+//         + (3/4) T_irr⁴ · [2/3 + 1/(γ√3) + (γ/√3 - 1/(γ√3)) · exp(-γτ√3)]
+//
+// where τ is the IR optical depth (∝ pressure for a constant-opacity
+// atmosphere): τ = κ_IR · P / g.
+//
+// For a typical hot Jupiter: T_int ≈ 100–500 K, T_irr ≈ 1000–2500 K,
+// γ ≈ 0.1–1 (thermal IR / visible opacity ratio), kappa_IR ≈ 10⁻³–10⁻¹
+// cm²/g.
+//
+// `pressures_bar` must be sorted top-first (ascending pressure).
+// Returns T(K) at each layer, same shape as the input.
+std::vector<double> guillot_profile(const std::vector<double>& pressures_bar,
+                                    double T_int_k, double T_irr_k,
+                                    double gamma_thermal_visible,
+                                    double kappa_IR_cm2_per_g = 1.0e-2,
+                                    double gravity_si = 25.0);
+
+// Build a complete Atmosphere with a Guillot T-P profile and a single
+// species. Logarithmic pressure grid from P_top to P_bot.
+Atmosphere guillot(double T_int_k, double T_irr_k,
+                   double gamma_thermal_visible,
+                   double P_top_bar, double P_bot_bar,
+                   std::size_t n_layers,
+                   Species species, double mixing_ratio,
+                   double kappa_IR_cm2_per_g = 1.0e-2,
+                   double planet_gravity_si = 25.0);
+
 }  // namespace argus

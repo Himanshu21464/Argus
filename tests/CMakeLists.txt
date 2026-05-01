@@ -69,3 +69,7 @@ add_test(NAME voigt_reference COMMAND test_voigt_reference)
 add_executable(test_benchmark test_benchmark.cpp)
 target_link_libraries(test_benchmark PRIVATE argus_core)
 add_test(NAME benchmark COMMAND test_benchmark)
+
+add_executable(test_guillot test_guillot.cpp)
+target_link_libraries(test_guillot PRIVATE argus_core)
+add_test(NAME guillot COMMAND test_guillot)

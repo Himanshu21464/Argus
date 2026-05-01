@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.3.4 — 2026-05-01 — Guillot 2010 T-P profile
+
+Adds the standard hot-Jupiter analytic temperature-pressure profile,
+moving Argus from "isothermal toy" to actually-realistic exoplanet
+atmosphere modelling.
+
+### Added
+- **`argus::guillot_profile()`** — analytic T(P) per Guillot 2010
+  eq. (29). Inputs: `T_int` (internal heat flux temperature),
+  `T_irr` (irradiation temperature), γ (thermal/visible opacity ratio),
+  `kappa_IR` (IR opacity), `gravity`. Returns T (K) at each pressure.
+- **`argus::guillot()`** — convenience builder that returns a complete
+  `Atmosphere` with a Guillot T-P profile, log-spaced pressure grid,
+  and a single species.
+- **`test_guillot`** (9 assertions):
+  * profile is finite and physically plausible (100-5000 K)
+  * deep atmosphere is hottest (internal heat increases with τ ∝ P)
+  * top-of-atmosphere matches the analytic skin-temperature formula
+    to <0.1%
+  * monotone non-decreasing for γ < 1 (no inversion regime)
+  * geometry pass works on the non-isothermal profile
+  * forward model produces sensible spectrum
+  * higher T_irr → larger scale height → deeper transit (verified)
+  * bad inputs throw
+
+### Validated
+19/19 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`.
+Performance unchanged: ~1.7 ms forward call, ~9 ns / Voigt.
+
+---
+
 ## 0.3.3 — 2026-05-01 — Self-broadening + independent Voigt reference + benchmark
 
 Adds the missing HITRAN physics (self-broadening, pressure shift), an
