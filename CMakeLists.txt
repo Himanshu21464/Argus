@@ -25,6 +25,8 @@ add_library(argus_core STATIC
   src/opacity.cpp
   src/radiative_transfer.cpp
   src/ir.cpp
+  src/geometry.cpp
+  src/line_list.cpp
 )
 target_include_directories(argus_core PUBLIC include)
 target_compile_features(argus_core PUBLIC cxx_std_20)
@@ -35,6 +37,14 @@ add_executable(example_01_transmission_spectrum
 )
 target_link_libraries(example_01_transmission_spectrum PRIVATE argus_core)
 set_target_properties(example_01_transmission_spectrum PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)
+
+add_executable(example_02_voigt_h2o
+  examples/02_voigt_h2o.cpp
+)
+target_link_libraries(example_02_voigt_h2o PRIVATE argus_core)
+set_target_properties(example_02_voigt_h2o PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
 )
 

@@ -26,8 +26,13 @@ struct Atmosphere {
   // ordered list of species; rows of mixing_ratios match this order.
   std::vector<Species> species;
   // bulk planet properties used by the geometry pass.
-  double planet_radius_rj = 1.0;   // R_Jupiter
-  double planet_gravity_si = 25.0; // m/s^2
+  double planet_radius_rj = 1.0;     // R_Jupiter
+  double planet_gravity_si = 25.0;   // m/s^2
+  // bulk mean molecular weight of the background gas (amu).
+  // 2.3 is the standard H2/He hot-Jupiter value.
+  double bulk_mmw_amu = 2.3;
+  // host-star radius in solar radii, used to convert R_eff -> transit depth.
+  double star_radius_rsun = 1.0;
 
   std::size_t num_layers() const { return pressure_bar.size(); }
   std::size_t num_species() const { return species.size(); }
