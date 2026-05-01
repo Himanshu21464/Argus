@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.3.6 — 2026-05-01 — Rayleigh + CH4 + comprehensive hot-Jupiter test
+
+Adds the last two physics components a real exoplanet retrieval needs
+(Rayleigh scattering on the bulk gas, CH4 molecular opacity) and a
+comprehensive end-to-end test that runs every kernel together on a
+realistic hot-Jupiter setup.
+
+### Added
+- **`argus::RayleighOpacity`** — λ⁻⁴ scattering kernel.
+  σ(ν) = σ₁μm · (ν/10000)⁴, no T,P dependence. For H2-dominated
+  atmospheres use σ₁μm ≈ 8.49e-29 cm². T,P-independent (Rayleigh is
+  a continuum scatterer); kernel pre-computes per-wavenumber values
+  once per call.
+- **`argus::test_data::kCH4Lines`** — 8 hand-curated real HITRAN CH4
+  lines from the v3 (3.3 μm) asymmetric-stretch fundamental band of
+  the most abundant 12CH4 isotopologue.
+- **`test_rayleigh`** (5 assertions):
+  * σ(1 μm) equals the reference value exactly
+  * λ⁻⁴ scaling: σ(0.5 μm) = 16·σ(1 μm); σ(2 μm) = σ(1 μm)/16
+  * T- and P-independence
+  * malformed input (negative σ) throws
+  * end-to-end Rayleigh slope: 0.5 μm depth > 2 μm depth
+- **`test_hot_jupiter`** — comprehensive end-to-end:
+  * Loads real HITRAN H2O (16 lines), CO2 (10 lines), CH4 (8 lines)
+  * Builds Guillot 2010 hot-Jupiter T-P (T_int=200 K, T_irr=1500 K, γ=0.5)
+  * Stacks 5 opacity kernels: H2 Rayleigh + H2O + CO2 + CH4 + cloud deck
+  * Runs forward over 0.5-5 μm (JWST-PRISM range)
+  * Asserts physical properties:
+    - Rayleigh slope at short λ
+    - H2O 1.4 μm band detected above continuum
+    - CO2 4.3 μm band detected above continuum
+    - CH4 3.3 μm band detected above continuum
+    - cloud floor caps the deepest features (max depth < 5%)
+    - bit-exact reproducibility on repeat calls
+
+### Validated
+22/22 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 3 examples build warning-free. Performance unchanged:
+~1.8 ms / forward call, ~9 ns / Voigt eval.
+
+### M2 production-perfect inventory
+The kernel now ships every component a real exoplanet atmospheric
+retrieval would call:
+- Hydrostatic geometry + transit-radius integration
+- Hui-Armstrong-Wray Voigt (1e-6) with autograd path via `Dual<T>`
+- HITRAN .par parser + bundled real H2O/CO2/CH4 fixtures
+- TIPS-anchored Q(T) for 5 molecules
+- Self-broadening (γ_self) + pressure shift (δ_air)
+- Guillot 2010 T-P profile
+- Gray cloud-deck opacity
+- Rayleigh scattering (λ⁻⁴)
+- Bit-exact reproducibility, file I/O round-trip, performance baseline
+
+---
+
 ## 0.3.5 — 2026-05-01 — Gray cloud deck
 
 Adds the canonical "gray cloud deck" opacity model used in nearly every

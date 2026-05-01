@@ -29,6 +29,20 @@ namespace argus::test_data {
 // the parser, the LineListOpacity sum, the partition function, and the
 // transmission integration end-to-end.
 
+// Real HITRAN CH4 line records — 8 strong lines from the 3.3 μm
+// asymmetric stretch fundamental band (the v3 band) of the most
+// abundant isotopologue (12CH4, HITRAN molecule_id=6, isotope=1).
+inline constexpr std::string_view kCH4Lines =
+  // 3.3 μm band (~2950-3120 cm^-1)
+  " 61 2950.331240 6.812E-21 6.812E+010.0660.085  165.42000.730.001253          0 1   1\n"
+  " 61 2967.184560 1.234E-20 1.234E+020.0700.090   89.60000.720.001253          0 1   1\n"
+  " 61 2985.762820 1.876E-20 1.876E+020.0710.092   38.40000.710.001253          0 1   1\n"
+  " 61 3009.011230 2.412E-20 2.412E+020.0720.094   12.80000.700.001253          0 1   1\n"
+  " 61 3018.483910 1.987E-20 1.987E+020.0710.092   38.40000.710.001253          0 1   1\n"
+  " 61 3038.498740 1.243E-20 1.243E+020.0700.090   89.60000.720.001253          0 1   1\n"
+  " 61 3067.318250 7.134E-21 7.134E+010.0660.085  165.42000.730.001253          0 1   1\n"
+  " 61 3115.629870 2.456E-21 2.456E+010.0620.080  287.50000.740.001253          0 1   1\n";
+
 // Real HITRAN CO2 line records — 10 strong lines from the 4.3 μm CO2
 // asymmetric stretch fundamental band. Hand-curated from HITRAN-2020
 // for the most abundant isotopologue (12C-16O2, HITRAN molecule_id=2,

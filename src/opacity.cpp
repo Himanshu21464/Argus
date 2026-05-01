@@ -20,6 +20,43 @@ Tensor GreyOpacity::cross_section(const std::vector<double>& wavenumber_cm,
   return out;
 }
 
+// ─── RayleighOpacity ──────────────────────────────────────────────────
+
+RayleighOpacity::RayleighOpacity(std::string species_key,
+                                 double sigma_at_1um_cm2)
+    : key_(std::move(species_key)),
+      sigma_1um_(sigma_at_1um_cm2) {
+  if (sigma_1um_ < 0.0) {
+    throw std::invalid_argument(
+        "RayleighOpacity: sigma_at_1um_cm2 must be >= 0");
+  }
+}
+
+Tensor RayleighOpacity::cross_section(
+    const std::vector<double>& wavenumber_cm,
+    const std::vector<double>& T_k,
+    const std::vector<double>& P_bar) const {
+  const std::size_t nT = T_k.size();
+  const std::size_t nP = P_bar.size();
+  const std::size_t nW = wavenumber_cm.size();
+  Tensor out({nT, nP, nW});
+  // Pre-compute per-wavenumber values (T,P-independent).
+  std::vector<double> sigma_w(nW);
+  for (std::size_t w = 0; w < nW; ++w) {
+    const double r = wavenumber_cm[w] / 10000.0;     // ν/(1/μm)
+    const double r2 = r * r;
+    sigma_w[w] = sigma_1um_ * r2 * r2;
+  }
+  for (std::size_t iT = 0; iT < nT; ++iT) {
+    for (std::size_t iP = 0; iP < nP; ++iP) {
+      for (std::size_t w = 0; w < nW; ++w) {
+        out[(iT * nP + iP) * nW + w] = sigma_w[w];
+      }
+    }
+  }
+  return out;
+}
+
 // ─── CloudDeckOpacity ─────────────────────────────────────────────────
 
 CloudDeckOpacity::CloudDeckOpacity(std::string species_key,

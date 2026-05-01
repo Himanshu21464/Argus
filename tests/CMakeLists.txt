@@ -77,3 +77,11 @@ add_test(NAME guillot COMMAND test_guillot)
 add_executable(test_clouds test_clouds.cpp)
 target_link_libraries(test_clouds PRIVATE argus_core)
 add_test(NAME clouds COMMAND test_clouds)
+
+add_executable(test_rayleigh test_rayleigh.cpp)
+target_link_libraries(test_rayleigh PRIVATE argus_core)
+add_test(NAME rayleigh COMMAND test_rayleigh)
+
+add_executable(test_hot_jupiter test_hot_jupiter.cpp)
+target_link_libraries(test_hot_jupiter PRIVATE argus_core)
+add_test(NAME hot_jupiter COMMAND test_hot_jupiter)

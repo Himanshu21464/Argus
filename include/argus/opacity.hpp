@@ -60,6 +60,34 @@ class GreyOpacity final : public OpacityKernel {
   double sigma_cm2_;
 };
 
+// Rayleigh-scattering opacity. Cross-section scales as λ⁻⁴ — strongly
+// peaked toward short wavelengths. The reference value at λ = 1 μm is
+// configurable; for an H2-dominated background (typical hot Jupiter)
+// use σ_1μm ≈ 8.49e-29 cm²; for an H2/He mix ~6e-29 cm². At ν in cm⁻¹:
+//
+//     σ(ν) = σ_1μm · (ν / 10000)^4         where 10000 cm⁻¹ ≡ 1 μm
+//
+// This kernel doesn't care about (T, P) — Rayleigh is a continuum
+// scatterer. The TransmissionModel multiplies σ by VMR · n_total in
+// the standard way, so to apply Rayleigh to the bulk gas just set the
+// associated species' VMR to 1.0 in every layer.
+class RayleighOpacity final : public OpacityKernel {
+ public:
+  RayleighOpacity(std::string species_key, double sigma_at_1um_cm2);
+
+  const std::string& species_key() const noexcept override { return key_; }
+
+  Tensor cross_section(const std::vector<double>& wavenumber_cm,
+                       const std::vector<double>& T_k,
+                       const std::vector<double>& P_bar) const override;
+
+  double sigma_at_1um_cm2() const noexcept { return sigma_1um_; }
+
+ private:
+  std::string key_;
+  double sigma_1um_;
+};
+
 // Canonical "gray cloud deck" model used in exoplanet retrievals.
 // Above the cloud-top pressure P_cloud_bar the atmosphere is fully
 // opaque (huge sigma per cloud molecule), below it the cloud
