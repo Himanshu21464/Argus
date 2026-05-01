@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.3.1 — 2026-05-01 — M2 polish
+
+Adds three more hard test suites — bringing the total to 14 — covering
+edge-case stress, file I/O round-trip, and bit-exact reproducibility.
+
+### Added
+- **`test_stress`** — 15 hard edge-case assertions:
+  malformed Atmosphere, mixing-ratio bounds, isothermal-builder rejects,
+  geometry rejects 1-layer atmosphere and mis-ordered layers, Tensor
+  shape mismatch, zero-opacity baseline matches geometric (R_p/R_*)²,
+  null OpacityKernel rejection, non-positive molar mass rejection,
+  Voigt finite + positive at extreme regimes, line list at 50 K and
+  4000 K, single-wavelength forward, empty wavenumber grid, empty line
+  list, garbage HITRAN strings.
+- **`test_file_io`** — writes `kH2OLines` fixture to `/tmp`, reads it
+  back via `Hitran::load_file()`, and verifies field-by-field equality
+  with the in-memory parse to 1e-12. Also asserts that missing files
+  throw.
+- **`test_reproducibility`** — runs the entire forward model twice on
+  the same inputs and asserts bit-exact equality (no nondeterminism in
+  reductions / hash randomisation / uninit memory). Plus IR content
+  address determinism, single-call cross-section determinism,
+  partition-function determinism.
+
+### Validated
+14/14 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. Three examples build and run end-to-end.
+
+---
+
 ## 0.3.0 — 2026-05-01 — M2 production-grade
 
 Production-quality completion of the M2 milestone. The kernel now uses

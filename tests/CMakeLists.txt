@@ -41,3 +41,15 @@ add_test(NAME real_h2o COMMAND test_real_h2o)
 add_executable(test_finite_diff test_finite_diff.cpp)
 target_link_libraries(test_finite_diff PRIVATE argus_core)
 add_test(NAME finite_diff COMMAND test_finite_diff)
+
+add_executable(test_stress test_stress.cpp)
+target_link_libraries(test_stress PRIVATE argus_core)
+add_test(NAME stress COMMAND test_stress)
+
+add_executable(test_file_io test_file_io.cpp)
+target_link_libraries(test_file_io PRIVATE argus_core)
+add_test(NAME file_io COMMAND test_file_io)
+
+add_executable(test_reproducibility test_reproducibility.cpp)
+target_link_libraries(test_reproducibility PRIVATE argus_core)
+add_test(NAME reproducibility COMMAND test_reproducibility)
