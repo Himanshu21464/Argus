@@ -1053,3 +1053,176 @@ section.band-deep {
 }
 .jf-tagid { color: var(--ink-4); }
 @media (max-width: 560px) { .jf-bottom { flex-direction: column; gap: 6px; } }
+
+/* ─────────────  3D TRANSIT SCENE  ───────────── */
+
+.band-3d {
+  padding: 70px 0 80px;
+  background:
+    radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(255, 179, 71, 0.06), transparent 60%),
+    radial-gradient(ellipse 900px 400px at 30% 100%, rgba(0, 212, 255, 0.05), transparent 60%);
+}
+
+.transit-stage {
+  position: relative;
+  margin: 24px 0 0;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 30% 50%, rgba(255, 179, 71, 0.08), transparent 60%),
+    linear-gradient(180deg, #02050d, #050a18);
+}
+
+.transit-canvas-wrap {
+  width: 100%;
+  height: 480px;
+  position: relative;
+}
+.transit-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+@media (max-width: 760px) {
+  .transit-canvas-wrap { height: 320px; }
+}
+
+.transit-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border-top: 1px solid var(--rule);
+}
+@media (max-width: 760px) {
+  .transit-legend { grid-template-columns: 1fr; }
+}
+.tl-item {
+  background: var(--void-1);
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 12px 14px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+.tl-swatch {
+  grid-row: 1 / 3;
+  width: 14px; height: 14px; border-radius: 50%;
+  align-self: center;
+  box-shadow: 0 0 12px currentColor;
+}
+.tl-star   { background: #ffd380; color: #ffd380; }
+.tl-planet { background: #1a3a52; color: #00d4ff; box-shadow: 0 0 8px #00d4ff; }
+.tl-atm    { background: #00d4ff; color: #00d4ff; }
+.tl-name { color: var(--ink); font-weight: 600; }
+.tl-meta { color: var(--ink-3); grid-column: 2; font-size: 0.74rem; }
+
+/* ─────────────  ANIMATIONS — keyframes  ───────────── */
+
+@keyframes draw-line {
+  from { stroke-dashoffset: var(--fit-len, 1000); opacity: 0.4; }
+  to   { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.35),
+                          0 0 20px -2px rgba(0, 212, 255, 0.45); }
+  50%      { box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.55),
+                          0 0 32px -2px rgba(0, 212, 255, 0.7); }
+}
+@keyframes wedge-pulse {
+  0%, 100% { fill: var(--cont); }
+  50%      { fill: var(--cont-2); }
+}
+
+/* ─────────────  scroll-reveal  ───────────── */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s ease, transform .7s ease;
+  will-change: opacity, transform;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ─────────────  animated spectrum  ───────────── */
+
+.hero-spectrum.animate .fit-line {
+  animation: draw-line 2.0s cubic-bezier(.22, .68, .25, 1) forwards;
+}
+
+.hero-spectrum .data-points > g {
+  opacity: 0;
+}
+.hero-spectrum.animate .data-points > g {
+  animation: fade-in 0.4s ease-out forwards;
+  animation-delay: var(--dp-delay, 0.5s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-spectrum .fit-line { animation: none !important; }
+  .hero-spectrum .data-points > g { opacity: 1 !important; animation: none !important; }
+}
+
+/* ─────────────  hover effects  ───────────── */
+
+.card,
+.pain-fact,
+.tl-card,
+.problem,
+.box,
+.ip-card,
+.involved,
+.build-block,
+.rack-card {
+  transition: border-color .25s ease, transform .25s ease,
+              background .25s ease, box-shadow .25s ease;
+}
+.pain-fact:hover,
+.tl-card:hover,
+.box:hover,
+.ip-card:hover,
+.involved:hover,
+.build-block:hover,
+.rack-card:hover {
+  border-color: rgba(0, 212, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 38px -22px rgba(0, 212, 255, 0.30);
+}
+.problem:not(.problem-wedge):hover {
+  background: var(--void-3);
+}
+
+.btn { transition: all .2s ease; }
+.btn-prime:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px -10px rgba(0, 212, 255, 0.55);
+}
+
+/* the Argus star in the constellation always pulses */
+.star-wedge circle:nth-of-type(2) {
+  transform-origin: 450px 240px;
+  animation: wedge-pulse 3s ease-in-out infinite;
+}
+
+/* command bar wordmark spectrum gets a subtle live highlight */
+.wm-spectrum {
+  transition: color .3s ease, opacity .3s ease;
+}
+.wordmark:hover .wm-spectrum {
+  color: var(--accent);
+  opacity: 1;
+}

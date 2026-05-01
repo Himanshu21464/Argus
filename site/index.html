@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="argus.css?v=3">
+  <link rel="stylesheet" href="argus.css?v=5">
 </head>
 <body>
 
@@ -207,8 +207,44 @@
     <span class="rib-tick">5.0 μm</span>
   </div>
 
+  <!-- ─────────────  3D TRANSIT SCENE  ───────────── -->
+  <section class="band band-3d reveal">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">live · <span class="band-mol">transit</span> · WebGL</div>
+        <h2>The event Argus inverts.</h2>
+        <p class="band-lede">
+          A hot Jupiter transits its host star. The dip in the stellar
+          spectrum encodes the planet's atmosphere — the data Argus
+          compiles into composition, T-P profile, clouds.
+        </p>
+      </div>
+
+      <div class="transit-stage">
+        <div id="transit-3d" class="transit-canvas-wrap" aria-hidden="true"></div>
+        <div class="transit-legend">
+          <div class="tl-item">
+            <span class="tl-swatch tl-star"></span>
+            <span class="tl-name">G-type host star</span>
+            <span class="tl-meta">T_eff ≈ 5500 K · R ≈ 1 R<sub>☉</sub></span>
+          </div>
+          <div class="tl-item">
+            <span class="tl-swatch tl-planet"></span>
+            <span class="tl-name">Hot Jupiter</span>
+            <span class="tl-meta">R ≈ 1 R<sub>J</sub> · T_eq ≈ 1500 K</span>
+          </div>
+          <div class="tl-item">
+            <span class="tl-swatch tl-atm"></span>
+            <span class="tl-name">Atmosphere</span>
+            <span class="tl-meta">H<sub>2</sub>O · CO<sub>2</sub> · CH<sub>4</sub> · clouds</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ─────────────────────────  OBSERVATION — THE PAIN  ───────────────────────── -->
-  <section id="observation" class="band">
+  <section id="observation" class="band reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">λ &nbsp; <span class="band-mol">H₂O</span> 1.4 μm</div>
@@ -255,7 +291,7 @@
   </section>
 
   <!-- ─────────────  ARCHITECTURE — ATMOSPHERIC CROSS-SECTION  ───────────── -->
-  <section id="kernel" class="band band-deep">
+  <section id="kernel" class="band band-deep reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">λ &nbsp; <span class="band-mol">CH₄</span> 3.3 μm</div>
@@ -372,7 +408,7 @@
   </section>
 
   <!-- ─────────────  WHY C++ — INSTRUMENT-PANEL CARDS  ───────────── -->
-  <section class="band">
+  <section class="band reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">λ &nbsp; <span class="band-mol">CO₂</span> 4.3 μm</div>
@@ -419,7 +455,7 @@
   </section>
 
   <!-- ─────────────  API — INSTRUMENT TERMINAL  ───────────── -->
-  <section id="api" class="band band-deep">
+  <section id="api" class="band band-deep reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">λ &nbsp; <span class="band-mol">NH₃</span> 10.5 μm</div>
@@ -477,7 +513,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
   </section>
 
   <!-- ─────────────  MISSION — TIMELINE  ───────────── -->
-  <section id="mission" class="band">
+  <section id="mission" class="band reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">T₀ &nbsp; <span class="band-mol">launch</span> &nbsp; 2026-05-01</div>
@@ -551,7 +587,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
   </section>
 
   <!-- ─────────────  SKY MAP — THE TEN PROBLEMS AS A CONSTELLATION  ───────────── -->
-  <section id="sky" class="band band-deep">
+  <section id="sky" class="band band-deep reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">RA &nbsp; <span class="band-mol">23ʰ 06ᵐ</span> &nbsp; the substrate</div>
@@ -708,7 +744,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
   </section>
 
   <!-- ─────────────  GET INVOLVED  ───────────── -->
-  <section id="build" class="band">
+  <section id="build" class="band reveal">
     <div class="container">
       <div class="band-head">
         <div class="band-key">∂ &nbsp; <span class="band-mol">build</span></div>
@@ -780,6 +816,9 @@ ctest --test-dir build
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/starfield.js"></script>
+<script src="js/transit-3d.js"></script>
+<script src="js/reveal.js"></script>
 </body>
 </html>
