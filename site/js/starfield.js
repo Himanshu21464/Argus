@@ -1,11 +1,19 @@
-// Argus starfield — vanilla canvas. No deps.
+// Argus starfield — dim background field of stars.
 //
-// Three layers of stars at increasing brightness/size, each with subtle
-// twinkle. Respects prefers-reduced-motion.
+// Intentionally restrained: most of the page's astronomy comes from
+// the inline SVG (transmission spectrum, atmospheric cross-section,
+// constellation chart). The starfield exists only to give the deep-void
+// background a sense of scale and depth without competing with the data
+// graphics in front.
+//
+// Honors prefers-reduced-motion.
 
 (() => {
-  const canvas = document.getElementById('starfield');
-  if (!canvas) return;
+  // create canvas dynamically so the markup stays clean
+  const canvas = document.createElement('canvas');
+  canvas.id = 'starfield';
+  canvas.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
   const reduce = window.matchMedia &&
@@ -14,28 +22,28 @@
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
   let width = 0, height = 0;
 
-  // star palette — slightly off-white into the cool/warm range
+  // dim, cool palette — nothing flashy
   const palette = [
-    'rgba(245, 247, 255, 1)',   // pure starlight
-    'rgba(192, 132, 252, 1)',   // purple primary
-    'rgba(103, 232, 249, 1)',   // spectral cyan
-    'rgba(229, 233, 247, 1)',   // soft white
+    'rgba(240, 245, 255, 1)',  // starlight
+    'rgba(184, 194, 212, 1)',  // soft white
+    'rgba(103, 232, 249, 1)',  // h2o cyan, rare
+    'rgba(176, 149, 255, 1)',  // continuum violet, rare
   ];
 
-  // Three layers — far/mid/near
+  // sparser than typical to keep the data graphics in front readable
   const layers = [
-    { count: 220, size: [0.4, 1.0], speed: 0.5, twinkle: 0.005 },
-    { count: 90,  size: [0.7, 1.6], speed: 1.0, twinkle: 0.012 },
-    { count: 35,  size: [1.0, 2.2], speed: 1.6, twinkle: 0.025 },
+    { count: 140, size: [0.25, 0.85], twinkle: 0.004 },
+    { count: 60,  size: [0.55, 1.25], twinkle: 0.010 },
   ];
 
   let stars = [];
 
   function resize() {
     const w = window.innerWidth;
-    const h = window.innerHeight;
+    // height = full document height so the field doesn't end at fold
+    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
     width = w; height = h;
-    canvas.width  = Math.floor(w * DPR);
+    canvas.width = Math.floor(w * DPR);
     canvas.height = Math.floor(h * DPR);
     canvas.style.width  = w + 'px';
     canvas.style.height = h + 'px';
@@ -48,50 +56,49 @@
   function seed() {
     stars = [];
     for (const layer of layers) {
-      for (let i = 0; i < layer.count; ++i) {
+      const dens = (width * height) / (1440 * 900);
+      const n = Math.max(40, Math.floor(layer.count * dens));
+      for (let i = 0; i < n; ++i) {
+        const colorIdx = Math.random() < 0.85 ? 0 : (1 + Math.floor(Math.random() * 3));
         stars.push({
           x: Math.random() * width,
           y: Math.random() * height,
           r: rand(layer.size[0], layer.size[1]),
-          a: rand(0.35, 1.0),
+          baseAlpha: rand(0.22, 0.65),
           phase: Math.random() * Math.PI * 2,
-          color: palette[Math.floor(Math.random() * palette.length)],
-          layer,
+          color: palette[Math.min(colorIdx, palette.length - 1)],
+          twinkle: layer.twinkle,
         });
       }
     }
+  }
+
+  function drawSpike(x, y, color, len) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-len, 0); ctx.lineTo(len, 0);
+    ctx.moveTo(0, -len); ctx.lineTo(0, len);
+    ctx.stroke();
+    ctx.restore();
   }
 
   let last = 0;
   function frame(t) {
     const dt = Math.min(40, t - last) || 16;
     last = t;
-
     ctx.clearRect(0, 0, width, height);
 
     for (const s of stars) {
-      // gentle twinkle via sinusoidal alpha modulation
-      s.phase += s.layer.twinkle * dt;
-      const tw = 0.55 + 0.45 * Math.sin(s.phase);
-      const alpha = s.a * tw;
-      ctx.globalAlpha = alpha;
+      s.phase += s.twinkle * dt;
+      const tw = 0.6 + 0.4 * Math.sin(s.phase);
+      ctx.globalAlpha = s.baseAlpha * tw;
       ctx.fillStyle = s.color;
-
-      // soft glow halo for the brightest layer
-      if (s.layer === layers[2]) {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r * 3.4, 0, Math.PI * 2);
-        const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3.4);
-        grad.addColorStop(0, s.color.replace('1)', '0.45)'));
-        grad.addColorStop(1, s.color.replace('1)', '0)'));
-        ctx.fillStyle = grad;
-        ctx.fill();
-      }
-
-      // crisp star core
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = s.color;
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -99,48 +106,44 @@
     if (!reduce) requestAnimationFrame(frame);
   }
 
-  // also draw a couple of static "bright" stars with diffraction spikes for
-  // that JWST/Hubble look. Kept minimal — too many becomes noisy.
-  function drawSpikedStars() {
+  function drawSpikes() {
+    // a few brighter "JWST-style" stars with diffraction spikes,
+    // placed deterministically so they don't shift on resize
     const big = [
-      { x: width * 0.18, y: height * 0.22, color: 'rgba(192, 132, 252, 1)', r: 1.6 },
-      { x: width * 0.82, y: height * 0.16, color: 'rgba(103, 232, 249, 1)', r: 1.4 },
-      { x: width * 0.42, y: height * 0.78, color: 'rgba(245, 247, 255, 1)', r: 2.0 },
+      { x: width * 0.08,  y: height * 0.08, color: 'rgba(176, 149, 255, 1)', len: 22 },
+      { x: width * 0.93,  y: height * 0.04, color: 'rgba(103, 232, 249, 1)', len: 18 },
+      { x: width * 0.36,  y: height * 0.30, color: 'rgba(240, 245, 255, 1)', len: 16 },
+      { x: width * 0.72,  y: height * 0.55, color: 'rgba(176, 149, 255, 1)', len: 20 },
     ];
     for (const s of big) {
-      ctx.save();
-      ctx.translate(s.x, s.y);
-      ctx.globalAlpha = 0.55;
-
-      // four-point diffraction spike
-      const len = 22 + s.r * 10;
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = 0.55;
-      ctx.beginPath();
-      ctx.moveTo(-len, 0); ctx.lineTo(len, 0);
-      ctx.moveTo(0, -len); ctx.lineTo(0, len);
-      ctx.stroke();
-
-      // bright core
+      drawSpike(s.x, s.y, s.color, s.len);
       ctx.globalAlpha = 1;
       ctx.beginPath();
-      ctx.arc(0, 0, s.r, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, 1.4, 0, Math.PI * 2);
       ctx.fillStyle = s.color;
       ctx.fill();
-
-      ctx.restore();
     }
   }
 
   window.addEventListener('resize', resize);
+
+  // re-seed when the layout settles (images / fonts loaded change page height)
+  let scheduled = false;
+  function scheduleResize() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; resize(); drawSpikes(); });
+  }
+  window.addEventListener('load', scheduleResize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleResize);
+
   resize();
 
   if (reduce) {
-    // single static frame for reduced motion
     last = performance.now();
     frame(last);
-    drawSpikedStars();
+    drawSpikes();
   } else {
-    requestAnimationFrame((t) => { last = t; frame(t); drawSpikedStars(); });
+    requestAnimationFrame((t) => { last = t; frame(t); drawSpikes(); });
   }
 })();

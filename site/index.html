@@ -1,440 +1,750 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Argus — a differentiable atmospheric retrieval kernel</title>
-  <meta name="description" content="Argus is the C++ kernel that compiles JWST and Ariel spectra into atmospheres — the wedge into a substrate-layer toolchain for differentiable astronomy.">
-  <meta name="theme-color" content="#050810">
+  <meta name="description" content="The C++ kernel that compiles JWST and Ariel transmission spectra into atmospheres. Differentiable, GPU-native, autograd-aware.">
+  <meta name="theme-color" content="#000510">
   <meta property="og:title" content="Argus — a differentiable atmospheric retrieval kernel">
-  <meta property="og:description" content="LLVM for the sky — starting with a single planet.">
-  <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><radialGradient id='g' cx='40%25' cy='40%25'><stop offset='0' stop-color='%23c084fc'/><stop offset='0.6' stop-color='%23a855f7'/><stop offset='1' stop-color='%236b21a8'/></radialGradient></defs><circle cx='16' cy='16' r='13' fill='url(%23g)'/><circle cx='11' cy='12' r='1.6' fill='%23050810' opacity='0.55'/><circle cx='20' cy='17' r='2.6' fill='%23050810' opacity='0.45'/><circle cx='13' cy='21' r='1.1' fill='%23050810' opacity='0.50'/></svg>">
+  <meta property="og:description" content="Photons → atmospheres. The kernel.">
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000510'/><path d='M2 18 Q 6 18, 8 16 T 12 16 Q 14 12, 16 12 T 20 16 Q 22 18, 24 17 T 30 17' stroke='%2300d4ff' stroke-width='1.6' fill='none'/><circle cx='12' cy='16' r='1.4' fill='%2300d4ff'/><circle cx='20' cy='16' r='1.4' fill='%2300d4ff'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="argus.css">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="argus.css?v=3">
 </head>
 <body>
 
-<canvas id="starfield" aria-hidden="true"></canvas>
-
-<header class="topbar">
-  <div class="wrap row">
-    <a class="brand" href="/">
-      <span class="brand-glyph" aria-hidden="true"></span>
-      <span class="brand-name">Argus</span>
+<!-- ─────────────  COMMAND BAR  ───────────── -->
+<header class="cmd-bar">
+  <div class="cmd-row">
+    <a class="wordmark" href="/">
+      <span class="wm-text">ARGUS</span>
+      <svg class="wm-spectrum" viewBox="0 0 80 8" aria-hidden="true">
+        <path d="M 0 4 L 12 4 L 14 2 L 16 4 L 22 4 L 24 6 L 28 4 L 38 4 L 40 1 L 44 4 L 56 4 L 58 5 L 62 4 L 80 4" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      </svg>
     </a>
-    <nav class="nav-links" aria-label="Primary">
-      <a href="#pain">The pain</a>
-      <a href="#kernel">Kernel</a>
-      <a href="#code">API</a>
-      <a href="#roadmap">Roadmap</a>
-      <a href="#substrate">Substrate</a>
-      <a href="#get-involved">Build</a>
-    </nav>
-    <div class="topbar-cta">
-      <a class="topbar-link" href="https://github.com/Himanshu21464/Argus" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+    <div class="cmd-meta">
+      <span class="meta-pill"><span class="led led-on"></span>M1 · v0.1.0</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-mono">commit 7f3ed0e</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-mono">2026-05-01</span>
     </div>
+    <nav class="cmd-nav" aria-label="Primary">
+      <a href="#observation">Observation</a>
+      <a href="#kernel">Kernel</a>
+      <a href="#api">API</a>
+      <a href="#mission">Mission</a>
+      <a href="#sky">Sky</a>
+      <a href="https://github.com/Himanshu21464/Argus" class="nav-gh" target="_blank" rel="noopener">github ↗</a>
+    </nav>
   </div>
 </header>
 
 <main>
 
-  <!-- ─────────────────────────  HERO  ───────────────────────── -->
-
+  <!-- ─────────────────────────  HERO — TRANSMISSION SPECTRUM  ───────────────────────── -->
   <section class="hero">
-    <div class="wrap">
-      <div class="eyebrow">
-        <span class="dot"></span>
-        §00 &nbsp;·&nbsp; Future Project Brief &nbsp;·&nbsp; v0 · May 2026
-      </div>
-
-      <h1 class="hero-title">
-        The kernel that <em>compiles photons</em><br>
-        into atmospheres.
-      </h1>
-
-      <p class="lede">
-        When JWST captures a transmission spectrum of a hot Jupiter, retrieval
-        codes <strong>bin it down</strong> to make MCMC tractable — discarding the
-        dynamic range an $11&thinsp;B telescope was built to deliver. The
-        bottleneck is not the data and not the science. It is the absence of a
-        differentiable, GPU-native, autograd-aware production kernel for
-        radiative transfer.
-        <br><br>
-        <strong>Argus</strong> is that kernel. The wedge into a substrate that
-        eventually compiles photons into physics across exoplanets, lensing,
-        and interferometry.
-      </p>
-
-      <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/Himanshu21464/Argus" target="_blank" rel="noopener">
-          Star on GitHub <span aria-hidden="true">→</span>
-        </a>
-        <a class="btn" href="../Argus.pdf" target="_blank">Read the brief</a>
-        <a class="btn" href="../docs/Astronomy-Compute-Crisis.pdf" target="_blank">See the 23-slide deck</a>
-      </div>
-
-      <div class="hero-stats">
-        <div class="stat">
-          <div class="stat-value">10<sup>7</sup></div>
-          <div class="stat-label">RT forward calls per retrieval</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">5</div>
-          <div class="stat-label">fragmented PhD codebases that don't compose</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">2029</div>
-          <div class="stat-label">Ariel launches; ~1000 atmospheres incoming</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- spectrum bar — purely decorative -->
-    <div class="spectrum-bar" aria-hidden="true"></div>
-  </section>
-
-  <!-- ─────────────────────────  §01  THE PAIN  ───────────────────────── -->
-
-  <section id="pain" class="band band-soft">
-    <div class="wrap">
-      <div class="kbd">§01 &nbsp; The pain</div>
-      <h2>JWST is producing data <em>we cannot fully analyze.</em></h2>
-
-      <div class="two-col">
-        <div>
-          <p>
-            A single JWST transmission spectrum of a hot Jupiter contains, in
-            principle, parts-per-million constraints on H<sub>2</sub>O, CO<sub>2</sub>,
-            CH<sub>4</sub>, NH<sub>3</sub>, hazes, clouds, the temperature-pressure
-            profile, and atmospheric circulation. Extracting any of that requires
-            a Bayesian inversion against a forward radiative-transfer model.
-          </p>
-          <p>
-            One forward call sweeps line-by-line opacity over $10^5$–$10^7$
-            wavenumber points across multiple molecular species and hundreds of
-            atmospheric layers. That's seconds-to-minutes per call on CPU. One
-            MCMC retrieval needs $10^6$–$10^7$ forward calls. Production codes
-            <strong>bin the spectrum</strong> to make the math fit.
-          </p>
-          <p class="quiet">
-            The dynamic range JWST exists to deliver is being thrown away to
-            fit a 2008 algorithm.
-          </p>
+    <div class="hero-grid">
+      <div class="hero-text">
+        <div class="target-card">
+          <div class="tc-row"><span class="tc-key">TARGET</span><span class="tc-val">WASP-39 b</span></div>
+          <div class="tc-row"><span class="tc-key">INSTRUMENT</span><span class="tc-val">JWST · NIRSpec PRISM</span></div>
+          <div class="tc-row"><span class="tc-key">MODE</span><span class="tc-val">transmission spectroscopy</span></div>
+          <div class="tc-row"><span class="tc-key">RANGE</span><span class="tc-val">0.6 – 5.2 μm</span></div>
         </div>
 
-        <aside class="card card-data">
-          <div class="card-eyebrow">FRAGMENTATION</div>
-          <h3>Five PhD codebases. Zero composition.</h3>
-          <ul class="codelist">
-            <li><span class="kbd-tag">PYTHON</span> TauREx</li>
-            <li><span class="kbd-tag">PYTHON</span> POSEIDON</li>
-            <li><span class="kbd-tag">PYTHON</span> CHIMERA</li>
-            <li><span class="kbd-tag">PY/F90</span> petitRADTRANS</li>
-            <li><span class="kbd-tag">JAX</span> ExoJAX2 <span class="muted">— validates the differentiable approach</span></li>
-          </ul>
-          <p class="card-foot">
-            Each owns its own opacity format, atmosphere parameterization,
-            prior conventions. Cross-code comparisons are heroic. None expose
-            gradients through the full forward model.
-          </p>
-        </aside>
+        <h1 class="hero-h1">
+          Photons
+          <span class="arrow">⟶</span>
+          atmospheres.
+        </h1>
+
+        <p class="hero-lede">
+          A differentiable, GPU-native C++ kernel for line-by-line radiative
+          transfer. Inverts JWST and Ariel transmission spectra into
+          temperature&ndash;pressure profiles and molecular abundances —
+          without binning the data away to make MCMC tractable.
+        </p>
+
+        <div class="hero-cta">
+          <a class="btn btn-prime" href="https://github.com/Himanshu21464/Argus" target="_blank" rel="noopener">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            Open source on GitHub
+          </a>
+          <a class="btn" href="../Argus.pdf" target="_blank">brief.pdf</a>
+          <a class="btn" href="../docs/Astronomy-Compute-Crisis.pdf" target="_blank">research deck.pdf</a>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ─────────────────────────  §02  THE KERNEL  ───────────────────────── -->
+      <!-- THE TRANSMISSION SPECTRUM — the focal element of the page -->
+      <figure class="hero-spectrum">
+        <div class="spec-frame">
+          <div class="spec-corner spec-tl"></div>
+          <div class="spec-corner spec-tr"></div>
+          <div class="spec-corner spec-bl"></div>
+          <div class="spec-corner spec-br"></div>
 
-  <section id="kernel" class="band">
-    <div class="wrap">
-      <div class="kbd">§02 &nbsp; What Argus is</div>
-      <h2>Five layers. <em>One bijection.</em> Photons → atmospheres.</h2>
+          <svg class="spec-svg" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true">
+            <!-- gridlines -->
+            <g class="grid">
+              <line x1="60" y1="40"  x2="760" y2="40"  /><line x1="60" y1="120" x2="760" y2="120" />
+              <line x1="60" y1="200" x2="760" y2="200" /><line x1="60" y1="280" x2="760" y2="280" />
+              <line x1="60" y1="360" x2="760" y2="360" /><line x1="60" y1="40"  x2="60"  y2="360" />
+              <line x1="200" y1="40" x2="200" y2="360" /><line x1="340" y1="40" x2="340" y2="360" />
+              <line x1="480" y1="40" x2="480" y2="360" /><line x1="620" y1="40" x2="620" y2="360" />
+              <line x1="760" y1="40" x2="760" y2="360" />
+            </g>
 
-      <p class="section-lede">
-        A C++20 / CUDA core for differentiable line-by-line radiative transfer,
-        with an autograd-aware intermediate representation and a built-in
-        simulation-based inference engine. Composable, GPU-resident,
-        vendor-neutral.
-      </p>
+            <!-- molecular band shading -->
+            <g class="bands">
+              <!-- H2O bands -->
+              <rect x="180" y="40" width="40" height="320" fill="url(#h2o-grad)" opacity="0.18"/>
+              <rect x="280" y="40" width="56" height="320" fill="url(#h2o-grad)" opacity="0.18"/>
+              <rect x="430" y="40" width="50" height="320" fill="url(#h2o-grad)" opacity="0.18"/>
+              <!-- CH4 -->
+              <rect x="540" y="40" width="32" height="320" fill="url(#ch4-grad)" opacity="0.18"/>
+              <!-- CO2 -->
+              <rect x="640" y="40" width="60" height="320" fill="url(#co2-grad)" opacity="0.22"/>
+            </g>
 
-      <div class="stack" aria-label="Argus five-layer kernel">
-        <div class="stack-row">
-          <div class="layer-tag">L4</div>
-          <div class="layer-body">
-            <div class="layer-title">Front End</div>
-            <div class="layer-desc">Python bindings (pybind11) · retrieval DSL · natural-language goals</div>
+            <defs>
+              <linearGradient id="h2o-grad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#00d4ff" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#00d4ff" stop-opacity="1"/>
+              </linearGradient>
+              <linearGradient id="ch4-grad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#10f2a8" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#10f2a8" stop-opacity="1"/>
+              </linearGradient>
+              <linearGradient id="co2-grad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#ffb347" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#ffb347" stop-opacity="1"/>
+              </linearGradient>
+              <linearGradient id="fit-grad" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%"  stop-color="#b095ff"/>
+                <stop offset="50%" stop-color="#00d4ff"/>
+                <stop offset="100%" stop-color="#ffb347"/>
+              </linearGradient>
+            </defs>
+
+            <!-- model fit polyline (simulated WASP-39b-like H2O+CO2+CH4 spectrum) -->
+            <path d="M 60 240 Q 100 235 140 230 T 200 218 Q 210 145 220 188 Q 235 235 260 250 Q 280 254 300 220 Q 320 175 330 200 Q 340 135 360 175 Q 385 230 430 245 Q 450 200 470 180 Q 480 160 500 200 Q 540 245 555 240 Q 565 200 575 235 Q 600 245 640 240 Q 660 130 680 110 Q 700 130 720 165 Q 740 215 760 235"
+                  class="fit-line" stroke="url(#fit-grad)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- data points with error bars -->
+            <g class="data-points">
+              <!-- format: x y err -->
+              <g transform="translate(70 240)"><line y2="-12"/><line y2="12"/><circle r="3"/></g>
+              <g transform="translate(110 235)"><line y2="-10"/><line y2="10"/><circle r="3"/></g>
+              <g transform="translate(150 232)"><line y2="-9"/><line y2="9"/><circle r="3"/></g>
+              <g transform="translate(180 220)"><line y2="-11"/><line y2="11"/><circle r="3"/></g>
+              <g transform="translate(210 195)"><line y2="-14"/><line y2="14"/><circle r="3"/></g>
+              <g transform="translate(240 240)"><line y2="-10"/><line y2="10"/><circle r="3"/></g>
+              <g transform="translate(275 250)"><line y2="-9"/><line y2="9"/><circle r="3"/></g>
+              <g transform="translate(305 224)"><line y2="-12"/><line y2="12"/><circle r="3"/></g>
+              <g transform="translate(335 195)"><line y2="-13"/><line y2="13"/><circle r="3"/></g>
+              <g transform="translate(365 175)"><line y2="-11"/><line y2="11"/><circle r="3"/></g>
+              <g transform="translate(400 215)"><line y2="-10"/><line y2="10"/><circle r="3"/></g>
+              <g transform="translate(440 240)"><line y2="-12"/><line y2="12"/><circle r="3"/></g>
+              <g transform="translate(470 184)"><line y2="-15"/><line y2="15"/><circle r="3"/></g>
+              <g transform="translate(505 205)"><line y2="-11"/><line y2="11"/><circle r="3"/></g>
+              <g transform="translate(540 240)"><line y2="-9"/><line y2="9"/><circle r="3"/></g>
+              <g transform="translate(572 232)"><line y2="-11"/><line y2="11"/><circle r="3"/></g>
+              <g transform="translate(605 240)"><line y2="-10"/><line y2="10"/><circle r="3"/></g>
+              <g transform="translate(640 232)"><line y2="-12"/><line y2="12"/><circle r="3"/></g>
+              <g transform="translate(670 116)"><line y2="-18"/><line y2="18"/><circle r="3"/></g>
+              <g transform="translate(700 138)"><line y2="-13"/><line y2="13"/><circle r="3"/></g>
+              <g transform="translate(740 222)"><line y2="-11"/><line y2="11"/><circle r="3"/></g>
+            </g>
+
+            <!-- band labels -->
+            <g class="band-labels">
+              <text x="200" y="34" class="lbl-h2o">H₂O</text>
+              <text x="307" y="34" class="lbl-h2o">H₂O</text>
+              <text x="455" y="34" class="lbl-h2o">H₂O</text>
+              <text x="555" y="34" class="lbl-ch4">CH₄</text>
+              <text x="670" y="34" class="lbl-co2">CO₂</text>
+            </g>
+
+            <!-- axis labels -->
+            <g class="axis">
+              <text x="60"  y="380" class="ax-tick">0.6</text>
+              <text x="200" y="380" class="ax-tick">1.4</text>
+              <text x="340" y="380" class="ax-tick">2.2</text>
+              <text x="480" y="380" class="ax-tick">3.3</text>
+              <text x="620" y="380" class="ax-tick">4.3</text>
+              <text x="760" y="380" class="ax-tick" text-anchor="end">5.2</text>
+              <text x="410" y="408" class="ax-title">wavelength λ &nbsp; (μm)</text>
+
+              <text x="50" y="48"  class="ax-tick" text-anchor="end">22.0</text>
+              <text x="50" y="200" class="ax-tick" text-anchor="end">21.5</text>
+              <text x="50" y="364" class="ax-tick" text-anchor="end">21.0</text>
+              <text x="14" y="200" class="ax-title" transform="rotate(-90 14 200)" text-anchor="middle">transit depth (R₁/R★)² &nbsp; · &nbsp; 10⁻³</text>
+            </g>
+          </svg>
+
+          <div class="spec-caption">
+            <span class="cap-label">FIG. 1</span>
+            simulated transmission spectrum · 22 wavelength bins ·
+            line indicates a forward-model fit · the H₂O / CH₄ / CO₂ bands are what an
+            atmospheric retrieval recovers.
           </div>
         </div>
-        <div class="stack-row">
-          <div class="layer-tag">L3</div>
-          <div class="layer-body">
-            <div class="layer-title">Argus IR <span class="muted">— typed graphs</span></div>
-            <div class="layer-desc">opacity sources · atmosphere layers · instrument PSF/LSF · observational geometry · priors. Content-addressed runs.</div>
-          </div>
-        </div>
-        <div class="stack-row stack-row-hero">
-          <div class="layer-tag">L2</div>
-          <div class="layer-body">
-            <div class="layer-title">Differentiable Physics <span class="muted">(C++20 / CUDA)</span></div>
-            <div class="layer-desc">line-by-line opacity · Voigt &amp; Doppler · multi-stream scattering · chemistry · T–P profile · chord integration</div>
-          </div>
-        </div>
-        <div class="stack-row">
-          <div class="layer-tag">L1</div>
-          <div class="layer-body">
-            <div class="layer-title">Inference Engine</div>
-            <div class="layer-desc">amortized SBI · normalizing flows · gradient-based MAP · MCMC fallback · autograd tape</div>
-          </div>
-        </div>
-        <div class="stack-row">
-          <div class="layer-tag">L0</div>
-          <div class="layer-body">
-            <div class="layer-title">Data Plane</div>
-            <div class="layer-desc">HITRAN / HITEMP / ExoMol loaders · JWST &amp; Ariel ingest · provenance · content-addressed runs</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="boxes-3">
-        <div class="box">
-          <div class="box-eyebrow">ONE-LINE PITCH</div>
-          <p>A C++20/CUDA core for differentiable radiative transfer with an autograd-aware IR and a built-in SBI engine.</p>
-        </div>
-        <div class="box">
-          <div class="box-eyebrow">WHAT IT REPLACES</div>
-          <p>Five fragmented PhD codebases that don't compose. Argus is the kernel; those become passes (or clients).</p>
-        </div>
-        <div class="box">
-          <div class="box-eyebrow">WHY NOW</div>
-          <p>JWST data is binned away today. ExoJAX2 (2025) proved the approach in JAX. Ariel launches 2029. The 24-month standard-setting window is open now.</p>
-        </div>
-      </div>
+      </figure>
     </div>
   </section>
 
-  <!-- ─────────────────────────  §03  WHY C++  ───────────────────────── -->
+  <!-- ─────────────  SPECTRUM RIBBON DIVIDER  ───────────── -->
+  <div class="ribbon" aria-hidden="true">
+    <span class="rib-tick">0.6 μm</span>
+    <span class="rib-tick">1.0 μm</span>
+    <span class="rib-tick">2.0 μm</span>
+    <span class="rib-tick">3.0 μm</span>
+    <span class="rib-tick">4.0 μm</span>
+    <span class="rib-tick">5.0 μm</span>
+  </div>
 
-  <section class="band band-soft">
-    <div class="wrap">
-      <div class="kbd">§03 &nbsp; Why a C++ kernel with autograd is non-negotiable</div>
-      <h2>The hot path is C++. Always.</h2>
-
-      <div class="reasons">
-        <div class="reason">
-          <div class="reason-num">1</div>
-          <h3>Throughput</h3>
-          <p>One JWST retrieval needs $10^6$–$10^7$ RT forward evaluations. Each touches GB-scale opacity tables. Python wrappers cost 10–100× in the hot path.</p>
-        </div>
-        <div class="reason">
-          <div class="reason-num">2</div>
-          <h3>Determinism</h3>
-          <p>Bit-reproducible posteriors across hardware and years are required for biosignature claims. Python autograd toolchains drift; an explicit C++ tape does not.</p>
-        </div>
-        <div class="reason">
-          <div class="reason-num">3</div>
-          <h3>GPU residency</h3>
-          <p>Opacity grids are 1–100 GB per molecule. They must stay on device across the whole retrieval. Python orchestration constantly bounces them through host memory.</p>
-        </div>
-        <div class="reason">
-          <div class="reason-num">4</div>
-          <h3>Composability</h3>
-          <p>The same RT primitive must be callable from MCMC, NF posterior, and gradient-based optimization without rewriting.</p>
-        </div>
-        <div class="reason">
-          <div class="reason-num">5</div>
-          <h3>Vendor longevity</h3>
-          <p>A 2026 telescope takes data until 2050+. The kernel that processes its photons must compile in 2050.</p>
-        </div>
+  <!-- ─────────────────────────  OBSERVATION — THE PAIN  ───────────────────────── -->
+  <section id="observation" class="band">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">λ &nbsp; <span class="band-mol">H₂O</span> 1.4 μm</div>
+        <h2>The data is in. The retrievals can't keep up.</h2>
       </div>
 
-      <p class="quiet center">Python and Julia bindings live <em>above</em> the kernel — for retrieval scripts, agent reasoning, plotting, UI. The hot path is C++.</p>
+      <div class="pain-grid">
+        <article class="pain-fact">
+          <div class="pf-num">10<sup>7</sup></div>
+          <div class="pf-label">forward-model evaluations per MCMC retrieval</div>
+          <p>Each call sweeps line-by-line opacity over 10⁵–10⁷ wavenumbers across
+            multiple molecular species and hundreds of atmospheric layers.</p>
+        </article>
+
+        <article class="pain-fact">
+          <div class="pf-num">~min</div>
+          <div class="pf-label">per forward call on production CPU code</div>
+          <p>Multiplied by 10⁷ calls, a single retrieval becomes intractable.
+            The community's response has been to bin the spectrum.</p>
+        </article>
+
+        <article class="pain-fact pain-fact-bad">
+          <div class="pf-num">×&nbsp;½</div>
+          <div class="pf-label">resolution thrown away by binning</div>
+          <p>The dynamic range that JWST exists to deliver is being averaged
+            into uselessness so that a 2008-vintage MCMC can converge.</p>
+        </article>
+      </div>
+
+      <div class="codes-rack">
+        <div class="rack-head">
+          <span class="rack-eyebrow">RETRIEVAL CODES IN USE TODAY</span>
+          <span class="rack-foot">none expose gradients through the full forward model</span>
+        </div>
+        <div class="rack-row">
+          <div class="rack-card"><div class="rc-name">TauREx</div><div class="rc-tech">python</div></div>
+          <div class="rack-card"><div class="rc-name">POSEIDON</div><div class="rc-tech">python</div></div>
+          <div class="rack-card"><div class="rc-name">CHIMERA</div><div class="rc-tech">python</div></div>
+          <div class="rack-card"><div class="rc-name">petitRADTRANS</div><div class="rc-tech">py · f90</div></div>
+          <div class="rack-card rack-card-jax"><div class="rc-name">ExoJAX2</div><div class="rc-tech">jax · validates the approach</div></div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- ─────────────────────────  §04  THE API  ───────────────────────── -->
+  <!-- ─────────────  ARCHITECTURE — ATMOSPHERIC CROSS-SECTION  ───────────── -->
+  <section id="kernel" class="band band-deep">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">λ &nbsp; <span class="band-mol">CH₄</span> 3.3 μm</div>
+        <h2>One photon. Five physics passes.</h2>
+        <p class="band-lede">
+          The kernel is a typed graph that takes a chord through a layered
+          atmosphere and emits a posterior over its composition.
+        </p>
+      </div>
 
-  <section id="code" class="band">
-    <div class="wrap">
-      <div class="kbd">§04 &nbsp; The forward model</div>
-      <h2>End-to-end in <em>40 lines.</em></h2>
+      <figure class="cross-section">
+        <svg viewBox="0 0 900 540" class="atmo-svg" aria-hidden="true">
+          <defs>
+            <radialGradient id="planet" cx="50%" cy="100%" r="80%">
+              <stop offset="0%"  stop-color="#1a3a52"/>
+              <stop offset="60%" stop-color="#0a1426"/>
+              <stop offset="100%" stop-color="#000510"/>
+            </radialGradient>
+            <linearGradient id="layer-a" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#b095ff" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#b095ff" stop-opacity="0.04"/>
+            </linearGradient>
+            <linearGradient id="layer-b" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.20"/>
+              <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.06"/>
+            </linearGradient>
+            <linearGradient id="layer-c" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#10f2a8" stop-opacity="0.22"/>
+              <stop offset="100%" stop-color="#10f2a8" stop-opacity="0.08"/>
+            </linearGradient>
+            <linearGradient id="layer-d" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#ffb347" stop-opacity="0.22"/>
+              <stop offset="100%" stop-color="#ffb347" stop-opacity="0.10"/>
+            </linearGradient>
+            <linearGradient id="layer-e" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#ff70a6" stop-opacity="0.24"/>
+              <stop offset="100%" stop-color="#ff70a6" stop-opacity="0.12"/>
+            </linearGradient>
+            <linearGradient id="ray" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stop-color="#f0f5ff" stop-opacity="0.0"/>
+              <stop offset="35%" stop-color="#f0f5ff" stop-opacity="0.85"/>
+              <stop offset="65%" stop-color="#00d4ff" stop-opacity="0.90"/>
+              <stop offset="100%" stop-color="#ffb347" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
 
-      <p class="section-lede">
-        The M1 kernel ships <code>Atmosphere</code>, <code>OpacityKernel</code>,
-        <code>TransmissionModel</code>, and the <code>Argus IR</code>. The
-        example below is what's in <code>examples/01_transmission_spectrum.cpp</code>
-        right now, today.
-      </p>
+          <!-- planet body -->
+          <circle cx="450" cy="940" r="540" fill="url(#planet)" stroke="#26354d" stroke-width="0.6"/>
 
-      <div class="code-block">
-        <div class="code-bar">
-          <span class="code-bar-dot"></span>
-          <span class="code-bar-dot"></span>
-          <span class="code-bar-dot"></span>
-          <span class="code-bar-name">examples/01_transmission_spectrum.cpp</span>
+          <!-- atmospheric layers, top of atmo on top -->
+          <g class="layers">
+            <path d="M 0 90  Q 450 50 900 90  L 900 150 Q 450 110 0 150 Z"  fill="url(#layer-a)" stroke="#3a2a55" stroke-width="0.6"/>
+            <path d="M 0 150 Q 450 110 900 150 L 900 220 Q 450 180 0 220 Z" fill="url(#layer-b)" stroke="#1f4860" stroke-width="0.6"/>
+            <path d="M 0 220 Q 450 180 900 220 L 900 300 Q 450 260 0 300 Z" fill="url(#layer-c)" stroke="#0e5645" stroke-width="0.6"/>
+            <path d="M 0 300 Q 450 260 900 300 L 900 380 Q 450 340 0 380 Z" fill="url(#layer-d)" stroke="#5a4220" stroke-width="0.6"/>
+            <path d="M 0 380 Q 450 340 900 380 L 900 470 Q 450 430 0 470 Z" fill="url(#layer-e)" stroke="#5a2a48" stroke-width="0.6"/>
+          </g>
+
+          <!-- chord ray (stellar photon path through atmosphere) -->
+          <line x1="0" y1="262" x2="900" y2="262" stroke="url(#ray)" stroke-width="2.6" stroke-linecap="round"/>
+          <line x1="0" y1="262" x2="900" y2="262" stroke="#f0f5ff" stroke-opacity="0.10" stroke-width="0.8"/>
+
+          <!-- chord endpoints -->
+          <g class="endpts">
+            <text x="20" y="254" class="ep-label">photon in <tspan class="ep-from">★ host star</tspan></text>
+            <text x="20" y="248" class="ep-label" font-size="9" fill="#6f7a92">↓</text>
+          </g>
+
+          <!-- layer labels (the kernel layers, mapped to atmosphere) -->
+          <g class="layer-labels">
+            <g transform="translate(880 120)">
+              <text class="ll-tag" text-anchor="end">FRONT END</text>
+              <text class="ll-desc" y="14" text-anchor="end">python bindings · DSL · natural-language goals</text>
+            </g>
+            <g transform="translate(880 185)">
+              <text class="ll-tag" text-anchor="end">ARGUS IR</text>
+              <text class="ll-desc" y="14" text-anchor="end">typed graphs · content-addressed runs · provenance</text>
+            </g>
+            <g transform="translate(880 268)">
+              <text class="ll-tag ll-tag-hero" text-anchor="end">DIFFERENTIABLE PHYSICS</text>
+              <text class="ll-desc" y="14" text-anchor="end">line-by-line opacity · Voigt · scattering · chord integration · C++/CUDA</text>
+            </g>
+            <g transform="translate(880 340)">
+              <text class="ll-tag" text-anchor="end">INFERENCE ENGINE</text>
+              <text class="ll-desc" y="14" text-anchor="end">amortized SBI · normalizing flows · autograd · MCMC fallback</text>
+            </g>
+            <g transform="translate(880 425)">
+              <text class="ll-tag" text-anchor="end">DATA PLANE</text>
+              <text class="ll-desc" y="14" text-anchor="end">HITRAN · HITEMP · ExoMol · JWST &amp; Ariel ingest</text>
+            </g>
+          </g>
+
+          <!-- altitude label on left -->
+          <g class="altitude">
+            <line x1="40" y1="90"  x2="40" y2="470" stroke="#26354d" stroke-width="0.8"/>
+            <line x1="36" y1="90"  x2="44" y2="90"  stroke="#26354d"/>
+            <line x1="36" y1="262" x2="44" y2="262" stroke="#26354d"/>
+            <line x1="36" y1="470" x2="44" y2="470" stroke="#26354d"/>
+            <text x="56" y="94" class="ax-tick">10⁻⁶ bar  · top of atmosphere</text>
+            <text x="56" y="266" class="ax-tick">10⁻³ bar  · chord transit</text>
+            <text x="56" y="474" class="ax-tick">10² bar  · surface · opaque</text>
+          </g>
+        </svg>
+
+        <figcaption class="atmo-cap">
+          <span class="cap-label">FIG. 2</span>
+          mapping the kernel to the physics it models.
+          a stellar photon enters at left, traverses five passes (front end →
+          IR → physics → inference → data plane), and exits as a calibrated
+          posterior over composition.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ─────────────  WHY C++ — INSTRUMENT-PANEL CARDS  ───────────── -->
+  <section class="band">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">λ &nbsp; <span class="band-mol">CO₂</span> 4.3 μm</div>
+        <h2>Why a C++ kernel with autograd is non-negotiable.</h2>
+      </div>
+
+      <div class="instrument-panel">
+        <div class="ip-card">
+          <div class="ip-meter">10–100×</div>
+          <div class="ip-name">throughput penalty</div>
+          <p>Python wrappers cost an order of magnitude in the hot path. With
+            10⁷ forward calls per retrieval, that order of magnitude is a week
+            on the cluster.</p>
         </div>
-<pre><code><span class="cmt">// 1. Build a 40-layer isothermal H2O atmosphere.</span>
-<span class="kw">using namespace</span> argus;
-Species h2o{<span class="str">"H2O"</span>, <span class="num">18.015</span>};
-Atmosphere atm = isothermal(<span class="num">1200.0</span>,    <span class="cmt">// T [K]</span>
-                            <span class="num">1.0e-6</span>,     <span class="cmt">// P_top [bar]</span>
-                            <span class="num">1.0e2</span>,      <span class="cmt">// P_bot [bar]</span>
-                            <span class="num">40</span>,         <span class="cmt">// n_layers</span>
+        <div class="ip-card">
+          <div class="ip-meter">bit-exact</div>
+          <div class="ip-name">determinism</div>
+          <p>Biosignature claims need posteriors that are bit-reproducible
+            across hardware and years. Python autograd toolchains drift; a
+            C++ tape with explicit operators does not.</p>
+        </div>
+        <div class="ip-card">
+          <div class="ip-meter">100 GB</div>
+          <div class="ip-name">opacity tables, on-device</div>
+          <p>HITRAN/HITEMP/ExoMol grids are 1–100 GB per molecule. Argus
+            keeps them on the GPU across the entire retrieval — no host bounce.</p>
+        </div>
+        <div class="ip-card">
+          <div class="ip-meter">∇ x</div>
+          <div class="ip-name">composability</div>
+          <p>The same RT primitive callable from MCMC, normalizing-flow
+            posteriors, and gradient-based MAP — without rewriting.</p>
+        </div>
+        <div class="ip-card">
+          <div class="ip-meter">2050+</div>
+          <div class="ip-name">vendor longevity</div>
+          <p>A 2026 telescope takes data until 2050+. The kernel that processes
+            its photons must compile in 2050.</p>
+        </div>
+      </div>
+
+      <p class="quiet quiet-center">Python and Julia bindings live <em>above</em> the kernel — for retrieval scripts, agent reasoning, plotting, UI. The hot path is C++.</p>
+    </div>
+  </section>
+
+  <!-- ─────────────  API — INSTRUMENT TERMINAL  ───────────── -->
+  <section id="api" class="band band-deep">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">λ &nbsp; <span class="band-mol">NH₃</span> 10.5 μm</div>
+        <h2>End-to-end in 30 lines.</h2>
+        <p class="band-lede">
+          What ships in <code>examples/01_transmission_spectrum.cpp</code>
+          today, M1.
+        </p>
+      </div>
+
+      <div class="terminal">
+        <div class="term-bar">
+          <span class="term-led led-on"></span>
+          <span class="term-led led-warn"></span>
+          <span class="term-led led-amber"></span>
+          <span class="term-name">argus@retrieval:~/examples</span>
+          <span class="term-meta">cpp · 47 lines · gcc 15.2 · -Wall -Wpedantic -Wconversion</span>
+        </div>
+<pre class="term-body"><code><span class="c-cmt">// 1. Build a 40-layer isothermal H2O atmosphere.</span>
+<span class="c-kw">using namespace</span> argus;
+Species h2o{<span class="c-str">"H2O"</span>, <span class="c-num">18.015</span>};
+Atmosphere atm = isothermal(<span class="c-num">1200.0</span>,    <span class="c-cmt">// T [K]</span>
+                            <span class="c-num">1.0e-6</span>,     <span class="c-cmt">// P_top [bar]</span>
+                            <span class="c-num">1.0e2</span>,      <span class="c-cmt">// P_bot [bar]</span>
+                            <span class="c-num">40</span>,         <span class="c-cmt">// n_layers</span>
                             h2o,
-                            <span class="num">1.0e-3</span>);    <span class="cmt">// VMR</span>
+                            <span class="c-num">1.0e-3</span>);    <span class="c-cmt">// VMR</span>
 
-<span class="cmt">// 2. Attach an opacity kernel.</span>
-<span class="cmt">//    M2 swaps GreyOpacity for HITRAN+CUDA Voigt; this call site does not change.</span>
-<span class="kw">auto</span> opacity = std::make_shared&lt;GreyOpacity&gt;(<span class="str">"H2O"</span>, <span class="num">1.0e-22</span>);
+<span class="c-cmt">// 2. Attach an opacity kernel.</span>
+<span class="c-cmt">// M2 swaps GreyOpacity for HITRAN+CUDA Voigt — call site unchanged.</span>
+<span class="c-kw">auto</span> opacity = std::make_shared&lt;GreyOpacity&gt;(<span class="c-str">"H2O"</span>, <span class="c-num">1.0e-22</span>);
 
-<span class="cmt">// 3. Forward model.</span>
+<span class="c-cmt">// 3. Forward model.</span>
 TransmissionModel model;
 model.add_opacity(opacity);
+Spectrum s = model.forward(atm, make_grid(<span class="c-num">2000.0</span>, <span class="c-num">4000.0</span>, <span class="c-num">21</span>));
 
-<span class="kw">std</span>::vector&lt;<span class="kw">double</span>&gt; wavenumber_cm = make_grid(<span class="num">2000.0</span>, <span class="num">4000.0</span>, <span class="num">21</span>);
-Spectrum s = model.forward(atm, wavenumber_cm);
-
-<span class="cmt">// 4. Argus IR — content-addressed reproducible runs.</span>
+<span class="c-cmt">// 4. Argus IR — content-addressed reproducible runs.</span>
 ir::Graph g;
-<span class="kw">auto</span> a = g.add(ir::NodeKind::kAtmosphere,    <span class="str">"atm"</span>);
-<span class="kw">auto</span> o = g.add(ir::NodeKind::kOpacity,        <span class="str">"h2o_grey"</span>);
-<span class="kw">auto</span> m = g.add(ir::NodeKind::kForwardModel,   <span class="str">"transmission"</span>, {a, o});
-<span class="kw">auto</span> p = g.add(ir::NodeKind::kSpectrum,       <span class="str">"out"</span>, {m});
+<span class="c-kw">auto</span> a = g.add(ir::NodeKind::kAtmosphere,    <span class="c-str">"atm"</span>);
+<span class="c-kw">auto</span> o = g.add(ir::NodeKind::kOpacity,        <span class="c-str">"h2o_grey"</span>);
+<span class="c-kw">auto</span> m = g.add(ir::NodeKind::kForwardModel,   <span class="c-str">"transmission"</span>, {a, o});
+<span class="c-kw">auto</span> p = g.add(ir::NodeKind::kSpectrum,       <span class="c-str">"out"</span>, {m});
 
-std::cout &lt;&lt; g.content_address();   <span class="cmt">// → 845f876e00f4ea93</span></code></pre>
-      </div>
-
-      <div class="code-foot">
-        <div class="code-foot-item"><span class="ok">✓</span> Compiles under <code>-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion</code> on GCC&nbsp;15.</div>
-        <div class="code-foot-item"><span class="ok">✓</span> Three smoke tests pass (atmosphere, RT, IR content-addressing).</div>
-        <div class="code-foot-item"><span class="ok">✓</span> Zero external runtime dependencies in M1.</div>
+std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e00f4ea93</span></code></pre>
+        <div class="term-foot">
+          <span class="tf-ok">✓</span> compiles clean under <code>-Wpedantic -Wconversion</code>
+          &nbsp; · &nbsp;
+          <span class="tf-ok">✓</span> three smoke tests pass (atmosphere · RT · IR)
+          &nbsp; · &nbsp;
+          <span class="tf-ok">✓</span> zero external runtime deps
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ─────────────────────────  §05  ROADMAP  ───────────────────────── -->
+  <!-- ─────────────  MISSION — TIMELINE  ───────────── -->
+  <section id="mission" class="band">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">T₀ &nbsp; <span class="band-mol">launch</span> &nbsp; 2026-05-01</div>
+        <h2>Mission timeline · 18 months · single workstation.</h2>
+        <p class="band-lede">
+          No telescope, no wet lab, no privileged data. JWST + HSC + MeerKAT
+          archives are public. The benchmark target at M3 is
+          POSEIDON / CHIMERA on WASP-39b — a 10× speedup with no spectral
+          binning.
+        </p>
+      </div>
 
-  <section id="roadmap" class="band band-soft">
-    <div class="wrap">
-      <div class="kbd">§05 &nbsp; The 18-month roadmap</div>
-      <h2>One workstation. <em>Public data only.</em> No telescope required.</h2>
+      <ol class="timeline">
+        <li class="tl-event tl-now">
+          <div class="tl-dot"></div>
+          <div class="tl-when">T+0</div>
+          <div class="tl-card">
+            <div class="tl-h"><span class="tl-id">M1</span><span class="tl-name">The IR</span><span class="tl-status status-shipped">SHIPPED · v0.1.0</span></div>
+            <p>Typed graphs of opacity sources, atmosphere layers, instrument
+              PSF, observational geometry. Serialization, content-addressed
+              runs, provenance. C++20, zero runtime deps.</p>
+          </div>
+        </li>
 
-      <ol class="roadmap">
-        <li>
-          <div class="rm-window">M1 · months 1–3</div>
-          <div class="rm-content">
-            <h3>The IR <span class="badge badge-now">SHIPPED v0.1</span></h3>
-            <p>Typed graphs of opacity sources, atmosphere layers, instrument PSF, observational geometry. Serialization, content-addressed runs, provenance. C++20, zero runtime deps.</p>
+        <li class="tl-event">
+          <div class="tl-dot"></div>
+          <div class="tl-when">T + 3 mo</div>
+          <div class="tl-card">
+            <div class="tl-h"><span class="tl-id">M2</span><span class="tl-name">The kernel</span><span class="tl-status status-next">NEXT</span></div>
+            <p>GPU-resident HITRAN / HITEMP / ExoMol opacity. Voigt CUDA
+              kernel. First differentiable transmission-spectrum solver in
+              C++/CUDA. Validate against petitRADTRANS on the WASP-39b
+              benchmark.</p>
           </div>
         </li>
-        <li>
-          <div class="rm-window">M2 · months 3–6</div>
-          <div class="rm-content">
-            <h3>The kernel</h3>
-            <p>GPU-resident opacity tables (HITRAN / HITEMP / ExoMol). First differentiable transmission-spectrum solver in C++/CUDA. Validate against petitRADTRANS on the WASP-39b benchmark.</p>
+
+        <li class="tl-event">
+          <div class="tl-dot"></div>
+          <div class="tl-when">T+6mo</div>
+          <div class="tl-card">
+            <div class="tl-h"><span class="tl-id">M3</span><span class="tl-name">The inference engine</span></div>
+            <p>Amortized SBI via normalizing flows. Compare against POSEIDON /
+              CHIMERA on public JWST spectra. <strong>Target: 10× speed,
+              equal or better posteriors, no spectral binning.</strong></p>
           </div>
         </li>
-        <li>
-          <div class="rm-window">M3 · months 6–9</div>
-          <div class="rm-content">
-            <h3>The inference engine</h3>
-            <p>Amortized SBI via normalizing flows. Compare against POSEIDON / CHIMERA on public JWST spectra. <strong>Target: 10× speed, equal or better posteriors, no spectral binning.</strong></p>
+
+        <li class="tl-event">
+          <div class="tl-dot"></div>
+          <div class="tl-when">T+9mo</div>
+          <div class="tl-card">
+            <div class="tl-h"><span class="tl-id">M4</span><span class="tl-name">Lensing pass</span></div>
+            <p>Strong-lensing forward model in the same IR. Differentiable
+              ray-trace through SIE / EPL profiles. Demonstrates that the
+              substrate generalizes beyond exoplanets.</p>
           </div>
         </li>
-        <li>
-          <div class="rm-window">M4 · months 9–12</div>
-          <div class="rm-content">
-            <h3>Lensing pass</h3>
-            <p>Add a strong-lensing forward model in the same IR. Differentiable ray-trace through SIE / EPL profiles. Demonstrates the substrate generalizes beyond exoplanets.</p>
-          </div>
-        </li>
-        <li>
-          <div class="rm-window">M5 · months 12–18</div>
-          <div class="rm-content">
-            <h3>Imaging pass</h3>
-            <p>Differentiable interferometric forward model — gridder + FFT + visibility prediction. Three disjoint sub-fields running on one kernel = the substrate claim.</p>
+
+        <li class="tl-event tl-final">
+          <div class="tl-dot"></div>
+          <div class="tl-when">T+18mo</div>
+          <div class="tl-card">
+            <div class="tl-h"><span class="tl-id">M5</span><span class="tl-name">Imaging pass</span></div>
+            <p>Differentiable interferometric forward model — gridder + FFT +
+              visibility prediction. Three disjoint sub-fields running on one
+              kernel = the substrate claim.</p>
           </div>
         </li>
       </ol>
     </div>
   </section>
 
-  <!-- ─────────────────────────  §06  THE SUBSTRATE  ───────────────────────── -->
-
-  <section id="substrate" class="band">
-    <div class="wrap">
-      <div class="kbd">§06 &nbsp; The substrate</div>
-      <h2>Argus is the <em>wedge.</em> Not the destination.</h2>
-
-      <p class="section-lede">
-        2026 astronomy has ten computational walls. None of them have a shared
-        C++ substrate. None of them have an LLVM-level IR. Argus picks the
-        smallest, most contained wall — atmospheric retrieval — and proves
-        the substrate by climbing.
-      </p>
-
-      <div class="problem-grid">
-        <div class="problem"><span class="p-num">01</span><span class="p-name">LSST alert firehose</span><span class="p-tag">time-perishable</span></div>
-        <div class="problem"><span class="p-num">02</span><span class="p-name">SKA visibility stream</span><span class="p-tag">hardware-bound</span></div>
-        <div class="problem"><span class="p-num">03</span><span class="p-name">Radio interferometric imaging</span><span class="p-tag">kernel-ready</span></div>
-        <div class="problem"><span class="p-num">04</span><span class="p-name">Cosmological N-body</span><span class="p-tag">compute-bound</span></div>
-        <div class="problem"><span class="p-num">05</span><span class="p-name">GRMHD black holes</span><span class="p-tag">access-bound</span></div>
-        <div class="problem"><span class="p-num">06</span><span class="p-name">GW parameter estimation</span><span class="p-tag">political-bound</span></div>
-        <div class="problem problem-wedge">
-          <span class="p-num">07</span>
-          <span class="p-name">Exoplanet atmospheric retrieval</span>
-          <span class="p-tag tag-wedge">★ ARGUS WEDGE</span>
-        </div>
-        <div class="problem"><span class="p-num">08</span><span class="p-name">Petabyte catalog cross-match</span><span class="p-tag">tablestakes</span></div>
-        <div class="problem"><span class="p-num">09</span><span class="p-name">Strong gravitational lensing</span><span class="p-tag">kernel-ready</span></div>
-        <div class="problem"><span class="p-num">10</span><span class="p-name">Multi-messenger coordination</span><span class="p-tag">political-bound</span></div>
+  <!-- ─────────────  SKY MAP — THE TEN PROBLEMS AS A CONSTELLATION  ───────────── -->
+  <section id="sky" class="band band-deep">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">RA &nbsp; <span class="band-mol">23ʰ 06ᵐ</span> &nbsp; the substrate</div>
+        <h2>Argus is the wedge. Not the destination.</h2>
+        <p class="band-lede">
+          2026 astronomy has ten computational walls. Argus is positioned at
+          #7 — the smallest, most contained problem with the cleanest IR
+          story — to prove the substrate by climbing.
+        </p>
       </div>
 
-      <p class="quiet center">
-        The full breakdown is in
-        <a href="../docs/Astronomy-Compute-Crisis.pdf">the 23-slide deck</a> —
-        problem, AI/algorithm solution, kernel opportunity, and the buildability
-        and importance rankings.
-      </p>
+      <figure class="sky-map">
+        <svg viewBox="0 0 900 460" class="constellation" aria-hidden="true">
+          <defs>
+            <radialGradient id="star-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#f0f5ff" stop-opacity="1"/>
+              <stop offset="40%" stop-color="#00d4ff" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="wedge-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+              <stop offset="35%" stop-color="#b095ff" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#b095ff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- backdrop scattered field -->
+          <g class="bg-stars">
+            <circle cx="50"  cy="40"  r="0.7" fill="#6f7a92"/>
+            <circle cx="120" cy="120" r="0.5" fill="#6f7a92"/>
+            <circle cx="240" cy="60"  r="0.4" fill="#6f7a92"/>
+            <circle cx="320" cy="180" r="0.7" fill="#6f7a92"/>
+            <circle cx="480" cy="100" r="0.5" fill="#6f7a92"/>
+            <circle cx="560" cy="40"  r="0.4" fill="#6f7a92"/>
+            <circle cx="720" cy="160" r="0.6" fill="#6f7a92"/>
+            <circle cx="820" cy="80"  r="0.5" fill="#6f7a92"/>
+            <circle cx="100" cy="320" r="0.5" fill="#6f7a92"/>
+            <circle cx="280" cy="400" r="0.4" fill="#6f7a92"/>
+            <circle cx="500" cy="380" r="0.6" fill="#6f7a92"/>
+            <circle cx="660" cy="430" r="0.5" fill="#6f7a92"/>
+            <circle cx="780" cy="360" r="0.4" fill="#6f7a92"/>
+            <circle cx="80"  cy="240" r="0.5" fill="#6f7a92"/>
+            <circle cx="380" cy="280" r="0.4" fill="#6f7a92"/>
+            <circle cx="600" cy="240" r="0.5" fill="#6f7a92"/>
+          </g>
+
+          <!-- constellation lines: the substrate connects each problem to Argus -->
+          <g class="const-lines" stroke="#26354d" stroke-width="0.8" stroke-dasharray="1 3" fill="none">
+            <line x1="450" y1="240" x2="120" y2="80"/>
+            <line x1="450" y1="240" x2="280" y2="100"/>
+            <line x1="450" y1="240" x2="460" y2="80"/>
+            <line x1="450" y1="240" x2="640" y2="100"/>
+            <line x1="450" y1="240" x2="800" y2="160"/>
+            <line x1="450" y1="240" x2="780" y2="280"/>
+            <line x1="450" y1="240" x2="700" y2="400"/>
+            <line x1="450" y1="240" x2="450" y2="420"/>
+            <line x1="450" y1="240" x2="200" y2="400"/>
+            <line x1="450" y1="240" x2="120" y2="280"/>
+          </g>
+
+          <!-- 10 problem stars -->
+          <!-- each has: glow, dot, and label -->
+          <g class="star-grp" data-name="01">
+            <circle cx="120" cy="80" r="14" fill="url(#star-glow)"/>
+            <circle cx="120" cy="80" r="3" fill="#00d4ff"/>
+            <text x="120" y="50" text-anchor="middle" class="st-label">01 · LSST alerts</text>
+            <text x="120" y="64" text-anchor="middle" class="st-tag">time-perishable</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="280" cy="100" r="11" fill="url(#star-glow)"/>
+            <circle cx="280" cy="100" r="2.6" fill="#00d4ff"/>
+            <text x="280" y="74" text-anchor="middle" class="st-label">02 · SKA visibilities</text>
+            <text x="280" y="88" text-anchor="middle" class="st-tag">hardware-bound</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="460" cy="80" r="13" fill="url(#star-glow)"/>
+            <circle cx="460" cy="80" r="2.8" fill="#00d4ff"/>
+            <text x="460" y="50" text-anchor="middle" class="st-label">03 · radio imaging</text>
+            <text x="460" y="64" text-anchor="middle" class="st-tag">kernel-ready</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="640" cy="100" r="12" fill="url(#star-glow)"/>
+            <circle cx="640" cy="100" r="2.6" fill="#00d4ff"/>
+            <text x="640" y="74" text-anchor="middle" class="st-label">04 · N-body cosmology</text>
+            <text x="640" y="88" text-anchor="middle" class="st-tag">compute-bound</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="800" cy="160" r="10" fill="url(#star-glow)"/>
+            <circle cx="800" cy="160" r="2.4" fill="#00d4ff"/>
+            <text x="800" y="142" text-anchor="end" class="st-label">05 · GRMHD black holes</text>
+            <text x="800" y="156" text-anchor="end" class="st-tag">access-bound</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="780" cy="280" r="11" fill="url(#star-glow)"/>
+            <circle cx="780" cy="280" r="2.6" fill="#00d4ff"/>
+            <text x="800" y="280" text-anchor="start" class="st-label">06 · GW PE</text>
+            <text x="800" y="294" text-anchor="start" class="st-tag">political-bound</text>
+          </g>
+
+          <!-- Argus = wedge — the brightest star, central position -->
+          <g class="star-grp star-wedge">
+            <!-- diffraction spikes -->
+            <line x1="450" y1="190" x2="450" y2="290" stroke="#ffffff" stroke-width="0.8" opacity="0.7"/>
+            <line x1="400" y1="240" x2="500" y2="240" stroke="#ffffff" stroke-width="0.8" opacity="0.7"/>
+            <line x1="415" y1="205" x2="485" y2="275" stroke="#ffffff" stroke-width="0.6" opacity="0.45"/>
+            <line x1="415" y1="275" x2="485" y2="205" stroke="#ffffff" stroke-width="0.6" opacity="0.45"/>
+            <circle cx="450" cy="240" r="40" fill="url(#wedge-glow)"/>
+            <circle cx="450" cy="240" r="6" fill="#ffffff"/>
+            <circle cx="450" cy="240" r="3" fill="#b095ff"/>
+            <text x="450" y="208" text-anchor="middle" class="st-label st-label-wedge">07 · ARGUS</text>
+            <text x="450" y="296" text-anchor="middle" class="st-tag st-tag-wedge">★ exoplanet retrieval</text>
+            <text x="450" y="312" text-anchor="middle" class="st-tag st-tag-wedge">★ the wedge</text>
+          </g>
+
+          <g class="star-grp">
+            <circle cx="700" cy="400" r="11" fill="url(#star-glow)"/>
+            <circle cx="700" cy="400" r="2.6" fill="#00d4ff"/>
+            <text x="700" y="424" text-anchor="middle" class="st-label">08 · catalog cross-match</text>
+            <text x="700" y="438" text-anchor="middle" class="st-tag">tablestakes</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="450" cy="420" r="13" fill="url(#star-glow)"/>
+            <circle cx="450" cy="420" r="2.8" fill="#00d4ff"/>
+            <text x="450" y="397" text-anchor="middle" class="st-label">09 · strong lensing</text>
+            <text x="450" y="411" text-anchor="middle" class="st-tag">kernel-ready</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="200" cy="400" r="12" fill="url(#star-glow)"/>
+            <circle cx="200" cy="400" r="2.6" fill="#00d4ff"/>
+            <text x="200" y="424" text-anchor="middle" class="st-label">10 · multi-messenger</text>
+            <text x="200" y="438" text-anchor="middle" class="st-tag">political-bound</text>
+          </g>
+          <g class="star-grp">
+            <circle cx="120" cy="280" r="11" fill="url(#star-glow)"/>
+            <circle cx="120" cy="280" r="2.6" fill="#00d4ff"/>
+            <!-- coordinate ticker for visual flair -->
+          </g>
+
+          <!-- coordinate ticker, decorative -->
+          <g class="coords">
+            <text x="20" y="450" class="ax-tick">RA &nbsp; 22ʰ 30ᵐ — 23ʰ 30ᵐ &nbsp;·&nbsp; Dec &nbsp; +12° to +50° &nbsp;·&nbsp; epoch J2026.5</text>
+          </g>
+        </svg>
+
+        <figcaption class="atmo-cap">
+          <span class="cap-label">FIG. 3</span>
+          the substrate as a constellation. Argus &mdash; #7, the wedge &mdash;
+          is connected to nine sister problems by dashed lines. Each is a future
+          pass of the same kernel; the brief is in
+          <a href="../docs/Astronomy-Compute-Crisis.pdf">the 23-slide deck</a>.
+        </figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- ─────────────────────────  §07  GET INVOLVED  ───────────────────────── -->
+  <!-- ─────────────  GET INVOLVED  ───────────── -->
+  <section id="build" class="band">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">∂ &nbsp; <span class="band-mol">build</span></div>
+        <h2>Apache 2.0 · open core · contributors welcome.</h2>
+      </div>
 
-  <section id="get-involved" class="band band-soft">
-    <div class="wrap">
-      <div class="kbd">§07 &nbsp; Build on Argus</div>
-      <h2>Apache 2.0. <em>Open core.</em> Contributors welcome.</h2>
-
-      <div class="involved-grid">
-        <div class="involved">
-          <h3>Clone &amp; run the M1 kernel</h3>
-<pre><code><span class="kw">git</span> clone https://github.com/Himanshu21464/Argus
-<span class="kw">cd</span> Argus
-cmake -S . -B build &amp;&amp; cmake --build build -j
+      <div class="build-grid">
+        <div class="build-block">
+          <div class="bb-head">CLONE &amp; RUN M1</div>
+<pre class="bb-code"><code>git clone https://github.com/Himanshu21464/Argus
+cd Argus
+cmake -S . -B build
+cmake --build build -j
 ctest --test-dir build
 ./build/examples/example_01_transmission_spectrum</code></pre>
         </div>
 
-        <div class="involved">
-          <h3>Where help is wanted</h3>
-          <ul class="want-list">
-            <li><span class="want-tag">M2</span> HITRAN/HITEMP/ExoMol loaders + Voigt CUDA kernel</li>
-            <li><span class="want-tag">M2</span> WASP-39b benchmark vs. petitRADTRANS</li>
-            <li><span class="want-tag">M3</span> Normalizing-flow SBI engine</li>
-            <li><span class="want-tag">DOC</span> Architecture diagrams &amp; design rationale</li>
-            <li><span class="want-tag">PY</span> pybind11 bindings</li>
+        <div class="build-block">
+          <div class="bb-head">WHERE HELP IS WANTED</div>
+          <ul class="want">
+            <li><span class="want-pill want-m2">M2</span> HITRAN/HITEMP/ExoMol loaders + Voigt CUDA kernel</li>
+            <li><span class="want-pill want-m2">M2</span> WASP-39b benchmark vs. petitRADTRANS</li>
+            <li><span class="want-pill want-m3">M3</span> Normalizing-flow SBI engine</li>
+            <li><span class="want-pill want-doc">DOC</span> Architecture diagrams &amp; design rationale</li>
+            <li><span class="want-pill want-py">PY</span> pybind11 bindings</li>
           </ul>
         </div>
 
-        <div class="involved">
-          <h3>Read the brief</h3>
-          <ul class="read-list">
+        <div class="build-block">
+          <div class="bb-head">REFERENCES</div>
+          <ul class="refs">
             <li><a href="../Argus.pdf" target="_blank">Argus.pdf — one-page Future Project Brief</a></li>
             <li><a href="../docs/Astronomy-Compute-Crisis.pdf" target="_blank">Astronomy-Compute-Crisis.pdf — 23-slide research deck</a></li>
-            <li><a href="https://github.com/Himanshu21464/Argus/blob/main/README.md" target="_blank">README.md — build, layout, design principles</a></li>
+            <li><a href="https://github.com/Himanshu21464/Argus/blob/main/README.md" target="_blank">README.md</a></li>
             <li><a href="https://github.com/Himanshu21464/Argus/blob/main/CLAUDE.md" target="_blank">CLAUDE.md — architectural commitments</a></li>
+            <li><a href="https://iopscience.iop.org/article/10.3847/1538-4357/adcba2" target="_blank">ExoJAX2 (ApJ 2025) — validates differentiable RT</a></li>
           </ul>
         </div>
       </div>
@@ -443,46 +753,30 @@ ctest --test-dir build
 
 </main>
 
-<footer>
-  <div class="wrap">
-    <div class="footer-grid">
-      <div>
-        <div class="brand brand-foot">
-          <span class="brand-glyph" aria-hidden="true"></span>
-          <span class="brand-name">Argus</span>
+<!-- ─────────────  JOURNAL FOOTER  ───────────── -->
+<footer class="journal-foot">
+  <div class="container">
+    <div class="jf-row">
+      <div class="jf-cite">
+        <div class="jf-id">ARGUS · v0.1.0 · M1</div>
+        <div class="jf-cite-text">
+          A differentiable atmospheric retrieval kernel.<br>
+          <em>Future Project Brief, May 2026.</em>
+          &nbsp;Apache 2.0.
         </div>
-        <p class="muted">A differentiable atmospheric retrieval kernel. <br>The wedge into a substrate-layer toolchain for differentiable astronomy.</p>
       </div>
-      <div>
-        <div class="footer-head">Project</div>
-        <ul>
-          <li><a href="https://github.com/Himanshu21464/Argus" target="_blank">GitHub repo ↗</a></li>
-          <li><a href="../Argus.pdf" target="_blank">Brief (PDF)</a></li>
-          <li><a href="../docs/Astronomy-Compute-Crisis.pdf" target="_blank">Research deck (PDF)</a></li>
-        </ul>
-      </div>
-      <div>
-        <div class="footer-head">Sister briefs</div>
-        <ul>
-          <li><span class="muted">Vita — LLVM for biology</span></li>
-          <li><span class="muted">Kepler — Kubernetes for self-driving labs</span></li>
-          <li><span class="muted">Mnemos — a hippocampus for every agent</span></li>
-          <li><span class="muted">NeuroKernel — Linux kernel for minds</span></li>
-        </ul>
-      </div>
-      <div>
-        <div class="footer-head">Meta</div>
-        <ul>
-          <li>Apache 2.0 license</li>
-          <li>v0.1.0 · 2026-05-01</li>
-          <li>C++20 · CUDA (M2+)</li>
-        </ul>
+      <div class="jf-meta">
+        <div><span class="jf-key">REPO</span> <a href="https://github.com/Himanshu21464/Argus" target="_blank">github.com/Himanshu21464/Argus</a></div>
+        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · CUDA from M2</div>
+        <div><span class="jf-key">DEPS</span> none (M1)</div>
+        <div><span class="jf-key">TARGETS</span> JWST · Ariel · HWO</div>
       </div>
     </div>
-    <div class="footer-rule"></div>
-    <p class="footer-tag muted">
-      &copy; 2026 Argus contributors. The instruments are done. The substrate isn't.
-    </p>
+    <div class="jf-rule"></div>
+    <div class="jf-bottom">
+      <span>The instruments are done. The substrate isn't.</span>
+      <span class="jf-tagid">argus.aeoru</span>
+    </div>
   </div>
 </footer>
 
