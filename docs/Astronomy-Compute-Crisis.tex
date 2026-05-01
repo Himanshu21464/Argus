@@ -1,0 +1,595 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,landscape,top=0.8cm,bottom=1cm,left=1.2cm,right=1.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage[table]{xcolor}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+\definecolor{primary}{HTML}{6B21A8}
+\definecolor{accent}{HTML}{059669}
+\definecolor{soft}{HTML}{F5F3FF}
+\definecolor{dark}{HTML}{1F2937}
+\definecolor{muted}{HTML}{6B7280}
+\definecolor{warn}{HTML}{D97706}
+\definecolor{danger}{HTML}{B91C1C}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primary,
+  urlcolor=accent,
+  pdftitle={Astronomy's Computation Crisis --- Argus Project Brief},
+  pdfauthor={Future Project Brief}
+}
+
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{callout}[1][]{
+  enhanced,breakable,
+  colback=soft,colframe=primary,
+  boxrule=0.5pt,arc=3pt,
+  left=10pt,right=10pt,top=8pt,bottom=8pt,
+  fonttitle=\bfseries,
+  #1
+}
+
+\newtcolorbox{warnbox}[1][]{
+  enhanced,breakable,
+  colback=accent!8,colframe=accent,
+  boxrule=0.5pt,arc=3pt,
+  left=10pt,right=10pt,top=8pt,bottom=8pt,
+  #1
+}
+
+\newtcolorbox{statbox}[1][]{
+  enhanced,breakable,
+  colback=primary!8,colframe=primary,
+  boxrule=0.5pt,arc=3pt,
+  left=8pt,right=8pt,top=5pt,bottom=5pt,
+  #1
+}
+
+\newcommand{\stat}[2]{%
+  \begin{minipage}[t]{0.31\textwidth}%
+    \begin{statbox}%
+      {\color{primary}\Large\bfseries #1}\\%
+      {\color{dark}\small #2}%
+    \end{statbox}%
+  \end{minipage}%
+}
+
+\newcommand{\bullethead}[1]{{\color{primary}\textbf{#1}}\quad}
+
+% slide title bar
+\newcommand{\slidetitle}[1]{%
+  {\color{primary}\Large\bfseries #1}\\[0.1em]%
+  {\color{accent}\rule{2.4em}{1.6pt}}\par\vspace{0.4em}%
+}
+
+\newcommand{\problemtag}[3]{%
+  {\color{muted}\footnotesize PROBLEM \##1 \,\textbullet\, #2}\hfill{\color{accent}\footnotesize\bfseries #3}\par%
+}
+
+% slide separator (new page + footer)
+\newcommand{\slidebreak}{\vfill\noindent{\color{muted}\scriptsize Astronomy Compute Crisis \,\textbullet\, 2026-05 \,\textbullet\, Argus Project Brief}\hfill{\color{muted}\scriptsize \thepage}\newpage}
+
+\pagestyle{empty}
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 1 — title
+\thispagestyle{empty}
+\vspace*{1.6cm}
+\begin{center}
+  {\color{muted}\small FUTURE PROJECT BRIEF \textbullet{} 2026-05}\\[1.4em]
+  {\color{primary}\Huge\bfseries Astronomy's}\\[0.2em]
+  {\color{primary}\Huge\bfseries Computation Crisis}\\[0.6em]
+  {\color{accent}\rule{0.18\textwidth}{1.2pt}}\\[0.6em]
+  {\color{dark}\Large Top 10 problems. The AI / kernel solutions. Where to build first.}\\[1.6em]
+  {\color{muted}\itshape ``The instruments are done. The substrate isn't.''}\\[2em]
+  {\color{muted}\small Companion document to the \textbf{Argus} project --- a differentiable atmospheric retrieval kernel}\\[0.4em]
+  {\color{muted}\small \texttt{\textasciitilde/Desktop/Future/Argus}}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 2 — setup
+\slidetitle{The setup --- May 2026}
+
+\begin{minipage}[t]{0.48\textwidth}
+\begin{callout}
+\textbf{Vera C. Rubin Observatory} --- live since Feb 2026.\\
+10 TB / night. Up to \textbf{10 million alerts / night}. 60-second latency to public stream.
+\end{callout}
+\vspace{0.4em}
+\begin{callout}
+\textbf{Square Kilometre Array} --- early science 2026, full ops 2028.\\
+\textbf{$\sim$1 EB / year} archived. 100--1000$\times$ that before correlation.
+\end{callout}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{callout}
+\textbf{JWST + Ariel (2029)} --- native-resolution exoplanet spectra. Retrievals can't keep up; data is binned away.
+\end{callout}
+\vspace{0.4em}
+\begin{callout}
+\textbf{LIGO O5 + LISA (2035) + ET} --- $\sim$100k GW detections / year by 2030s. Global fit on overlapping signals: open problem.
+\end{callout}
+\end{minipage}
+
+\vspace{0.8em}
+\begin{center}
+{\color{primary}\Large\bfseries The instruments are done. The substrate isn't.}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 3 — overview
+\slidetitle{The 10 problems at a glance}
+
+\small
+\begin{tabular}{@{}r p{0.42\textwidth} p{0.40\textwidth}@{}}
+  \toprule
+  \textbf{\#} & \textbf{Problem} & \textbf{Pain (one phrase)} \\
+  \midrule
+  1 & LSST alert firehose & 10M alerts/night, 60s, 7 brokers \\
+  2 & SKA visibility stream & 1 EB/yr archived, EB/day uncorrelated \\
+  3 & Radio interferometric imaging & inversion dominates at SKA fields \\
+  4 & Cosmological N-body & millions of core-hours per run \\
+  5 & GRMHD black-hole simulations & 80M CPU-hr for the EHT library \\
+  6 & GW parameter estimation & exponential cost; LISA global fit unsolved \\
+  7 & \textbf{\color{primary}Exoplanet atmospheric retrieval} & JWST data binned away to make MCMC tractable \\
+  8 & Petabyte catalog cross-match & Gaia + LSST + Euclid + Roman, no shared join \\
+  9 & Strong gravitational lens modeling & MCMC hours/system, 100k Euclid lenses incoming \\
+  10 & Multi-messenger coordination & seconds-to-minutes; today: GCN circulars + Slack \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+{\color{accent}\textbf{\#7 highlighted} as the chosen Argus wedge --- explained at the end.}
+\slidebreak
+
+% ───────────────────────── Problems 1–10 ─────────────────────────────
+
+% Slide 4 — problem 1
+\slidetitle{\#1 --- LSST Alert Firehose}
+\problemtag{1}{Real-time transient classification at Rubin scale}{TIME-PERISHABLE}
+\vspace{0.3em}
+\stat{10 TB}{per night, raw images}\hfill\stat{10M}{alerts / night peak}\hfill\stat{60 s}{latency to public stream}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Seven community brokers (Fink, ALERCE, ANTARES, AMPEL, Lasair, Pitt-Google, Babamul) each ingest the full stream and re-implement feature extraction, light-curve embedding, contextual cross-match, classifier inference. No shared feature store. Latency budgets blown by Python glue. Missed kilonovae are missed forever.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Transformer encoders over irregular multi-band light curves, self-supervised contrastive embeddings (AstroCLIP / AstroPT), early-classification heads with abstention, active-learning loops driving spectroscopic follow-up.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} A C++/CUDA streaming-inference runtime with a stable photometric feature ABI --- ONNX Runtime for time-series astronomy. Brokers become \emph{configurations}, not bespoke services.
+\end{warnbox}
+\slidebreak
+
+% Slide 5 — problem 2
+\slidetitle{\#2 --- SKA Visibility Stream}
+\problemtag{2}{Real-time radio data deluge at exascale}{HARDWARE-BOUND}
+\vspace{0.3em}
+\stat{$\sim$1 EB/yr}{archived at Regional Centres}\hfill\stat{$\sim$1 EB/day}{at antennas, pre-correlation}\hfill\stat{millions}{servers if built today}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Real-time RFI excision, channelization, calibration, and visibility compression must run at the central signal processor. ASKAPsoft, MeerKAT pipeline, LOFAR Cobalt, SDP --- each rolled their own. No \texttt{libvis} for the world.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Learned RFI classifiers replacing hand-tuned masks; neural calibration of antenna gains; learned lossy visibility compression; deep image priors for self-cal.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} Streaming SIMD/CUDA visibility kernel, GPU-resident, with a typed visibility IR. Hardest of the ten to validate without a partner facility.
+\end{warnbox}
+\slidebreak
+
+% Slide 6 — problem 3
+\slidetitle{\#3 --- Radio Interferometric Imaging}
+\problemtag{3}{CLEAN, gridding, and inversion at SKA fields}{KERNEL-READY}
+\vspace{0.3em}
+\stat{TB-scale}{per pointing, post-correlation}\hfill\stat{Inversion}{dominates, not CLEAN}\hfill\stat{4+ codes}{CASA, WSClean, DDFacet, Cotton-Schwab}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Once visibilities are calibrated, gridding $+$ inverse FFT $+$ deconvolution produces images. At SKA-sized fields, the inversion/prediction step dominates --- not CLEAN. Existing pipelines are CPU-first and fragmented across packages.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Differentiable interferometric forward models (gridder $+$ FFT $+$ PSF as autograd ops); plug-and-play priors; learned regularizers replacing handcrafted scale choices; neural deconvolution with calibrated uncertainty.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} A GPU-resident, differentiable interferometry library --- \texttt{torch.fft} for radio astronomy. Whoever ships this owns the SKA-era imaging substrate.
+\end{warnbox}
+\slidebreak
+
+% Slide 7 — problem 4
+\slidetitle{\#4 --- Cosmological N-body Simulations}
+\problemtag{4}{Trillion-particle dark-matter precision cosmology}{COMPUTE-BOUND}
+\vspace{0.3em}
+\stat{$10^{12}$ particles}{state-of-the-art runs}\hfill\stat{millions}{core-hours per run}\hfill\stat{TB / PB}{memory / snapshots}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Euclid, Rubin, DESI, Roman ($\sim$\$10B combined) need \emph{thousands} of runs to marginalize over cosmological parameters. Each run takes weeks. FFT and tree-walks dominate. Codes (Gadget-4, ChaNGa, HACC, GIZMO, Arepo) each reimplement gravity solvers; none are differentiable end-to-end.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Neural N-body emulators (CAMELS, Lagrangian Deep Learning, Mass-Conditioned Halo Finders) replace runs at \textless 1\% cost; differentiable particle-mesh codes (PMWD, JaxPM) enable gradient-based parameter inference; learned super-resolution upgrades coarse runs.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} A differentiable, GPU-native N-body kernel with pluggable physics passes. Training emulators needs cluster hours --- compute-bound, not idea-bound.
+\end{warnbox}
+\slidebreak
+
+% Slide 8 — problem 5
+\slidetitle{\#5 --- GRMHD Black Hole Simulations}
+\problemtag{5}{Accretion-flow simulation libraries for the EHT}{ACCESS-BOUND}
+\vspace{0.3em}
+\stat{80M CPU-hr}{EHT library on Frontera}\hfill\stat{23 TB}{the library itself}\hfill\stat{8+ codes}{BHAC, KORAL, IllinoisGRMHD, HARM\dots}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Each new EHT target (Sgr A*, M87*, future ngEHT sources) demands a fresh library because magnetic-field topology and spin priors change. Each library run is multi-week, single-physics, and lives in a code that doesn't talk to the next code.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Physics-informed neural surrogates trained on the existing library to interpolate accretion-flow parameters in milliseconds; diffusion models conditioned on (spin, accretion mode) producing synthetic image cubes; differentiable GRMHD for accretion-disk parameter inference.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} GPU-native relativistic-fluid kernel wrapped in autograd. Library-access negotiation with EHT collab is the gating risk, not the technology.
+\end{warnbox}
+\slidebreak
+
+% Slide 9 — problem 6
+\slidetitle{\#6 --- Gravitational Wave Parameter Estimation}
+\problemtag{6}{Posterior inference for compact-binary coalescences}{POLITICAL-BOUND}
+\vspace{0.3em}
+\stat{exp(N)}{matched-filter cost in N parameters}\hfill\stat{hours--days}{Bayesian PE per event}\hfill\stat{$\sim$100k/yr}{events expected from CE/ET}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Matched filtering scales exponentially with parameters. \textbf{LISA's ``global fit''} --- jointly inferring parameters of \emph{thousands} of overlapping signals --- is the open hard problem of GW astronomy. Production pipeline (LALSuite, IMRPhenom, EOB, NRSur) is C/Fortran with no autograd path.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Simulation-based inference via normalizing flows: DINGO has demonstrated \textless 1 second amortized inference vs.\ days for classical MCMC, with calibrated posteriors. Deep filtering replacing matched filtering. Differentiable waveform models (jaxGW).
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} A differentiable waveform library $+$ amortized SBI engine. Technically buildable; LSC controls the production pipeline, so adoption is a political wedge.
+\end{warnbox}
+\slidebreak
+
+% Slide 10 — problem 7 (Argus wedge)
+\slidetitle{\#7 --- Exoplanet Atmospheric Retrieval \quad\textcolor{accent}{$\bigstar$}}
+\problemtag{7}{Inferring atmospheres from JWST/Ariel spectra}{\textbf{\color{accent}ARGUS WEDGE}}
+\vspace{0.3em}
+\stat{seconds--min}{per RT forward call}\hfill\stat{$10^6$--$10^7$}{calls per MCMC retrieval}\hfill\stat{native resolution}{currently binned away}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} JWST and Ariel produce native-resolution spectra. Current retrieval codes (TauREx, POSEIDON, CHIMERA, petitRADTRANS) \textbf{bin spectra down} to make MCMC tractable --- losing the very signal that argued for big telescopes. Every code is a different scientist's PhD; there is no \texttt{libRT}.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Differentiable radiative transfer (ExoJAX2 ships this in JAX); neural emulators of opacity tables and chemistry; SBI replacing MCMC; transformer-based posterior estimators.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} Differentiable, GPU-native RT kernel with line-by-line opacity, scattering, and chemistry as composable autograd passes. Per-planet datasets are MB --- single-GPU MVP. \textbf{This is what Argus ships first.}
+\end{warnbox}
+\slidebreak
+
+% Slide 11 — problem 8
+\slidetitle{\#8 --- Petabyte Catalog Cross-Match}
+\problemtag{8}{Spatial joins across the world's surveys}{TABLESTAKES}
+\vspace{0.3em}
+\stat{20B}{LSST sources}\hfill\stat{10B}{Euclid sources}\hfill\stat{6+ surveys}{Gaia, WISE, ZTF, PS1, LSST, Euclid, Roman}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Probabilistic positional $+$ photometric $+$ astrometric matching is now a serious distributed-systems problem. Every survey rolls its own join (TOPCAT, X-Match, ARI-Gaia, lsdb). HATS/hipscat is converging; no GPU-native engine exists.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Learned probabilistic matchers (positional $+$ colour priors); GNN entity resolution; learned hash families for HEALPix-aware spatial joins.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} Columnar HEALPix-indexed catalog format $+$ GPU spatial-join kernel. ``DuckDB for the sky.'' Quietly the highest-leverage primitive --- every other domain depends on it.
+\end{warnbox}
+\slidebreak
+
+% Slide 12 — problem 9
+\slidetitle{\#9 --- Strong Gravitational Lens Modeling}
+\problemtag{9}{Reconstructing source $+$ mass from arcs}{KERNEL-READY}
+\vspace{0.3em}
+\stat{$\sim$100k}{lenses Euclid will discover}\hfill\stat{hours--days}{MCMC per system}\hfill\stat{$10^7\times$}{neural-net speedup demonstrated}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} Classical MCMC (Lenstronomy, GLEE, GLAFIC) takes hours-to-days per system. JWST adds resolved kinematics, doubling parameter space. The science can't keep up with discovery.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} CNN/transformer parameter regressors (LEMON, SKiNN); conditional normalizing flows for full posteriors; differentiable ray-tracers $+$ SBI; deep ensembles for outlier triage.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} A differentiable lensing kernel callable from any inference engine. Same primitives pattern as exoplanet RT --- proves Argus IR generalizes.
+\end{warnbox}
+\slidebreak
+
+% Slide 13 — problem 10
+\slidetitle{\#10 --- Multi-Messenger Coordination}
+\problemtag{10}{Cross-facility alerts in seconds}{POLITICAL-BOUND}
+\vspace{0.3em}
+\stat{seconds--min}{required latency}\hfill\stat{GCN $+$ Slack}{current state of the art}\hfill\stat{RADAR}{first AI cross-facility framework, 2026}
+
+\vspace{0.6em}
+\bullethead{Why it hurts.} GW170817 was the proof of concept. Rubin $+$ LIGO/Virgo/KAGRA $+$ IceCube $+$ Fermi/Swift $+$ ngVLA need to coordinate within minutes when a kilonova fires. Today: GCN circulars, bespoke Slack channels, manual telescope retargeting.
+
+\vspace{0.4em}
+\bullethead{AI / algorithm.} Federated streaming inference (compute moves to data); shared event-schema embeddings; ML triggers for telescope retargeting; joint posterior fusion across messengers.
+
+\vspace{0.4em}
+\begin{warnbox}
+\textbf{Kernel opportunity.} Shared event bus $+$ on-site inference runtime $+$ standardized MMA event schema. Useless without facility buy-in --- politics, not code, is the wedge.
+\end{warnbox}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 14 — primitives
+\slidetitle{Six primitives every problem reaches for}
+
+\begin{minipage}[t]{0.49\textwidth}
+\begin{callout}
+\textbf{1. Differentiable forward models}\\[0.2em]
+{\small PSF, visibility, RT, lensing, waveforms, N-body. PyTorch/JAX prototypes exist; production codes are C/Fortran with no autograd.}
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{2. Simulation-based inference (SBI)}\\[0.2em]
+{\small Normalizing flows, neural posterior estimation. Each domain reinvents it independently.}
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{3. GPU-native physics kernels}\\[0.2em]
+{\small Gridding, FFT, tree-walks, opacity tables, ray-tracing, fluid solvers.}
+\end{callout}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\begin{callout}
+\textbf{4. Streaming inference runtimes}\\[0.2em]
+{\small Alert / visibility / event firehoses, deterministic latency, GPU residency.}
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{5. Spatial-temporal indexing at scale}\\[0.2em]
+{\small HEALPix-aware columnar formats, GPU spatial joins.}
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{6. Foundation models for astronomy}\\[0.2em]
+{\small AstroCLIP, AstroPT, light-curve transformers --- trained over the same surveys, no shared substrate.}
+\end{callout}
+\end{minipage}
+
+\vspace{0.6em}
+\begin{center}
+{\color{accent}\large\bfseries Six primitives. No shared C++ substrate. No LLVM-level IR.}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 15 — buildability
+\slidetitle{Buildability filter --- where can a small team ship?}
+
+\small
+\begin{tabular}{@{}p{0.05\textwidth} p{0.05\textwidth} p{0.32\textwidth} p{0.50\textwidth}@{}}
+  \toprule
+  \textbf{Tier} & \textbf{\#} & \textbf{Problem} & \textbf{Why this tier} \\
+  \midrule
+  \rowcolor{accent!10} 1 & 7 & Exoplanet retrieval & MB datasets, ExoJAX2 validates pattern, 1 GPU \\
+  \rowcolor{accent!10} 1 & 9 & Strong lens modeling & Euclid Q1 + HSC samples public, 1 GPU \\
+  \rowcolor{accent!10} 1 & 3 & Radio imaging & MeerKAT/VLA archives public, JAX prototypes exist \\
+  \rowcolor{accent!10} 1 & 8 & Catalog cross-match & All catalogs public, single-workstation prototype \\
+  \rowcolor{accent!10} 1 & 1 & LSST alert firehose & Stream live since Feb 2026, brokers in pain \\
+  \midrule
+  2 & 4 & N-body emulators & Cluster hours required for emulator training \\
+  2 & 6 & GW parameter estimation & DINGO proves pattern; LSC adoption is political \\
+  \midrule
+  \rowcolor{warn!10} 3 & 2 & SKA central signal proc.\ & EB/day-class hardware to validate \\
+  \rowcolor{warn!10} 3 & 5 & GRMHD surrogates & EHT collab guards the simulation library \\
+  \rowcolor{warn!10} 3 & 10 & Multi-messenger coord. & Useless without facility buy-in \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\begin{center}
+{\color{primary}\textbf{Tier 1 = the buildable set.}\quad \textbf{\#7 has the smallest blast radius and the cleanest IR story.}}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 16 — importance
+\slidetitle{Importance ranking --- what's irrecoverably lost?}
+
+\begin{minipage}[t]{0.49\textwidth}
+\begin{callout}
+\textbf{\#1 LSST Alerts --- most urgent}\\[0.2em]
+{\small Time-perishable. A kilonova caught at $+0.5$ days is a different paper than one at $+3$ days. \textbf{The photons don't come back.} Everything else works on cached data.}
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{\#4 N-body --- most fundamental}\\[0.2em]
+{\small Euclid + Rubin + DESI + Roman ($\sim$\$10B) are emulator-limited, not signal-limited. Determines whether dark energy gets pinned down or stays $\sigma\!\approx\!0.02$.}
+\end{callout}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\begin{callout}
+\textbf{\#7 Exoplanet RT --- most civilizational}\\[0.2em]
+{\small Biosignature detection lives here. JWST data \emph{being binned away today.} HWO (\$11B, 2040s) is bet on this being 100$\times$ better.}
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{\#8 Cross-match --- highest leverage}\\[0.2em]
+{\small Boring; quiet force multiplier. Every other problem eventually calls cross-match. Postgres of astronomy.}
+\end{callout}
+\end{minipage}
+
+\vspace{0.8em}
+\begin{center}
+{\color{accent}\textbf{Most urgent:} \#1.\quad \textbf{Most foundational:} \#4.\quad \textbf{Most civilizational:} \#7.\quad \textbf{Highest leverage:} \#8.}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 17 — synthesis
+\slidetitle{The synthesis --- what the substrate looks like}
+
+\begin{center}
+\begin{tcolorbox}[enhanced,width=0.92\textwidth,colback=soft,colframe=primary,boxrule=0.6pt,arc=4pt,top=8pt,bottom=8pt,left=12pt,right=12pt]
+\small\ttfamily
+\begin{tabbing}
+\hspace{2em}\=\hspace{18em}\=\kill
+\textbf{\color{primary}Front End}\>{\color{dark}Python bindings $\cdot$ DSL $\cdot$ natural-language goals}\\[0.3em]
+\textbf{\color{primary}Astronomy IR}\>{\color{dark}spectra $\cdot$ visibilities $\cdot$ light curves $\cdot$ catalogs $\cdot$ events}\\[0.3em]
+\textbf{\color{primary}Differentiable Physics}\>{\color{dark}RT $\cdot$ lensing $\cdot$ interferometry $\cdot$ waveforms $\cdot$ N-body \quad(C++/CUDA)}\\[0.3em]
+\textbf{\color{primary}Inference Engine}\>{\color{dark}amortized SBI $\cdot$ normalizing flows $\cdot$ autograd $\cdot$ MCMC fallback}\\[0.3em]
+\textbf{\color{primary}Streaming + Catalog}\>{\color{dark}alert ingest $\cdot$ HEALPix indexing $\cdot$ GPU spatial join}
+\end{tabbing}
+\end{tcolorbox}
+\end{center}
+
+\vspace{0.6em}
+\begin{center}
+{\color{primary}\large\bfseries Same shape as LLVM. Same shape as PyTorch. Missing in astronomy.}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 18 — why C++ + autograd
+\slidetitle{Why a C++ kernel with autograd is non-negotiable}
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Throughput.} A single JWST retrieval needs $10^6$--$10^7$ RT forward evaluations. Each one touches GB-scale opacity tables. Python wrappers cost $10$--$100\times$ in the hot path.
+  \item \textbf{Determinism for reproducibility.} Bit-reproducible posteriors across hardware and years are required for biosignature claims.
+  \item \textbf{GPU residency.} Opacity tables, atmospheric layers, line lists --- all want to stay on device. Python orchestration constantly bounces them through host memory.
+  \item \textbf{Composability.} The same RT primitive must be callable from MCMC, NF posterior, and gradient-based optimization without rewriting.
+  \item \textbf{Vendor longevity.} A telescope built in 2026 takes data until 2050+. The kernel that processes its photons must compile in 2050.
+\end{enumerate}
+
+\vspace{0.6em}
+\begin{center}
+{\color{muted}Python and Julia live \emph{above} the kernel --- for retrieval scripts, agent reasoning, UI. The hot path is C++.}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 19 — Argus the wedge
+\thispagestyle{empty}
+\vspace*{0.4cm}
+\begin{center}
+{\color{primary}\Huge\bfseries Argus}\\[0.2em]
+{\color{dark}\Large A differentiable atmospheric retrieval kernel}\\[0.3em]
+{\color{accent}\rule{0.18\textwidth}{1.2pt}}\\[0.3em]
+{\color{muted}\itshape ``LLVM for the sky --- starting with a single planet.''}
+\end{center}
+\vspace{0.4em}
+
+\begin{callout}
+\textbf{One-line pitch.} A C++20/CUDA core for differentiable line-by-line radiative transfer of exoplanet atmospheres, with an autograd-aware IR and a built-in simulation-based inference engine. Composable, GPU-resident, vendor-neutral.
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{What it replaces.} The fragmentation of TauREx, POSEIDON, CHIMERA, petitRADTRANS, ExoJAX --- five PhD codebases that don't compose. Argus is the kernel; those become passes (or clients).
+\end{callout}
+\vspace{0.3em}
+\begin{callout}
+\textbf{Why now.} JWST is producing native-resolution spectra that are being binned away. ExoJAX2 (Apr 2025) proved differentiable RT works. Ariel launches 2029. The 24-month window to set the standard is open.
+\end{callout}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 20 — roadmap
+\slidetitle{Argus --- 18-month MVP roadmap}
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{M1--3 \quad The IR.} Typed graphs of opacity sources, atmospheric layers, instrument PSFs, observational geometry. Serialization, content-addressed runs, provenance.
+  \item \textbf{M3--6 \quad The kernel.} GPU-resident opacity tables (HITRAN/HITEMP/ExoMol). First differentiable transmission-spectrum solver in C++/CUDA. Validates against petitRADTRANS on the WASP-39b benchmark.
+  \item \textbf{M6--9 \quad The inference engine.} Amortized SBI via normalizing flows. Compare against POSEIDON / CHIMERA on public JWST spectra: \textbf{target 10$\times$ speed, equal or better posteriors}, no binning required.
+  \item \textbf{M9--12 \quad Lensing pass.} Add a strong-lensing forward model in the same IR. Proves the substrate generalizes beyond exoplanets.
+  \item \textbf{M12--18 \quad Imaging pass.} Add a differentiable interferometric forward model. Three disjoint sub-fields running on one kernel = the substrate claim.
+\end{enumerate}
+
+\vspace{0.6em}
+\begin{center}
+{\color{accent}\textbf{Zero physical hardware required.} Public JWST + HSC + MeerKAT data; single-workstation MVP through M9.}
+\end{center}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 21 — risks
+\slidetitle{Risks \& mitigations}
+
+\begin{warnbox}
+\textbf{Upstream tool churn.} Opacity databases (HITRAN, ExoMol), JWST pipeline, ExoJAX2 all evolve fast.\\
+\textbf{Mitigation:} the IR stays stable; opacity sources are pluggable passes.
+\end{warnbox}
+\vspace{0.3em}
+\begin{warnbox}
+\textbf{Adoption inertia.} Retrieval community is small ($\sim$50 active groups), each emotionally attached to a code.\\
+\textbf{Mitigation:} ship a 10$\times$ speedup on a public benchmark first; let the speed sell itself. Open-source under Apache 2.0.
+\end{warnbox}
+\vspace{0.3em}
+\begin{warnbox}
+\textbf{C++/CUDA hiring.} Astronomy talent skews Python.\\
+\textbf{Mitigation:} expose Python bindings from day one; recruit from HPC and games industry, not from astronomy.
+\end{warnbox}
+\vspace{0.3em}
+\begin{warnbox}
+\textbf{IR over-design.} Trying to be the LLVM of astronomy on day one is how you ship nothing.\\
+\textbf{Mitigation:} ship the exoplanet wedge first, prove the IR \emph{retroactively} by adding lensing and imaging passes in M9--18.
+\end{warnbox}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 22 — sources
+\slidetitle{Sources}
+
+\footnotesize
+\begin{itemize}[leftmargin=1.2em,itemsep=0.2em]
+  \item Rubin Observatory --- \href{https://rubinobservatory.org/news/first-alerts}{first alerts launch (Feb 2026)}, \href{https://www.washington.edu/news/2026/02/25/rubin-observatory-real-time-alerts-dirac/}{UW DiRAC announcement}
+  \item SKA --- \href{https://www.osti.gov/servlets/purl/1772857}{full-scale processing on Summit}, \href{https://royalsocietypublishing.org/doi/10.1098/rsta.2019.0060}{exascale challenges (Phil.\ Trans.\ R.\ Soc.)}
+  \item N-body --- \href{https://link.springer.com/article/10.1186/s40668-019-0032-1}{generative-model challenge (CompAstroCosmo)}, \href{https://link.springer.com/article/10.1007/s41115-021-00013-z}{large-scale dark matter sims review}
+  \item GRMHD --- \href{https://news.arizona.edu/news/making-sense-nonsensical-black-holes-and-simulation-library}{EHT 80M CPU-hr simulation library}
+  \item GW PE --- \href{https://journal.hep.com.cn/fop/EN/10.15302/frontphys.2025.045301}{AI for GW data analysis review}, \href{https://arxiv.org/html/2602.00195}{LIGO\textrightarrow LISA model-agnostic inference}
+  \item Exoplanet retrieval --- \href{https://academic.oup.com/mnras/article/530/3/3252/7659843}{VIRA (MNRAS 2024)}, \href{https://iopscience.iop.org/article/10.3847/1538-4357/adcba2}{ExoJAX2 (ApJ 2025)}
+  \item Cross-match --- \href{https://github.com/ebks/astrocomputing/blob/main/book.md}{petabyte-era cross-match overview}
+  \item Lensing --- \href{https://arxiv.org/html/2603.06339}{LEMON (arXiv 2603, Mar 2026)}, \href{https://www.nature.com/articles/nature23463}{first CNN lens analysis (Nature)}
+  \item Brokers --- \href{https://www.aanda.org/articles/aa/full_html/2024/12/aa50370-24/aa50370-24.html}{Fink LSST classifiers (A\&A)}
+  \item Multi-messenger --- \href{https://www.anl.gov/article/radar-a-new-era-of-collaborative-cosmic-exploration}{Argonne RADAR}
+  \item Imaging --- \href{https://www.aanda.org/articles/aa/full_html/2026/02/aa55356-25/aa55356-25.html}{accelerated CLEAN (A\&A 2026)}
+  \item SED emulators --- \href{https://ar5iv.labs.arxiv.org/html/1911.11778}{Speculator (arXiv)}
+\end{itemize}
+\slidebreak
+
+% ─────────────────────────────────────────────────────────────────────
+% Slide 23 — closing
+\thispagestyle{empty}
+\vspace*{2cm}
+\begin{center}
+{\color{primary}\Huge\bfseries Argus}\\[0.6em]
+{\color{accent}\rule{0.18\textwidth}{1.2pt}}\\[0.6em]
+{\color{dark}\Large All-seeing.}\\[0.3em]
+{\color{muted}\itshape The kernel that compiles photons into atmospheres.}\\[2.4em]
+{\color{muted}\small Project repo: \texttt{\textasciitilde/Desktop/Future/Argus}}\\[0.4em]
+{\color{muted}\small Brief: \texttt{Argus.tex} \,\textbullet\, Code: \texttt{include/argus} + \texttt{src/}}
+\end{center}
+
+\end{document}

@@ -1,0 +1,223 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=0.9in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+
+\definecolor{primary}{HTML}{6B21A8}
+\definecolor{accent}{HTML}{059669}
+\definecolor{soft}{HTML}{F5F3FF}
+\definecolor{dark}{HTML}{1F2937}
+\definecolor{muted}{HTML}{6B7280}
+
+\titleformat{\section}
+  {\color{primary}\Large\bfseries}{\thesection}{0.8em}{}
+\titleformat{\subsection}
+  {\color{dark}\large\bfseries}{\thesubsection}{0.8em}{}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primary,
+  urlcolor=accent,
+  pdftitle={Argus --- A Differentiable Atmospheric Retrieval Kernel},
+  pdfauthor={Future Project Brief}
+}
+
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{callout}[1][]{
+  enhanced,breakable,
+  colback=soft,colframe=primary,
+  boxrule=0.4pt,arc=3pt,
+  left=12pt,right=12pt,top=10pt,bottom=10pt,
+  #1
+}
+
+\newtcolorbox{warnbox}[1][]{
+  enhanced,breakable,
+  colback=accent!5,colframe=accent,
+  boxrule=0.4pt,arc=3pt,
+  left=12pt,right=12pt,top=10pt,bottom=10pt,
+  #1
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\color{muted}\small Argus --- Project Brief}
+\fancyfoot[R]{\color{muted}\small \thepage}
+
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\begin{center}
+  \vspace*{-1.2cm}
+  {\color{muted}\small FUTURE PROJECT BRIEF \textbullet{} 2026}\\[0.4em]
+  {\color{primary}\Huge\bfseries Argus}\\[0.3em]
+  {\color{dark}\Large A Differentiable Atmospheric Retrieval Kernel}\\[0.2em]
+  {\color{muted}\itshape ``LLVM for the sky --- starting with a single planet.''}\\[0.4em]
+  \rule{0.35\textwidth}{0.5pt}
+\end{center}
+
+\vspace{0.6em}
+
+\begin{callout}
+\textbf{One-line pitch.} A C++20/CUDA core for differentiable line-by-line radiative transfer of exoplanet atmospheres, with an autograd-aware intermediate representation and a built-in simulation-based inference engine. The wedge into a substrate that eventually compiles photons into physics across exoplanets, lensing, and interferometry.
+
+\vspace{0.4em}
+\textbf{What it replaces.} Today, exoplanet retrieval lives in five fragmented PhD codebases --- TauREx, POSEIDON, CHIMERA, petitRADTRANS, ExoJAX. None compose. None are GPU-native. None expose autograd through the full forward model. Argus is the kernel; those become passes (or clients).
+
+\vspace{0.4em}
+\textbf{Why now.} JWST is producing native-resolution transmission and emission spectra that current retrievals \emph{bin away} to keep MCMC tractable --- losing the very signal that argued for an \$11B telescope. ExoJAX2 (Apr 2025) proved differentiable RT works; nothing has shipped a production C++ kernel. Ariel launches 2029. The 24-month window to set the standard is open now.
+\end{callout}
+
+\section{The Unsolved Problem}
+
+Atmospheric retrieval is the bottleneck between photons and physics. A JWST transmission spectrum of a hot Jupiter contains, in principle, parts-per-million constraints on $\mathrm{H_2O}$, $\mathrm{CO_2}$, $\mathrm{CH_4}$, $\mathrm{NH_3}$, hazes, clouds, T-P profile, and circulation. Extracting any of that requires a Bayesian inversion against a forward radiative-transfer model. The forward model is the bottleneck:
+
+\begin{itemize}[leftmargin=1.2em]
+  \item One forward call requires line-by-line opacity lookup over $\sim 10^5$--$10^7$ wavelength points, multiple molecular species, hundreds of atmospheric layers, and (for emission) multi-stream scattering --- seconds to minutes per call on CPU.
+  \item One MCMC retrieval needs $10^6$--$10^7$ forward calls. Production retrievals \textbf{bin spectra down} to make this tractable, throwing away the dynamic range that JWST exists to provide.
+  \item No retrieval code exposes gradients through the forward model. SBI, normalizing flows, and gradient-based optimization are off the table.
+  \item Each code (TauREx, POSEIDON, CHIMERA, petitRADTRANS, NEMESIS, NEXOTRANS, VIRA, ExoJAX) has its own opacity format, atmosphere parameterization, and prior conventions. Cross-code comparisons are heroic.
+\end{itemize}
+
+There is no \texttt{libRT} for exoplanets. There is no shared IR. There is no GPU-native, autograd-aware production kernel. Every group hand-rolls the pipeline, then bins to make it run.
+
+\section{What It Actually Solves}
+
+\begin{callout}
+\textbf{Biosignature detection.} The Habitable Worlds Observatory (HWO, $\sim$\$11B, 2040s) is being designed on the assumption that retrievals will be 100$\times$ more capable. Argus is the kernel that makes that capability real before HWO launches.
+
+\vspace{0.3em}
+\textbf{JWST data utilization today.} Spectra of K2-18b, WASP-39b, WASP-107b, GJ 1214b, TRAPPIST-1 planets are being reanalyzed every six months as the community argues over molecule detections. A reproducible, fast, differentiable kernel ends the food fight.
+
+\vspace{0.3em}
+\textbf{Ariel survey readiness.} ESA's Ariel ($\sim$1000 exoplanet atmospheres, 2029 launch) needs a pipeline that can retrieve hundreds of spectra per week. Today's tools cannot.
+
+\vspace{0.3em}
+\textbf{Substrate proof.} Once the IR is right, the same primitives drop into strong gravitational lensing (\#9 in the deck) and radio interferometry (\#3). One kernel, three sub-fields, one substrate claim.
+\end{callout}
+
+\section{Why C++ Is Non-Negotiable}
+
+Atmospheric retrieval is a true HPC workload. It is not orchestration; it is flops, memory bandwidth, and cache locality on opacity tables.
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Line-by-line opacity at scale.} HITRAN/HITEMP/ExoMol line lists run to $10^9$+ transitions per molecule. Voigt profile evaluation in the inner loop of every wavelength bin demands compiled vector kernels.
+  \item \textbf{GPU residency.} Opacity grids are 1--100 GB per molecule. They must stay on device across the entire retrieval; Python-orchestrated codes constantly bounce them through host memory.
+  \item \textbf{Autograd determinism.} Reproducible posteriors across hardware and TensorFlow versions are required for biosignature claims. Python autograd toolchains drift; a C++ tape with explicit operator definitions does not.
+  \item \textbf{Composability with HPC libraries.} cuFFT, cuBLAS, NCCL, ROCm --- the kernel must call into them without the marshalling overhead of Python wrappers.
+  \item \textbf{Vendor longevity.} A 2026 telescope takes data until 2050+. The kernel that processes its photons must compile in 2050.
+\end{enumerate}
+
+Python and Julia bindings live \emph{above} the kernel --- for retrieval scripts, agent reasoning, plotting, UI. The hot path is C++.
+
+\section{Why AI Is Core, Not Bolted On}
+
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Simulation-based inference.} Conditional normalizing flows produce calibrated posteriors over atmospheric parameters in seconds, replacing day-long MCMC runs. The forward model is differentiable, so SBI training is gradient-aware.
+  \item \textbf{Opacity emulators.} Neural surrogates of expensive opacity lookups (especially for high-T regimes outside HITRAN) keep the inner loop fast.
+  \item \textbf{Active learning.} The IR knows which observations would maximally constrain the current posterior. Drives JWST follow-up proposals automatically.
+  \item \textbf{Foundation models.} Pretrained spectral encoders (transformer-class) embed observations into a posterior-aware latent space; downstream tasks (classification, anomaly detection, biosignature scoring) inherit the embedding.
+  \item \textbf{Natural-language interface.} ``What's the $\mathrm{H_2O}$ posterior on WASP-39b under a cloudy prior?'' compiles into an executable Argus pipeline.
+\end{itemize}
+
+\section{Architecture Sketch}
+
+\begin{verbatim}
+ +--------------------------------------------------------+
+ |  Front End                                             |
+ |  Python bindings . retrieval DSL . natural language    |
+ +--------------------------------------------------------+
+ |  Argus IR                                              |
+ |  typed graphs of: opacity sources, atmosphere layers,  |
+ |  instrument PSF/LSF, observational geometry, priors    |
+ +--------------------------------------------------------+
+ |  Differentiable Physics  (C++/CUDA)                    |
+ |  line-by-line opacity . Voigt/Doppler . scattering .   |
+ |  multi-stream RT . chemistry . T-P profile             |
+ +--------------------------------------------------------+
+ |  Inference Engine                                      |
+ |  amortized SBI . normalizing flows . MCMC fallback .   |
+ |  gradient-based MAP . autograd tape                    |
+ +--------------------------------------------------------+
+ |  Data Plane                                            |
+ |  HITRAN/HITEMP/ExoMol loaders . JWST/Ariel ingest .    |
+ |  content-addressed runs . provenance                   |
+ +--------------------------------------------------------+
+\end{verbatim}
+
+Every retrieval is reproducible, content-addressed, type-checked. The same spectrum re-run on the same kernel in 2050 produces the same posterior bit-for-bit.
+
+\section{12--18 Month MVP Roadmap (Single Workstation, No Wet Lab)}
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Months 1--3.} Argus IR: typed graphs of opacity sources, atmospheric layers, instrument PSF, observational geometry. Serialization, content-addressed runs, provenance. C++20 with Python bindings via pybind11.
+  \item \textbf{Months 3--6.} Opacity kernel: GPU-resident HITRAN/HITEMP/ExoMol loaders. Voigt-profile inner loop in CUDA. First differentiable transmission-spectrum solver. Validate against petitRADTRANS on the WASP-39b benchmark.
+  \item \textbf{Months 6--9.} Inference engine: amortized SBI via normalizing flows (sbi/lampe-style). Compare against POSEIDON / CHIMERA on public JWST spectra: \textbf{target 10$\times$ wall-clock, equal or better posteriors, no spectral binning}. Publish a benchmark suite and reproducible Docker.
+  \item \textbf{Months 9--12.} Lensing pass: add a strong-lensing forward model in the same IR. Differentiable ray-trace through SIE/EPL profiles. Demonstrates the substrate generalizes beyond exoplanets.
+  \item \textbf{Months 12--18.} Imaging pass: differentiable interferometric forward model (gridder + FFT + visibility prediction). Three disjoint sub-fields running on one kernel = the substrate claim.
+\end{enumerate}
+
+All of this runs on one workstation with a consumer GPU (RTX 5090-class) plus public databases (HITRAN, HITEMP, ExoMol, MAST, ESA Datalabs). No telescope, no wet lab, no privileged data access.
+
+\section{Go-to-Market}
+
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Open source.} Apache 2.0. The kernel and IR are useless without an ecosystem; any closed core poisons adoption.
+  \item \textbf{Commercial: compute.} Heavy retrieval and SBI training jobs hosted on Argus Cloud, pay-per-hour. The same model that worked for Vita.
+  \item \textbf{Commercial: enterprise.} Pharma-style private deployments for instrument vendors (e.g., Ariel data centres, JWST follow-up consortia) wanting provenance, audit trail, IP firewall.
+  \item \textbf{Commercial: integrations.} Paid connectors to private opacity vendors and proprietary atmospheric models.
+  \item \textbf{First wedge:} JWST exoplanet groups drowning in retrieval cycles. Free, faster, reproducible beats a pile of bash scripts and a Slurm queue.
+  \item \textbf{Second wedge:} ESA Ariel pipeline development consortium (2026--2028 build phase).
+  \item \textbf{Third wedge:} HWO design teams and the NASA Exoplanet Exploration Program.
+\end{itemize}
+
+\section{2050 Vision}
+
+By 2050, atmospheric retrieval is a compilation target. Students write retrieval scripts in BioScript-like DSLs the way their grandparents wrote IDL. JWST and Ariel and ELT and HWO and LIFE all hand off spectra to Argus the way today's web stack hands off HTTP requests to a load balancer. Biosignature claims are reproducible to the bit because every retrieval is a content-addressed Argus run with frozen opacity, frozen kernel version, and frozen posterior sampler.
+
+Past exoplanets, the pattern compounds. The same Argus IR underlies strong-lensing analyses for Euclid (and post-Euclid), interferometric imaging for SKA-era radio astronomy, neutrino-flavor-evolution models for IceCube-Gen2. The category it creates: \emph{differentiable astronomy}. Argus is the toolchain everyone builds against.
+
+Three commercial categories fall out naturally: retrieval-as-a-service, instrument-vendor pipelines, and astrobiology compute. Each is a multi-billion-dollar industry by 2040.
+
+\section{Key Risks}
+
+\begin{warnbox}
+\textbf{Upstream tool churn.} Opacity databases (HITRAN, HITEMP, ExoMol), JWST pipeline, ExoJAX2 all evolve fast. Mitigation: the IR stays stable; opacity sources are pluggable passes with versioned interfaces.
+
+\textbf{Adoption inertia.} Retrieval community is small ($\sim$50 active groups) and emotionally attached to existing codes. Mitigation: ship a 10$\times$ speedup on a public benchmark first; let the speed sell itself. Open-source under Apache 2.0; offer migration tooling that converts POSEIDON / petitRADTRANS configs to Argus.
+
+\textbf{C++/CUDA hiring.} Astronomy talent skews Python. Mitigation: expose Python bindings from day one; recruit from HPC and games industry, not from astronomy.
+
+\textbf{IR over-design.} Trying to be the LLVM of astronomy on day one is how you ship nothing. Mitigation: ship the exoplanet wedge first; prove the IR \emph{retroactively} by adding lensing and imaging passes in M9--18.
+
+\textbf{Biosignature politics.} An Argus posterior that rejects a flagship biosignature claim is going to make enemies. Mitigation: ship calibration tooling (posterior-coverage tests, simulation-based calibration) that makes the math indefensible and the politics moot.
+\end{warnbox}
+
+\section{References}
+
+\begin{itemize}[leftmargin=1.2em]
+  \item \href{https://iopscience.iop.org/article/10.3847/1538-4357/adcba2}{ExoJAX2 --- Differentiable modeling of planet \& substellar atmospheres (ApJ 2025)}
+  \item \href{https://academic.oup.com/mnras/article/530/3/3252/7659843}{VIRA --- exoplanet atmospheric retrieval framework for JWST (MNRAS 2024)}
+  \item \href{https://arxiv.org/html/2510.27223}{NEXOTRANS --- next-gen retrieval framework (arXiv 2510, 2025)}
+  \item \href{https://arxiv.org/html/2508.04982}{Supervised ML with UQ for exoplanet retrievals from transmission spectroscopy (2025)}
+  \item \href{https://arxiv.org/html/2402.17697}{Approximate IR scattering radiative transfer for hot Jupiter atmospheres (2024)}
+  \item \href{https://www.aanda.org/articles/aa/full_html/2024/04/aa47379-23/aa47379-23.html}{ARES VI --- viability of 1D retrieval models for JWST/Ariel (A\&A 2024)}
+  \item \href{https://hitran.org/}{HITRAN/HITEMP molecular spectroscopic databases}
+  \item \href{https://www.exomol.com/}{ExoMol high-temperature line lists}
+  \item \href{https://www.jwst.nasa.gov/}{JWST mission and Mikulski Archive (MAST)}
+  \item \href{https://arielmission.space/}{ESA Ariel mission --- 2029 launch, $\sim$1000 atmospheres}
+\end{itemize}
+
+\end{document}

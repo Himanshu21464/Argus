@@ -1,0 +1,25 @@
+build/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+.cache/
+compile_commands.json
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.nav
+*.snm
+*.vrb
+*.synctex.gz
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
