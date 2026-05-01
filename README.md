@@ -34,16 +34,20 @@ Argus/
 │   ├── atmosphere.hpp               layered T-P-VMR atmosphere
 │   ├── opacity.hpp                  OpacityKernel interface + GreyOpacity stub
 │   ├── line_list.hpp                Line + LineListOpacity (HITRAN-subset)
-│   ├── voigt.hpp                    pseudo-Voigt line-shape (templated)
+│   ├── hitran.hpp                   fixed-width .par parser
+│   ├── partition.hpp                TIPS-anchored Q(T)
+│   ├── test_data.hpp                bundled real HITRAN H2O lines for tests
+│   ├── voigt.hpp                    Hui-Armstrong-Wray Voigt (~1e-6, templated)
 │   ├── geometry.hpp                 hydrostatic ray geometry, chord paths
 │   ├── radiative_transfer.hpp       TransmissionModel (proper transit-radius integration)
 │   ├── dual.hpp                     forward-mode autograd dual numbers
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based smoke tests (7 tests)
+├── tests/                           assert-based smoke tests (11 tests)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
-│   └── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
+│   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
+│   └── 03_real_hitran.cpp           16 real HITRAN H2O lines, JWST-PRISM-shaped spectrum
 ├── site/                            astronomy-themed project site (port 8767)
 └── docs/
     ├── Astronomy-Compute-Crisis.tex landscape research deck (top-10 problems)
@@ -67,17 +71,37 @@ No external runtime dependencies for the M1 kernel.
 | Phase | Window | Status | Deliverable |
 |-------|--------|--------|-------------|
 | **M1** | months 1–3 | ✅ shipped v0.1.0 | Argus IR, atmosphere/opacity/RT scaffolding |
-| **M2** | months 3–6 | 🟡 ⅓ shipped (v0.2.0) | Hydrostatic geometry, Voigt line shape, LineListOpacity, dual-number autograd. Outstanding: HITRAN/HITEMP/ExoMol loaders, GPU residency, CUDA Voigt, WASP-39b benchmark vs. petitRADTRANS. |
+| **M2** | months 3–6 | ✅ shipped v0.3.0 | Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6), LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS partition functions, real-data tests, finite-diff autograd validation. CUDA residency (M2.5) and WASP-39b benchmark vs. petitRADTRANS (M3 wedge) outstanding. |
 | **M3** | months 6–9 | ⏳ planned | Amortized SBI (normalizing flows), 10× speed vs. POSEIDON/CHIMERA on public JWST spectra without binning |
 | **M4** | months 9–12 | ⏳ planned | Lensing pass — proves the IR generalizes |
 | **M5** | months 12–18 | ⏳ planned | Interferometric imaging pass — three sub-fields, one kernel, substrate claim |
 
-### What v0.2.0 adds over v0.1.0
-- Real hydrostatic chord integration (`Geometry`) replacing the M1 1-km path stub.
-- Voigt line-shape evaluator (Thompson-Cox-Hastings pseudo-Voigt), templated for autograd.
-- `LineListOpacity` — sum a list of HITRAN-subset lines into per-(T,P) cross-section.
-- `Dual<T>` forward-mode autograd primitive; composes through `voigt`.
-- 4 new tests (geometry, voigt, line_list, dual) + new example `02_voigt_h2o.cpp`.
+### What v0.3.0 (M2-complete) adds over v0.2.0
+- **Verified Hui-Armstrong-Wray Voigt** (~1e-6 accuracy) replacing pseudo-Voigt (1%).
+  Tested against analytic Gaussian/Lorentzian limits, numerical convolution,
+  Lorentz asymptotic wing, and dual-number derivatives vs central finite differences.
+- **`argus::Hitran`** — fixed-width 160-char HITRAN .par parser.
+- **`argus::Partition`** — TIPS-anchored Q(T) for H2O, CO2, CH4, CO, NH3.
+- **Full HITRAN intensity scaling** — `S(T) = S(296) · Q(296)/Q(T) · exp(-c2 E"·Δ(1/T)) · induced_emission`.
+- **Bundled real HITRAN H2O test fixture** (16 lines, 2.7 μm + 1.4 μm bands).
+- **5 new hard tests + 1 new example** — see CHANGELOG.
+
+### Test suite
+11 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+
+| test | what it asserts |
+|---|---|
+| `test_atmosphere` | layer ordering, isothermal builder validation |
+| `test_radiative_transfer` | spectrum shape, grey-opacity flat profile |
+| `test_ir` | content-address determinism, graph topology |
+| `test_geometry` | chord path = 2r at b=0, hydrostatic z(P) to 1e-9 |
+| `test_voigt` | analytic limits, symmetry, area-normalisation, numerical convolution, asymptotic wing, autograd vs FD |
+| `test_line_list` | line-shape ordering, sum rules |
+| `test_dual` | arithmetic, exp/log/sqrt, chain rule |
+| `test_partition` | TIPS anchors at 296/1000/2000 K, monotonicity, throw on bad input |
+| `test_hitran` | round-trip parse, CR/LF tolerance, malformed rejection, filter |
+| `test_real_h2o` | end-to-end with real HITRAN: sum rule, T-dependence, VMR monotonicity, saturation |
+| `test_finite_diff` | autograd ∂/∂σ, ∂/∂γ, ∂/∂x, ∂/∂S vs central FD to 1e-5 |
 
 ## Design principles
 

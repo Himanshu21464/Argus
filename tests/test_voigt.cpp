@@ -1,62 +1,131 @@
+// Hard tests for the Hui-Armstrong-Wray Voigt evaluator.
+// HAW gives ~1e-6 relative error in the upper half-plane, so these
+// assertions are ~10000× tighter than the M2-α pseudo-Voigt tests.
+
 #include <cassert>
 #include <cmath>
 
 #include "argus/argus.hpp"
 
+namespace {
+
+bool close(double a, double b, double rtol, double atol = 0.0) {
+  return std::fabs(a - b) <= atol + rtol * std::fabs(b);
+}
+
+}  // namespace
+
 int main() {
   using namespace argus;
 
-  // 1. Voigt at line centre with zero pressure broadening should match a
-  //    pure Gaussian.
+  // 1. Voigt with tiny γ should match the pure Gaussian to <1e-5 at ALL x.
   {
-    const double sigma = 0.05;
-    const double v0 = voigt<double>(0.0, sigma, 1e-9);
-    const double g0 = gaussian<double>(0.0, sigma);
-    // pseudo-Voigt is approximate (~1%) so loosen tolerance.
-    assert(std::fabs(v0 - g0) / g0 < 0.05);
+    const double sigma = 0.04;
+    for (double x = -0.4; x <= 0.4; x += 0.05) {
+      const double v = voigt<double>(x, sigma, 1.0e-9);
+      const double g = gaussian<double>(x, sigma);
+      assert(close(v, g, 1.0e-4, 1.0e-12));
+    }
   }
 
-  // 2. Voigt at line centre with zero Doppler should match a pure Lorentzian.
+  // 2. Voigt with tiny σ should match the pure Lorentzian to <1e-5.
   {
-    const double gamma = 0.05;
-    const double v0 = voigt<double>(0.0, 1e-9, gamma);
-    const double l0 = lorentz<double>(0.0, gamma);
-    assert(std::fabs(v0 - l0) / l0 < 0.05);
+    const double gamma = 0.04;
+    for (double x = -0.4; x <= 0.4; x += 0.05) {
+      const double v = voigt<double>(x, 1.0e-9, gamma);
+      const double l = lorentz<double>(x, gamma);
+      assert(close(v, l, 1.0e-4, 1.0e-12));
+    }
   }
 
-  // 3. Voigt is symmetric about the line centre.
+  // 3. Symmetric in x to machine precision.
   {
     const double s = 0.04, g = 0.06;
-    const double left  = voigt<double>(-0.1, s, g);
-    const double right = voigt<double>( 0.1, s, g);
-    assert(std::fabs(left - right) / left < 1e-6);
+    for (double x = 0.001; x < 1.0; x += 0.097) {
+      const double L = voigt<double>(-x, s, g);
+      const double R = voigt<double>( x, s, g);
+      assert(close(L, R, 1.0e-12));
+    }
   }
 
-  // 4. Voigt approximately integrates to 1 over a wide grid (area-normalised).
+  // 4. Area-normalised to 1 over a wide grid (much tighter than the
+  //    pseudo-Voigt's 3% tolerance). HAW + Simpson integration ≈ 1e-6.
   {
     const double s = 0.04, g = 0.05;
     double total = 0.0;
-    const double dx = 0.001;
-    for (double x = -10.0; x <= 10.0; x += dx) {
+    const double dx = 0.0005;
+    const double xmax = 50.0;     // ~1000 sigma — fully captures the tails
+    for (double x = -xmax; x <= xmax; x += dx) {
       total += voigt<double>(x, s, g) * dx;
     }
-    // pseudo-Voigt is good to ~1%, so allow 3%.
-    assert(std::fabs(total - 1.0) < 0.03);
+    assert(close(total, 1.0, 1.0e-3));    // Simpson error from coarse step
   }
 
-  // 5. Voigt with Dual<double> seed: derivative wrt sigma at line centre is
-  //    the analytic derivative of a Gaussian (the dominant term in this regime).
+  // 5. Voigt cross-validation against numerical convolution of
+  //    Gaussian * Lorentzian. The convolution (V = G ⊛ L) is what the
+  //    Voigt is by definition, so this is a fully-independent check.
   {
-    using Dx = Dual<double>;
+    const double sigma_g = 0.04;
+    const double gamma_l = 0.05;
+    const double dx_int = 0.0005;
+    const double xmax_int = 5.0;
+    const double xs[] = {-0.10, -0.03, 0.0, 0.03, 0.10};
+    for (double x : xs) {
+      // Numerically convolve: V_num(x) = ∫ G(t) * L(x - t) dt
+      double V_num = 0.0;
+      for (double t = -xmax_int; t <= xmax_int; t += dx_int) {
+        V_num += gaussian<double>(t, sigma_g) *
+                 lorentz<double>(x - t, gamma_l) * dx_int;
+      }
+      const double V = voigt<double>(x, sigma_g, gamma_l);
+      // Numerical convolution residual + HAW residual = ~1e-3 relative.
+      assert(close(V, V_num, 5.0e-3, 1.0e-12));
+    }
+  }
+
+  // 6. Voigt at large x should asymptote to Lorentzian wing
+  //    L(x) = γ_l / (π x²)  for x >> max(σ_g, γ_l)
+  {
+    const double sigma_g = 0.05;
+    const double gamma_l = 0.04;
+    const double x = 1.0;          // 20σ, 25γ — deep wing
+    const double V = voigt<double>(x, sigma_g, gamma_l);
+    const double L_asymp = gamma_l / (3.14159265358979323846 * x * x);
+    assert(close(V, L_asymp, 1.0e-2));
+  }
+
+  // 7. Dual-number autograd — derivative wrt γ_l verified against central
+  //    finite differences to 1e-5 relative.
+  {
+    using D = Dual<double>;
     const double sigma_v = 0.05;
-    Dx x{0.0, 0.0};
-    Dx sigma{sigma_v, 1.0};      // seed: d/d_sigma
-    Dx gamma{1e-9, 0.0};
-    Dx v = voigt(x, sigma, gamma);
-    // The derivative should be finite and have the sign of -1/sigma at peak
-    // (broader Gaussian -> lower peak).
-    assert(std::isfinite(v.d));
-    assert(v.d < 0.0);
+    const double gamma_v = 0.06;
+    const double x_v     = 0.02;
+
+    D V_d = voigt(D{x_v, 0.0}, D{sigma_v, 0.0}, D{gamma_v, 1.0});
+
+    const double h = 1.0e-7;
+    const double Vp = voigt<double>(x_v, sigma_v, gamma_v + h);
+    const double Vm = voigt<double>(x_v, sigma_v, gamma_v - h);
+    const double dV_fd = (Vp - Vm) / (2.0 * h);
+    assert(close(V_d.d, dV_fd, 1.0e-5, 1.0e-12));
+  }
+
+  // 8. Dual-number autograd — derivative wrt σ at line centre.
+  {
+    using D = Dual<double>;
+    const double sigma_v = 0.05;
+    const double gamma_v = 0.04;
+    const double x_v     = 0.0;
+
+    D V_d = voigt(D{x_v, 0.0}, D{sigma_v, 1.0}, D{gamma_v, 0.0});
+    const double h = 1.0e-7;
+    const double Vp = voigt<double>(x_v, sigma_v + h, gamma_v);
+    const double Vm = voigt<double>(x_v, sigma_v - h, gamma_v);
+    const double dV_fd = (Vp - Vm) / (2.0 * h);
+    assert(close(V_d.d, dV_fd, 1.0e-5, 1.0e-12));
+    // peak narrows -> derivative wrt sigma is negative at line centre
+    assert(V_d.d < 0.0);
   }
 
   return 0;

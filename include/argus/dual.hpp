@@ -94,6 +94,13 @@ inline Dual<T> cos(const Dual<T>& a) { return {std::cos(a.v), -std::sin(a.v) * a
 template <typename T>
 inline T fabs(const Dual<T>& a) { return std::fabs(a.v); }  // value only
 
+// ─── value-extraction helpers (for branchy code that needs to inspect
+// a value while keeping derivatives composable) ───────────────────────
+
+inline double value_of(double x) noexcept { return x; }
+template <typename T>
+inline double value_of(const Dual<T>& x) noexcept { return value_of(x.v); }
+
 }  // namespace argus
 
 // std::sqrt / std::exp / std::log inside templated callees pick up the

@@ -27,6 +27,8 @@ add_library(argus_core STATIC
   src/ir.cpp
   src/geometry.cpp
   src/line_list.cpp
+  src/partition.cpp
+  src/hitran.cpp
 )
 target_include_directories(argus_core PUBLIC include)
 target_compile_features(argus_core PUBLIC cxx_std_20)
@@ -45,6 +47,14 @@ add_executable(example_02_voigt_h2o
 )
 target_link_libraries(example_02_voigt_h2o PRIVATE argus_core)
 set_target_properties(example_02_voigt_h2o PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)
+
+add_executable(example_03_real_hitran
+  examples/03_real_hitran.cpp
+)
+target_link_libraries(example_03_real_hitran PRIVATE argus_core)
+set_target_properties(example_03_real_hitran PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
 )
 

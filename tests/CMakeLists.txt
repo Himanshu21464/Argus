@@ -25,3 +25,19 @@ add_test(NAME line_list COMMAND test_line_list)
 add_executable(test_dual test_dual.cpp)
 target_link_libraries(test_dual PRIVATE argus_core)
 add_test(NAME dual COMMAND test_dual)
+
+add_executable(test_partition test_partition.cpp)
+target_link_libraries(test_partition PRIVATE argus_core)
+add_test(NAME partition COMMAND test_partition)
+
+add_executable(test_hitran test_hitran.cpp)
+target_link_libraries(test_hitran PRIVATE argus_core)
+add_test(NAME hitran COMMAND test_hitran)
+
+add_executable(test_real_h2o test_real_h2o.cpp)
+target_link_libraries(test_real_h2o PRIVATE argus_core)
+add_test(NAME real_h2o COMMAND test_real_h2o)
+
+add_executable(test_finite_diff test_finite_diff.cpp)
+target_link_libraries(test_finite_diff PRIVATE argus_core)
+add_test(NAME finite_diff COMMAND test_finite_diff)
