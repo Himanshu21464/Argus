@@ -25,6 +25,21 @@ class OpacityKernel {
   virtual Tensor cross_section(const std::vector<double>& wavenumber_cm,
                                const std::vector<double>& T_k,
                                const std::vector<double>& P_bar) const = 0;
+
+  // Cross-section accounting for self-broadening: the species' own VMR
+  // contributes to pressure broadening via γ_self instead of γ_air.
+  //   γ_total(layer) = γ_air * (1 - VMR_self) + γ_self * VMR_self
+  // VMR_self_at_TP[i,j] gives the self-VMR for the (T_k[i], P_bar[j])
+  // sample. Default implementation forwards to cross_section() (no
+  // self-broadening), so existing kernels keep working.
+  virtual Tensor cross_section_with_self(
+      const std::vector<double>& wavenumber_cm,
+      const std::vector<double>& T_k,
+      const std::vector<double>& P_bar,
+      const std::vector<double>& VMR_self_at_TP) const {
+    (void)VMR_self_at_TP;
+    return cross_section(wavenumber_cm, T_k, P_bar);
+  }
 };
 
 // Placeholder Voigt-profile opacity used for tests and the M1 example.

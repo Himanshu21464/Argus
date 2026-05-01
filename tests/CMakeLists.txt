@@ -57,3 +57,15 @@ add_test(NAME reproducibility COMMAND test_reproducibility)
 add_executable(test_multi_molecule test_multi_molecule.cpp)
 target_link_libraries(test_multi_molecule PRIVATE argus_core)
 add_test(NAME multi_molecule COMMAND test_multi_molecule)
+
+add_executable(test_self_broadening test_self_broadening.cpp)
+target_link_libraries(test_self_broadening PRIVATE argus_core)
+add_test(NAME self_broadening COMMAND test_self_broadening)
+
+add_executable(test_voigt_reference test_voigt_reference.cpp)
+target_link_libraries(test_voigt_reference PRIVATE argus_core)
+add_test(NAME voigt_reference COMMAND test_voigt_reference)
+
+add_executable(test_benchmark test_benchmark.cpp)
+target_link_libraries(test_benchmark PRIVATE argus_core)
+add_test(NAME benchmark COMMAND test_benchmark)

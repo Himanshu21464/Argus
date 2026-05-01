@@ -45,6 +45,12 @@ class LineListOpacity final : public OpacityKernel {
                        const std::vector<double>& T_k,
                        const std::vector<double>& P_bar) const override;
 
+  Tensor cross_section_with_self(
+      const std::vector<double>& wavenumber_cm,
+      const std::vector<double>& T_k,
+      const std::vector<double>& P_bar,
+      const std::vector<double>& VMR_self_at_TP) const override;
+
   std::size_t num_lines() const noexcept { return lines_.size(); }
 
  private:

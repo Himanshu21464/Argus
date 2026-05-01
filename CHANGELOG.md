@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.3.3 — 2026-05-01 — Self-broadening + independent Voigt reference + benchmark
+
+Adds the missing HITRAN physics (self-broadening, pressure shift), an
+independent closed-form Voigt cross-validation, and a performance
+baseline benchmark.
+
+### Added
+- **Self-broadening + pressure shift in `LineListOpacity`**:
+  * `OpacityKernel::cross_section_with_self()` — new virtual that takes
+    the species' own VMR per (T,P) sample, with a default that
+    forwards to `cross_section()` (no self-broadening) for backward
+    compatibility.
+  * `LineListOpacity::cross_section_with_self()` — implements the full
+    HITRAN form: γ_total = γ_air·(1-VMR) + γ_self·VMR
+  * Pressure-shift now applied to ALL line evaluations:
+    nu_eff = nu0 + δ_air · P_atm
+  * Both `cross_section()` (air-broadened, VMR=0) and
+    `cross_section_with_self()` (self-aware) paths use the shifted
+    centre, so the pressure shift is always honoured.
+
+- **`test_self_broadening`** (4 tests):
+  * γ_self = 2·γ_air with varying self-VMR -> monotonically wider
+    Lorentzian; pure-self limit ~2× wing absorption vs pure-air.
+  * Default `cross_section()` matches `cross_section_with_self(VMR=0)`.
+  * δ_air > 0 with high P shifts the line centre off our sample point,
+    reducing cross-section there.
+  * δ_air = 0 confirmation: pressure broadens centre but doesn't shift.
+
+- **`test_voigt_reference`** — independent closed-form cross-check.
+  Voigt at line centre with σ_g = 1, varying γ_l: V(0) = w(iy)/(σ√(2π))
+  where w(iy) = exp(y²)·erfc(y) computed via std::erfc (~1e-15 accurate).
+  Tolerance 1e-4 absorbs HAW's actual error in the y ~ 1-5 transition
+  zone. Plus pure-Lorentzian limit cross-check at high y_n, plus
+  comprehensive (σ, γ) grid sweep.
+
+- **`test_benchmark`** — performance baseline. Times 10 forward-model
+  runs (60-layer atmosphere · 16 H2O lines · ~200 wavenumber points)
+  and asserts:
+  * median wall time < 5 s (loose CI bound)
+  * per-Voigt-evaluation cost < 1 μs (current: ~9 ns on this box)
+  Recorded medians: ~1.7 ms / forward call, ~8.9 ns / Voigt.
+
+### Changed
+- `OpacityKernel` interface gains a new virtual; existing kernels (e.g.
+  `GreyOpacity`) inherit the no-op default and continue to work.
+- `LineListOpacity::cross_section()` now applies pressure-shift to
+  the line centre. For δ_air = 0 (M2 default for our test fixtures)
+  this is a no-op; for nonzero δ_air the line moves with pressure.
+
+### Validated
+18/18 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 3 examples build warning-free. Performance benchmark
+recorded: 1.7 ms / forward call (60 layer · 200 wn · 16 lines).
+
+---
+
 ## 0.3.2 — 2026-05-01 — Multi-molecule end-to-end
 
 Adds a real CO2 line fixture and a hard multi-molecule end-to-end test

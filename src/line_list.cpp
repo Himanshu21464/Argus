@@ -26,11 +26,25 @@ double doppler_sigma_cm(double nu0_cm, double T_k, double mass_amu) {
   return nu0_cm * (sig_v * 100.0) / kSpeedOfLightCm;
 }
 
-// Pressure-broadening Lorentzian HWHM for one (T, P) state.
-double lorentz_hwhm_cm(const Line& line, double T_k, double P_bar) {
+// Pressure-broadening Lorentzian HWHM (HITRAN convention):
+//   γ(T,P,VMR) = (T_ref/T)^n_air · P_atm
+//                · [γ_air · (1 - VMR_self) + γ_self · VMR_self]
+// VMR_self defaults to 0 (pure foreign-gas broadening).
+double lorentz_hwhm_cm(const Line& line, double T_k, double P_bar,
+                       double VMR_self = 0.0) {
   const double P_atm = P_bar / kBarPerAtm;
   const double tratio = std::pow(kTref_k / T_k, line.n_air);
-  return tratio * line.gamma_air_cm * P_atm;
+  const double gamma_eff =
+      line.gamma_air_cm * (1.0 - VMR_self) +
+      line.gamma_self_cm * VMR_self;
+  return tratio * gamma_eff * P_atm;
+}
+
+// Pressure-shift of the line centre (HITRAN convention):
+//   nu_eff = nu0 + delta_air * P_atm
+double shifted_centre_cm(const Line& line, double P_bar) {
+  const double P_atm = P_bar / kBarPerAtm;
+  return line.nu0_cm + line.delta_air_cm * P_atm;
 }
 
 // Full HITRAN-style temperature scaling of line intensity:
@@ -92,18 +106,71 @@ Tensor LineListOpacity::cross_section(
       for (const Line& line : lines_) {
         const double sigma_g = doppler_sigma_cm(line.nu0_cm, T,
                                                 molar_mass_amu_);
-        const double gamma_l = lorentz_hwhm_cm(line, T, P);
+        const double gamma_l = lorentz_hwhm_cm(line, T, P, /*VMR_self=*/0.0);
         const double S_T     = intensity_T(line, T, q_ratio);
+        const double nu_eff  = shifted_centre_cm(line, P);
         const double cutoff  = kCutoffHWHMs *
                                std::max(gamma_l,
                                         sigma_g * 2.354820045030949);
 
         for (std::size_t w = 0; w < nW; ++w) {
-          const double dx = wavenumber_cm[w] - line.nu0_cm;
+          const double dx = wavenumber_cm[w] - nu_eff;
           if (std::fabs(dx) > cutoff) continue;
           const double phi = voigt(dx, sigma_g, gamma_l);
           const std::size_t flat = (iT * nP + iP) * nW + w;
           out[flat] += S_T * phi;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+Tensor LineListOpacity::cross_section_with_self(
+    const std::vector<double>& wavenumber_cm,
+    const std::vector<double>& T_k,
+    const std::vector<double>& P_bar,
+    const std::vector<double>& VMR_self_at_TP) const {
+  const std::size_t nT = T_k.size();
+  const std::size_t nP = P_bar.size();
+  const std::size_t nW = wavenumber_cm.size();
+
+  Tensor out({nT, nP, nW});
+  constexpr double kCutoffHWHMs = 50.0;
+
+  for (std::size_t iT = 0; iT < nT; ++iT) {
+    const double T = T_k[iT];
+    double q_ratio = 1.0;
+    try {
+      q_ratio = Partition::Q_ref(key_) / Partition::Q(key_, T);
+    } catch (const std::invalid_argument&) {
+      // unknown species; q_ratio stays 1
+    }
+
+    for (std::size_t iP = 0; iP < nP; ++iP) {
+      const double P = P_bar[iP];
+      // VMR_self_at_TP layout: same flat indexing as the (T,P) grid.
+      double vmr_self = 0.0;
+      const std::size_t tp_idx = iT * nP + iP;
+      if (tp_idx < VMR_self_at_TP.size()) {
+        vmr_self = VMR_self_at_TP[tp_idx];
+      }
+
+      for (const Line& line : lines_) {
+        const double sigma_g = doppler_sigma_cm(line.nu0_cm, T,
+                                                molar_mass_amu_);
+        const double gamma_l = lorentz_hwhm_cm(line, T, P, vmr_self);
+        const double S_T     = intensity_T(line, T, q_ratio);
+        const double nu_eff  = shifted_centre_cm(line, P);
+        const double cutoff  = kCutoffHWHMs *
+                               std::max(gamma_l,
+                                        sigma_g * 2.354820045030949);
+
+        for (std::size_t w = 0; w < nW; ++w) {
+          const double dx = wavenumber_cm[w] - nu_eff;
+          if (std::fabs(dx) > cutoff) continue;
+          const double phi = voigt(dx, sigma_g, gamma_l);
+          out[(iT * nP + iP) * nW + w] += S_T * phi;
         }
       }
     }
