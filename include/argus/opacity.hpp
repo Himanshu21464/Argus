@@ -60,4 +60,41 @@ class GreyOpacity final : public OpacityKernel {
   double sigma_cm2_;
 };
 
+// Canonical "gray cloud deck" model used in exoplanet retrievals.
+// Above the cloud-top pressure P_cloud_bar the atmosphere is fully
+// opaque (huge sigma per cloud molecule), below it the cloud
+// contributes nothing. The species_key is a canonical bookkeeping
+// label ("CLOUD_DECK") and the kernel attaches its opacity to the
+// fictitious species's VMR (typically set to 1.0 for layers below
+// the cloud and 0 above).
+//
+// The expected wiring: caller adds a "CLOUD_DECK" species to the
+// Atmosphere with VMR = 1.0 in every layer, then sets up the
+// CloudDeckOpacity. For each (T,P) sample, this kernel returns:
+//   sigma_cm2_per_molecule  if P > P_cloud_bar
+//   0                       otherwise
+// The transmission model multiplies sigma * VMR * n_total to get
+// cm⁻¹, which becomes very large when sigma is large.
+class CloudDeckOpacity final : public OpacityKernel {
+ public:
+  // P_cloud_bar : cloud-top pressure (atmosphere becomes opaque at higher P)
+  // sigma_cm2   : effective per-cloud-particle cross section (use a
+  //               large value, e.g. 1e-18 cm², to make the deck opaque)
+  CloudDeckOpacity(std::string species_key,
+                   double P_cloud_bar, double sigma_cm2);
+
+  const std::string& species_key() const noexcept override { return key_; }
+
+  Tensor cross_section(const std::vector<double>& wavenumber_cm,
+                       const std::vector<double>& T_k,
+                       const std::vector<double>& P_bar) const override;
+
+  double P_cloud_bar() const noexcept { return P_cloud_bar_; }
+
+ private:
+  std::string key_;
+  double P_cloud_bar_;
+  double sigma_cm2_;
+};
+
 }  // namespace argus

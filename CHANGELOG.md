@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.5 — 2026-05-01 — Gray cloud deck
+
+Adds the canonical "gray cloud deck" opacity model used in nearly every
+exoplanet atmospheric retrieval. Above the cloud-top pressure the
+atmosphere goes opaque; the gas opacity dominates below.
+
+### Added
+- **`argus::CloudDeckOpacity`** — `OpacityKernel` that returns
+  σ_cloud per "cloud particle" for layers with P ≥ P_cloud_bar, zero
+  otherwise. Wavelength-independent (gray) by design — the canonical
+  retrieval cloud model. Constructor validates P_cloud > 0 and
+  σ ≥ 0; throws otherwise.
+- **`test_clouds`** (4 assertions):
+  * cross-section is zero above the cloud (low P) and σ below.
+  * cross-section is exactly σ at and below P_cloud.
+  * end-to-end transit-depth: deeper cloud (higher P_cloud) → lower
+    transit depth; shallower cloud → deeper transit (more opaque area).
+  * malformed inputs throw.
+
+### Validated
+20/20 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 3 examples build warning-free.
+
+---
+
 ## 0.3.4 — 2026-05-01 — Guillot 2010 T-P profile
 
 Adds the standard hot-Jupiter analytic temperature-pressure profile,
