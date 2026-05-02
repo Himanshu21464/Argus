@@ -117,3 +117,7 @@ add_test(NAME priors COMMAND test_priors)
 add_executable(test_posterior_predictive test_posterior_predictive.cpp)
 target_link_libraries(test_posterior_predictive PRIVATE argus_core)
 add_test(NAME posterior_predictive COMMAND test_posterior_predictive)
+
+add_executable(test_nn test_nn.cpp)
+target_link_libraries(test_nn PRIVATE argus_core)
+add_test(NAME nn COMMAND test_nn)

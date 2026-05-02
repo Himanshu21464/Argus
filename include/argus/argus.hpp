@@ -11,6 +11,7 @@
 #include "ir.hpp"
 #include "line_list.hpp"
 #include "mcmc.hpp"
+#include "nn.hpp"
 #include "opacity.hpp"
 #include "partition.hpp"
 #include "radiative_transfer.hpp"

@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.4.6 — 2026-05-02 — Neural-net primitives + README/site refresh
+
+Foundation for amortized SBI: Linear/Activation/Sequential building
+blocks for normalizing flows in the next iteration.
+
+### Added
+- **`argus::nn::Linear`** — y = Wx + b. Row-major weights flat in
+  memory, Glorot/Xavier-uniform initialisation with deterministic
+  seed, direct setters/getters for weight round-tripping. No external
+  BLAS dependency; M3.5 will swap inner loop for cuBLAS.
+- **`argus::nn::Activation`** enum + `apply_activation()`:
+  None / ReLU / LeakyReLU (α=0.01) / Tanh / Sigmoid.
+- **`argus::nn::Sequential`** — multi-layer MLP, alternating
+  `Linear` + `hidden_act`, terminating in a raw `Linear`. Mutable
+  layer access for pretrained-weight loading.
+- **`test_nn`** (7 test groups, 30+ assertions):
+  * Hand-set Linear forward gives the analytic answer
+  * All four activations match analytic forms
+  * Identity-weight Sequential composes Tanh as expected
+  * Xavier init: deterministic given seed, weights inside √(6/(in+out)) bound
+  * Sequential with Xavier produces finite output, deterministic by seed
+  * Layout: in/out dims and layer count
+  * 7 malformed-input throws (zero dim, wrong sizes, OOB layer access)
+
+### Changed
+- **README.md** test-suite table updated to 31 tests, split into
+  M2 physics layer + M3 inference layer sections.
+- **README.md** roadmap row for M3 marked 🟡 substantially shipped
+  (v0.4.5+) with the inventory of MCMC + ensemble + diagnostics +
+  chain I/O + priors + posterior-predictive.
+- **`site/index.html`** command-bar pill updated from M1/v0.1.0 to
+  M3/v0.4.5 with "31 tests" replacing the commit hash.
+
+### Validated
+31/31 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free.
+
+---
+
 ## 0.4.5 — 2026-05-02 — Posterior predictive + example refresh
 
 The standard post-MCMC convergence check: generate model spectra at

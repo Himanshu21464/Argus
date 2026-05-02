@@ -43,11 +43,12 @@ Argus/
 │   ├── dual.hpp                     forward-mode autograd dual numbers
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based smoke tests (11 tests)
+├── tests/                           assert-based hard tests (30 tests)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
-│   └── 03_real_hitran.cpp           16 real HITRAN H2O lines, JWST-PRISM-shaped spectrum
+│   ├── 03_real_hitran.cpp           16 real HITRAN H2O lines, JWST-PRISM-shaped spectrum
+│   └── 04_retrieval.cpp             full M3 pipeline: ensemble MCMC + R̂/ESS + CSV + posterior predictive
 ├── site/                            astronomy-themed project site (port 8767)
 └── docs/
     ├── Astronomy-Compute-Crisis.tex landscape research deck (top-10 problems)
@@ -72,7 +73,7 @@ No external runtime dependencies for the M1 kernel.
 |-------|--------|--------|-------------|
 | **M1** | months 1–3 | ✅ shipped v0.1.0 | Argus IR, atmosphere/opacity/RT scaffolding |
 | **M2** | months 3–6 | ✅ shipped v0.3.0 | Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6), LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS partition functions, real-data tests, finite-diff autograd validation. CUDA residency (M2.5) and WASP-39b benchmark vs. petitRADTRANS (M3 wedge) outstanding. |
-| **M3** | months 6–9 | ⏳ planned | Amortized SBI (normalizing flows), 10× speed vs. POSEIDON/CHIMERA on public JWST spectra without binning |
+| **M3** | months 6–9 | 🟡 substantially shipped (v0.4.5) | MCMC sampler + emcee-style ensemble + retrieval API + R̂/ESS diagnostics + CSV chain I/O + Gaussian/LogUniform priors + posterior-predictive checks. Outstanding: amortized SBI via normalizing flows, WASP-39b benchmark vs. POSEIDON/CHIMERA. |
 | **M4** | months 9–12 | ⏳ planned | Lensing pass — proves the IR generalizes |
 | **M5** | months 12–18 | ⏳ planned | Interferometric imaging pass — three sub-fields, one kernel, substrate claim |
 
@@ -92,7 +93,9 @@ No external runtime dependencies for the M1 kernel.
 - **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-20 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+30 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+
+**Physics layer (M2):**
 
 | test | what it asserts |
 |---|---|
@@ -116,6 +119,21 @@ No external runtime dependencies for the M1 kernel.
 | `test_benchmark` | wall-time baseline (~1.7 ms / forward call, ~9 ns / Voigt) |
 | `test_guillot` | Guillot 2010 T-P: skin temperature, monotonicity, hot/cold transit |
 | `test_clouds` | gray cloud deck: zero above P_cloud, opaque below, transit-depth ordering |
+| `test_rayleigh` | λ⁻⁴ scaling exact, T,P-independence, end-to-end Rayleigh slope |
+| `test_hot_jupiter` | comprehensive: Guillot + H2O+CO2+CH4 + cloud + Rayleigh — all bands detected |
+
+**Inference layer (M3):**
+
+| test | what it asserts |
+|---|---|
+| `test_mcmc` | Metropolis-Hastings recovers analytic 1D and 2D Gaussians; determinism |
+| `test_ensemble` | Goodman-Weare 2010 stretch move; affine-invariance on highly-correlated 2D |
+| `test_diagnostics` | Gelman-Rubin R̂ (converged ≈ 1.0, non-converged > 1.5) + ESS via Geyer's cutoff |
+| `test_chain_io` | CSV chain round-trip via hex-float — bit-exact equality |
+| `test_priors` | Uniform / Gaussian / LogUniform prior shapes recovered via MCMC |
+| `test_posterior` | Per-parameter median/mean/stddev/16-84% quantiles |
+| `test_retrieval` | End-to-end retrieval: recover injected T + log10(VMR) within 3σ |
+| `test_posterior_predictive` | 16-84% spectrum bands cover ≥ 85% of observations within 2σ_noise |
 
 ## Design principles
 
