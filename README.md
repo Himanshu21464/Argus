@@ -41,6 +41,11 @@ Argus/
 │   ├── geometry.hpp                 hydrostatic ray geometry, chord paths
 │   ├── radiative_transfer.hpp       TransmissionModel (proper transit-radius integration)
 │   ├── dual.hpp                     forward-mode autograd dual numbers
+│   ├── mcmc.hpp                     Metropolis-Hastings + emcee ensemble sampler
+│   ├── retrieval.hpp                Retrieval API + Parameter / Prior / PosteriorSummary
+│   ├── diagnostics.hpp              Gelman-Rubin R̂ + effective sample size
+│   ├── chain_io.hpp                 CSV save/load for MCMC chains (hex-float bit-exact)
+│   ├── nn.hpp                       neural-net primitives + Real NVP coupling + NormalizingFlow
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
 ├── tests/                           assert-based hard tests (30 tests)
@@ -73,7 +78,7 @@ No external runtime dependencies for the M1 kernel.
 |-------|--------|--------|-------------|
 | **M1** | months 1–3 | ✅ shipped v0.1.0 | Argus IR, atmosphere/opacity/RT scaffolding |
 | **M2** | months 3–6 | ✅ shipped v0.3.0 | Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6), LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS partition functions, real-data tests, finite-diff autograd validation. CUDA residency (M2.5) and WASP-39b benchmark vs. petitRADTRANS (M3 wedge) outstanding. |
-| **M3** | months 6–9 | 🟡 substantially shipped (v0.4.5) | MCMC sampler + emcee-style ensemble + retrieval API + R̂/ESS diagnostics + CSV chain I/O + Gaussian/LogUniform priors + posterior-predictive checks. Outstanding: amortized SBI via normalizing flows, WASP-39b benchmark vs. POSEIDON/CHIMERA. |
+| **M3** | months 6–9 | 🟡 substantially shipped (v0.4.9) | MCMC + emcee ensemble + Retrieval API + R̂/ESS diagnostics + CSV chain I/O + Gaussian/LogUniform/Uniform priors + posterior-predictive checks + neural-net primitives (Linear/Activation/Sequential) + AffineCoupling (Real NVP) + NormalizingFlow with sample / log_density / save / load. Outstanding: NF training loop (needs reverse-mode autograd), WASP-39b benchmark vs. POSEIDON/CHIMERA. |
 | **M4** | months 9–12 | ⏳ planned | Lensing pass — proves the IR generalizes |
 | **M5** | months 12–18 | ⏳ planned | Interferometric imaging pass — three sub-fields, one kernel, substrate claim |
 
@@ -93,7 +98,7 @@ No external runtime dependencies for the M1 kernel.
 - **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-30 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+32 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 
@@ -134,6 +139,8 @@ No external runtime dependencies for the M1 kernel.
 | `test_posterior` | Per-parameter median/mean/stddev/16-84% quantiles |
 | `test_retrieval` | End-to-end retrieval: recover injected T + log10(VMR) within 3σ |
 | `test_posterior_predictive` | 16-84% spectrum bands cover ≥ 85% of observations within 2σ_noise |
+| `test_nn` | Linear/Activation/Sequential + AffineCoupling forward/inverse + analytic log-det vs FD |
+| `test_normalizing_flow` | Stacked Real NVP: bit-exact roundtrip, log_density vs change-of-variables, sample reproducibility, save/load round-trip |
 
 ## Design principles
 
