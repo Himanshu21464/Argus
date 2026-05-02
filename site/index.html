@@ -26,9 +26,9 @@
       </svg>
     </a>
     <div class="cmd-meta">
-      <span class="meta-pill"><span class="led led-on"></span>M3 · v0.5.3</span>
+      <span class="meta-pill"><span class="led led-on"></span>M5 · v0.7.2</span>
       <span class="meta-sep">·</span>
-      <span class="meta-mono">37 tests · NF training</span>
+      <span class="meta-mono">42 tests · substrate proven</span>
       <span class="meta-sep">·</span>
       <span class="meta-mono">2026-05-02</span>
     </div>
@@ -565,10 +565,12 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
           <div class="tl-dot"></div>
           <div class="tl-when">T+9mo</div>
           <div class="tl-card">
-            <div class="tl-h"><span class="tl-id">M4</span><span class="tl-name">Lensing pass</span></div>
-            <p>Strong-lensing forward model in the same IR. Differentiable
-              ray-trace through SIE / EPL profiles. Demonstrates that the
-              substrate generalizes beyond exoplanets.</p>
+            <div class="tl-h"><span class="tl-id">M4</span><span class="tl-name">Lensing pass</span><span class="tl-status status-shipped">SHIPPED · v0.7.2</span></div>
+            <p>SIS / SIE / external shear / CompoundLens with closed-form
+              Kormann-Schneider-Bartelmann deflection, generic Newton image
+              solver, lensing potential + Fermat time delays. Substrate-claim
+              retrieval recovers (θ_E, lens, source) via the same Argus
+              <code>Retrieval</code> API used for atmospheric retrieval.</p>
           </div>
         </li>
 
@@ -576,10 +578,12 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
           <div class="tl-dot"></div>
           <div class="tl-when">T+18mo</div>
           <div class="tl-card">
-            <div class="tl-h"><span class="tl-id">M5</span><span class="tl-name">Imaging pass</span></div>
-            <p>Differentiable interferometric forward model — gridder + FFT +
-              visibility prediction. Three disjoint sub-fields running on one
-              kernel = the substrate claim.</p>
+            <div class="tl-h"><span class="tl-id">M5</span><span class="tl-name">Imaging pass</span><span class="tl-status status-shipped">SHIPPED · v0.7.1</span></div>
+            <p>PointSource + GaussianSource + visibility predictor on
+              synthesised UV coverage. Substrate-claim retrieval recovers
+              (l, m, F, σ) of a Gaussian source on a 7-antenna VLA-like
+              array via the same <code>Retrieval</code> API. Three disjoint
+              sub-fields running on one kernel = the substrate claim.</p>
           </div>
         </li>
       </ol>
@@ -794,17 +798,18 @@ ctest --test-dir build
   <div class="container">
     <div class="jf-row">
       <div class="jf-cite">
-        <div class="jf-id">ARGUS · v0.1.0 · M1</div>
+        <div class="jf-id">ARGUS · v0.7.2 · M5</div>
         <div class="jf-cite-text">
-          A differentiable atmospheric retrieval kernel.<br>
+          A differentiable astrophysical inference kernel — atmospheres,
+          lensing, interferometry on one substrate.<br>
           <em>Future Project Brief, May 2026.</em>
           &nbsp;Apache 2.0.
         </div>
       </div>
       <div class="jf-meta">
         <div><span class="jf-key">REPO</span> <a href="https://github.com/Himanshu21464/Argus" target="_blank">github.com/Himanshu21464/Argus</a></div>
-        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · CUDA from M2</div>
-        <div><span class="jf-key">DEPS</span> none (M1)</div>
+        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · 42 tests · all green</div>
+        <div><span class="jf-key">DEPS</span> none (header + CMake)</div>
         <div><span class="jf-key">TARGETS</span> JWST · Ariel · HWO</div>
       </div>
     </div>
