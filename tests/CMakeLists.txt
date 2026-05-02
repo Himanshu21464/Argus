@@ -105,3 +105,7 @@ add_test(NAME ensemble COMMAND test_ensemble)
 add_executable(test_diagnostics test_diagnostics.cpp)
 target_link_libraries(test_diagnostics PRIVATE argus_core)
 add_test(NAME diagnostics COMMAND test_diagnostics)
+
+add_executable(test_chain_io test_chain_io.cpp)
+target_link_libraries(test_chain_io PRIVATE argus_core)
+add_test(NAME chain_io COMMAND test_chain_io)

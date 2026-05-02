@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.3 — 2026-05-02 — CSV chain I/O (bit-exact round-trip)
+
+Adds the offline-analysis hand-off: save MCMC chains to CSV and load
+them back into corner.py / numpy / pandas for posterior visualisation
+and downstream analysis. Hex-float encoding makes the round-trip
+bit-exact.
+
+### Added
+- **`argus::ChainIO`** + **`argus::LoadedChain`**
+  (`include/argus/chain_io.hpp`, `src/chain_io.cpp`):
+    `save_csv(path, params, samples, log_posteriors)` writes
+    a header line with version + a comment line with shape + a CSV
+    header row of parameter names + 'log_posterior' column. Doubles
+    encoded as `%a` hex-float for bit-exact round-trip.
+    `save_csv(path, params, retrieval_result)` overload for direct
+    use with the Retrieval API.
+    `load_csv(path)` returns a `LoadedChain` with parameter names,
+    samples, and log-posteriors.
+- **`test_chain_io`** (8 test groups, 30+ assertions):
+  * 1000-sample 3-parameter chain round-trip → bit-exact equality
+  * Retrieval::Result overload round-trip
+  * Empty samples allowed
+  * Mismatched samples / log_posteriors throws on save
+  * Sample dim != params count throws on save
+  * Missing file throws on load
+  * Malformed CSV (no header, wrong columns) throws on load
+  * End-to-end with PosteriorSummary equality after round-trip
+
+### Validated
+28/28 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free.
+
+---
+
 ## 0.4.2 — 2026-05-02 — MCMC convergence diagnostics (R̂ + ESS)
 
 Adds the standard production-MCMC diagnostics: Gelman-Rubin R̂ for
