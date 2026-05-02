@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.7.5 — 2026-05-02 — M4 capstone: full SIE retrieval substrate proof
+
+The most rigorous M4 substrate proof yet: 7-parameter SIE retrieval
+recovers (θ_E, q, φ, lens_x, lens_y, source_x, source_y) from 4
+observed quad-image positions. Unlike the v0.6.1 SIS retrieval (which
+needed `EnsembleSampler` to mitigate the (lens, source) translation
+degeneracy), the SIE forward map is informative enough to constrain
+all 7 parameters to < 0.5σ from truth — including the SIE-specific
+shape parameters q and φ.
+
+### Added
+- **`test_sie_retrieval`** — full M4 capstone substrate proof.
+  Truth: SIE at (0.05, -0.02) with θ_E=1.0, q=0.7, φ=0.3 rad; source
+  at (0.04, 0.03) inside the tangential caustic ⇒ 4 quad images.
+  Add 0.01" image-position noise. Forward = source-plane chi²:
+  back-project each observed image via β_back_i = θ_i - α(θ_i;
+  lens_params); spectrum = (β_back_i - source_free) packed as 8
+  scalars; observation = 8 zeros. Avoids `find_images` in the inner
+  loop (~ 1 µs per forward instead of ~ 1 ms).
+  EnsembleSampler (32 walkers × 4000 steps) recovers every parameter
+  to within 0.5σ at 49% acceptance.
+
+### Substrate-claim status
+| Layer | Test | Free params | Recovery |
+|---|---|---|---|
+| **M2/M3** atmospheres | `test_retrieval` | (T, log10 VMR) | 1σ |
+| **M4** SIS lensing    | `test_lensing_retrieval` | (θ_E, lens, source) | 3σ ensemble |
+| **M4** SIE lensing    | `test_sie_retrieval` | (θ_E, q, φ, lens, source) | 0.5σ ensemble |
+| **M5** interferometry | `test_interferometry_retrieval` | (l, m, F, σ) | 3σ MH |
+
+Substrate claim now backed by **four independent retrieval tests**
+across **three physics layers**, all reusing the same `Spectrum` /
+`Retrieval::log_posterior` / `EnsembleSampler` / `MetropolisHastings`
+/ `PosteriorSummary` infrastructure. The forward model is the only
+thing that changes.
+
+### Validated
+43/43 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.4 — 2026-05-02 — Earth-rotation UV synthesis
 
 The standard real-array trick: as the Earth rotates, projected

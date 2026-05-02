@@ -165,3 +165,7 @@ add_test(NAME interferometry COMMAND test_interferometry)
 add_executable(test_interferometry_retrieval test_interferometry_retrieval.cpp)
 target_link_libraries(test_interferometry_retrieval PRIVATE argus_core)
 add_test(NAME interferometry_retrieval COMMAND test_interferometry_retrieval)
+
+add_executable(test_sie_retrieval test_sie_retrieval.cpp)
+target_link_libraries(test_sie_retrieval PRIVATE argus_core)
+add_test(NAME sie_retrieval COMMAND test_sie_retrieval)
