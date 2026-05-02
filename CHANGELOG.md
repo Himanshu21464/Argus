@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.7.3 — 2026-05-02 — NFW dark-matter halo lens
+
+The universal cosmological-simulation density profile (Navarro-Frenk-
+White 1996/1997) — the standard model for galaxy / cluster dark-matter
+halos in lensing analyses. Closes the M4 lens-model zoo: SIS + SIE +
+NFW + ExternalShear, composable via CompoundLens.
+
+### Added
+- **`argus::lensing::NFW`** — Wright & Brainerd (2000) closed-form
+  deflection:
+      |α(θ)| = α_s · h(θ/θ_s) / (θ/θ_s)
+      h(x) = ln(x/2) + arccosh(1/x)/√(1-x²)   for x < 1
+      h(x) = 1 + ln(1/2)                       for x = 1
+      h(x) = ln(x/2) + arccos(1/x)/√(x²-1)    for x > 1
+  Continuous through x = 1 (analytic limit verified to 1e-6).
+- **`test_lensing` extended (23 → 29 test groups)**:
+  * NFW deflection at x=1 matches α_s·(1+ln(1/2)) to 1e-10
+  * NFW small-x cancellation (deflection → 0 at origin)
+  * NFW deflection radial outward via cross-product = 0
+  * NFW translation invariance under off-centre shift
+  * NFW + ExternalShear via CompoundLens: `find_images` recovers a
+    multi-image config (commonly 3 — NFW supports a central image),
+    every image closes lens equation < 1e-7
+  * 4 bad-input throws (α_s/θ_s ≤ 0)
+
+### Validated
+42/42 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+The M4 lens model zoo is now complete for galaxy- and cluster-scale
+strong lensing: SIS (axisymmetric mass), SIE (elliptical galaxy),
+NFW (dark-matter halo), ExternalShear (large-scale tidal field), all
+composable via CompoundLens for the SIE + NFW + γ workhorse used in
+real H0LiCOW / TDCOSMO analyses.
+
+---
+
 ## 0.7.2 — 2026-05-02 — External shear + compound lens
 
 The standard real-strong-lensing modelling primitive: SIE + external

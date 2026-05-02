@@ -377,5 +377,84 @@ int main() {
     assert(threw);
   }
 
+  // ─── 24. NFW deflection at x = 1 → α_s · (1 + ln(1/2)). ────────────
+  {
+    NFW nfw(/*alpha_s=*/2.0, /*theta_s=*/1.0);
+    Vec2 a = nfw.deflection({1.0, 0.0});
+    const double mag = std::sqrt(a.x * a.x + a.y * a.y);
+    const double expected = 2.0 * (1.0 + std::log(0.5));
+    assert(close(mag, expected, 1.0e-10));
+    assert(std::fabs(a.y) < 1.0e-15);
+  }
+
+  // ─── 25. NFW small-x: |α| → 0 (scale-radius-interior cancellation).
+  {
+    NFW nfw(2.0, 1.0);
+    Vec2 a = nfw.deflection({0.001, 0.0});
+    const double mag = std::sqrt(a.x * a.x + a.y * a.y);
+    // α magnitude should be small (∝ x · ln-like at small x).
+    assert(mag < 0.05);
+    assert(mag > 0.0);
+  }
+
+  // ─── 26. NFW deflection points radially outward (axisymmetric). ───
+  {
+    NFW nfw(2.0, 1.0);
+    for (Vec2 t : {Vec2{1.0, 0.0}, Vec2{0.0, 2.0},
+                   Vec2{1.5, 1.5}, Vec2{-0.7, 0.4}}) {
+      Vec2 a = nfw.deflection(t);
+      // Cross product θ × α = 0 ⇒ collinear with θ.
+      assert(std::fabs(t.x * a.y - t.y * a.x) < 1.0e-12);
+      // Same sign as θ ⇒ outward not inward.
+      assert(t.x * a.x + t.y * a.y > 0.0);
+    }
+  }
+
+  // ─── 27. NFW translation invariance under off-centre shift. ───────
+  {
+    Vec2 c{0.4, -0.3};
+    NFW nfw_off(2.0, 1.0, c);
+    NFW nfw_at0(2.0, 1.0);
+    for (Vec2 t_rel : {Vec2{0.7, 0.4}, Vec2{1.5, -0.3}}) {
+      Vec2 a_off = nfw_off.deflection({t_rel.x + c.x, t_rel.y + c.y});
+      Vec2 a_at0 = nfw_at0.deflection(t_rel);
+      assert(close(a_off.x, a_at0.x, 1.0e-12));
+      assert(close(a_off.y, a_at0.y, 1.0e-12));
+    }
+  }
+
+  // ─── 28. NFW + ExternalShear via CompoundLens: find_images
+  //     recovers a multi-image config; lens equation closes. ─────────
+  {
+    auto nfw = std::make_shared<NFW>(2.0, 1.0);
+    auto sh  = std::make_shared<ExternalShear>(0.05, 0.0);
+    CompoundLens c{{nfw, sh}};
+    Vec2 beta{0.05, 0.02};
+    auto imgs = find_images(c, beta, /*radius=*/3.0, /*grid=*/120);
+    assert(imgs.size() >= 2);                  // multi-image (NFW often has 3)
+    for (const auto& im : imgs) {
+      Vec2 b = lens_equation(c, im.theta);
+      assert(close(b.x, beta.x, 1.0e-7, 1.0e-7));
+      assert(close(b.y, beta.y, 1.0e-7, 1.0e-7));
+      assert(std::isfinite(im.magnification));
+    }
+  }
+
+  // ─── 29. NFW bad inputs throw. ──────────────────────────────────────
+  {
+    bool threw = false;
+    try { NFW(0.0, 1.0); } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { NFW(-1.0, 1.0); } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { NFW(1.0, 0.0); } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { NFW(1.0, -0.5); } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }

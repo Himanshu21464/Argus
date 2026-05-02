@@ -150,6 +150,44 @@ std::vector<Image> find_images(const Lens& lens,
                                double dedup_tol = 1.0e-4,
                                std::size_t newton_max_iter = 50);
 
+// Navarro-Frenk-White (1996, 1997) dark-matter halo lens — the
+// universal cosmological-simulation density profile. Used in real
+// strong-lensing models when galaxy-scale halos are non-trivial
+// (e.g. cluster-scale lenses, lensing-by-substructure).
+//
+// Surface-mass-density profile is axisymmetric; deflection is
+// closed-form via Wright & Brainerd (2000) eq. 14:
+//
+//     |α(θ)| = α_s · h(θ/θ_s) / (θ/θ_s)
+//     h(x) = ln(x/2) + F(x) / √|1-x²|
+//     F(x) = arccosh(1/x)   for x < 1
+//          = arccos (1/x)   for x > 1
+//          (h(1) = 1 + ln(1/2) by limit)
+//
+// α_s combines the cosmological scale factor 4 G M_s / (D_d c² θ_s)
+// with the NFW characteristic mass M_s = 4π ρ_s r_s³; θ_s is the
+// scale-radius angle. Both are exposed as free parameters.
+class NFW final : public Lens {
+ public:
+  // alpha_s: characteristic deflection scale (arcsec).
+  // theta_s: scale-radius angle (arcsec).
+  // centre:  halo position on the sky.
+  NFW(double alpha_s_arcsec,
+      double theta_s_arcsec,
+      Vec2   centre = {0.0, 0.0});
+
+  Vec2 deflection(Vec2 theta) const override;
+
+  double alpha_s() const noexcept { return alpha_s_; }
+  double theta_s() const noexcept { return theta_s_; }
+  Vec2   centre () const noexcept { return centre_; }
+
+ private:
+  double alpha_s_;
+  double theta_s_;
+  Vec2   centre_;
+};
+
 // External tidal shear field — the standard ingredient in real
 // strong-lensing models. Combines with an SIE (or any other lens)
 // via CompoundLens to model perturbations from large-scale structure

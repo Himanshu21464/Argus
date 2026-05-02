@@ -321,6 +321,51 @@ std::vector<Image> find_images(const Lens& lens,
   return roots;
 }
 
+// ─── NFW ──────────────────────────────────────────────────────────────
+
+namespace {
+
+// Wright & Brainerd (2000) NFW deflection-magnitude helper:
+//     h(x) = ln(x/2) + F(x)/√|1-x²|
+// continuous through x = 1 with h(1) = 1 + ln(1/2) (analytic limit).
+double nfw_h(double x) {
+  if (x < 1.0e-15) return 0.0;          // analytic limit at origin
+  if (std::fabs(x - 1.0) < 1.0e-6) {
+    return 1.0 + std::log(0.5);
+  }
+  if (x < 1.0) {
+    return std::log(0.5 * x) +
+           std::acosh(1.0 / x) / std::sqrt(1.0 - x * x);
+  }
+  return std::log(0.5 * x) +
+         std::acos(1.0 / x) / std::sqrt(x * x - 1.0);
+}
+
+}  // namespace
+
+NFW::NFW(double alpha_s_arcsec, double theta_s_arcsec, Vec2 centre)
+    : alpha_s_(alpha_s_arcsec),
+      theta_s_(theta_s_arcsec),
+      centre_(centre) {
+  if (!(alpha_s_ > 0.0)) {
+    throw std::invalid_argument("NFW: alpha_s must be positive");
+  }
+  if (!(theta_s_ > 0.0)) {
+    throw std::invalid_argument("NFW: theta_s must be positive");
+  }
+}
+
+Vec2 NFW::deflection(Vec2 theta) const {
+  const Vec2 d = theta - centre_;
+  const double r = std::sqrt(d.x * d.x + d.y * d.y);
+  if (r < 1.0e-15) return {0.0, 0.0};
+  const double x = r / theta_s_;
+  const double h = nfw_h(x);
+  // |α| = α_s · h(x) / x; α points radially outward → α = |α| · d̂.
+  const double mag = alpha_s_ * h / x;
+  return {mag * d.x / r, mag * d.y / r};
+}
+
 // ─── ExternalShear ────────────────────────────────────────────────────
 
 ExternalShear::ExternalShear(double gamma1, double gamma2)
