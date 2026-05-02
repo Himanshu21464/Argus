@@ -1,10 +1,15 @@
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <random>
+#include <stdexcept>
+#include <utility>
 #include <vector>
+
+#include "dual.hpp"
 
 namespace argus {
 
@@ -56,6 +61,168 @@ class MetropolisHastings {
 
   LogPosterior log_p_;
   std::vector<double> proposal_widths_;
+  std::mt19937_64 rng_;
+  std::size_t n_accepted_ = 0;
+  std::size_t n_proposed_ = 0;
+};
+
+// Compute ∇f(x) for a templated scalar function f via forward-mode
+// autograd. f must be callable as f(std::vector<Dual<double>>) and
+// return Dual<double>; we evaluate it D times (one per coordinate)
+// with the seed derivative on that coordinate set to 1.
+//
+// Cost: D evaluations of f. Suitable for retrieval problems with
+// O(10) parameters. M3.5 will add reverse-mode autograd for larger
+// parameter spaces (one evaluation, one backward pass).
+template <typename F>
+inline std::vector<double> grad(F&& f, const std::vector<double>& x) {
+  const std::size_t D = x.size();
+  std::vector<double> g(D);
+  for (std::size_t i = 0; i < D; ++i) {
+    std::vector<Dual<double>> dx(D);
+    for (std::size_t j = 0; j < D; ++j) {
+      dx[j] = Dual<double>{x[j], (i == j) ? 1.0 : 0.0};
+    }
+    Dual<double> y = f(dx);
+    g[i] = y.d;
+  }
+  return g;
+}
+
+// Hamiltonian Monte Carlo with a leapfrog integrator. Uses forward-
+// mode autograd to compute ∇log p, so it works on any user-supplied
+// templated log-posterior callable.
+//
+// Compared to MetropolisHastings, HMC mixes much better on curved /
+// correlated posteriors at the cost of D + 1 forward evaluations
+// per leapfrog step (D for the gradient + 1 for the Metropolis
+// correction).
+//
+// The user supplies a templated log-posterior:
+//   template <typename T> T log_p(const std::vector<T>& x)
+template <typename LogP>
+class HMC {
+ public:
+  HMC(LogP log_p,
+      double step_size,
+      std::size_t n_leapfrog,
+      std::uint64_t seed = 0)
+      : log_p_(std::move(log_p)),
+        step_size_(step_size),
+        n_leapfrog_(n_leapfrog),
+        rng_(seed) {
+    if (!(step_size_ > 0.0)) {
+      throw std::invalid_argument("HMC: step_size must be positive");
+    }
+    if (n_leapfrog_ == 0) {
+      throw std::invalid_argument("HMC: n_leapfrog must be >= 1");
+    }
+  }
+
+  struct Result {
+    std::vector<std::vector<double>> samples;
+    std::vector<double> log_posteriors;
+  };
+
+  Result sample(std::vector<double>& state, std::size_t n_samples) {
+    auto logp_double = [&](const std::vector<double>& x) {
+      // Wrap x in Dual with d=0 to evaluate as plain double via the
+      // templated path.
+      std::vector<Dual<double>> dx(x.size());
+      for (std::size_t i = 0; i < x.size(); ++i) dx[i] = Dual<double>{x[i], 0.0};
+      return log_p_(dx).v;
+    };
+
+    auto grad_logp = [&](const std::vector<double>& x) {
+      return grad([&](const std::vector<Dual<double>>& xd) {
+        return log_p_(xd);
+      }, x);
+    };
+
+    Result out;
+    out.samples.reserve(n_samples);
+    out.log_posteriors.reserve(n_samples);
+
+    std::normal_distribution<double> nd(0.0, 1.0);
+    std::uniform_real_distribution<double> u01(0.0, 1.0);
+
+    double current_lp = logp_double(state);
+    if (!std::isfinite(current_lp)) {
+      throw std::invalid_argument(
+          "HMC::sample: initial state has non-finite log-posterior");
+    }
+
+    for (std::size_t s = 0; s < n_samples; ++s) {
+      // 1. Sample momentum p ~ N(0, I).
+      std::vector<double> p(state.size());
+      for (auto& pi : p) pi = nd(rng_);
+
+      // Initial Hamiltonian: H0 = -log_p(q) + 0.5 * |p|^2
+      double K0 = 0.0;
+      for (double pi : p) K0 += pi * pi;
+      K0 *= 0.5;
+      const double H0 = -current_lp + K0;
+
+      // 2. Leapfrog: alternate q and p updates.
+      std::vector<double> q = state;
+      std::vector<double> g = grad_logp(q);
+
+      // Half-step on p
+      for (std::size_t i = 0; i < p.size(); ++i) {
+        p[i] += 0.5 * step_size_ * g[i];
+      }
+      for (std::size_t L = 0; L < n_leapfrog_; ++L) {
+        // Full-step on q
+        for (std::size_t i = 0; i < q.size(); ++i) {
+          q[i] += step_size_ * p[i];
+        }
+        g = grad_logp(q);
+        // Full-step on p, except last is half-step
+        if (L + 1 < n_leapfrog_) {
+          for (std::size_t i = 0; i < p.size(); ++i) {
+            p[i] += step_size_ * g[i];
+          }
+        } else {
+          for (std::size_t i = 0; i < p.size(); ++i) {
+            p[i] += 0.5 * step_size_ * g[i];
+          }
+        }
+      }
+      // Negate momentum to make proposal symmetric (cosmetic; H is
+      // unchanged because K depends only on |p|^2).
+      for (auto& pi : p) pi = -pi;
+
+      // 3. Metropolis correction.
+      const double new_lp = logp_double(q);
+      double K1 = 0.0;
+      for (double pi : p) K1 += pi * pi;
+      K1 *= 0.5;
+      const double H1 = -new_lp + K1;
+
+      ++n_proposed_;
+      if (std::isfinite(new_lp) &&
+          std::log(u01(rng_)) < (H0 - H1)) {
+        state = std::move(q);
+        current_lp = new_lp;
+        ++n_accepted_;
+      }
+
+      out.samples.push_back(state);
+      out.log_posteriors.push_back(current_lp);
+    }
+    return out;
+  }
+
+  double acceptance_rate() const noexcept {
+    if (n_proposed_ == 0) return 0.0;
+    return static_cast<double>(n_accepted_) /
+           static_cast<double>(n_proposed_);
+  }
+
+ private:
+  LogP log_p_;
+  double step_size_;
+  std::size_t n_leapfrog_;
   std::mt19937_64 rng_;
   std::size_t n_accepted_ = 0;
   std::size_t n_proposed_ = 0;

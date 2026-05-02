@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.10 — 2026-05-02 — Hamiltonian Monte Carlo (autograd-based)
+
+Gradient-based MCMC: Hamiltonian Monte Carlo with leapfrog
+integration, using forward-mode autograd through `Dual<T>` to
+compute the log-posterior gradient. Far better mixing than MH on
+curved or correlated posteriors.
+
+### Added
+- **`argus::grad<F>(f, x)`** — generic forward-mode gradient. Calls
+  the templated function f exactly D times (one per coordinate)
+  with the seed derivative on that axis = 1. Cost is O(D) forward
+  evaluations; suitable for retrieval problems with O(10) parameters.
+- **`argus::HMC<LogP>`** — leapfrog HMC with Metropolis correction.
+  User supplies a templated log-posterior callable; the sampler
+  resolves the gradient via `argus::grad`. API mirrors
+  `MetropolisHastings`: `sample(state, n_samples)` returns a
+  `Result` with samples and log_posteriors.
+- **`test_hmc`** (5 test groups):
+  * `argus::grad` on 1-D and 2-D quadratics matches the analytic
+    gradient to 1e-12.
+  * 2-D Gaussian recovery with HMC: mean within 0.10-0.20, stddev
+    within 20%; acceptance rate > 30%.
+  * Determinism: identical samples across identical seeds.
+  * Bad inputs throw (negative step_size, n_leapfrog=0, non-finite
+    initial log-posterior).
+
+### Validated
+33/33 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. The HMC sampler completes the gradient-based MCMC
+toolkit; reverse-mode autograd (for high-D parameter spaces and NF
+training) is the next major M3 milestone.
+
+---
+
 ## 0.4.9 — 2026-05-02 — NormalizingFlow weight I/O
 
 Save and load NormalizingFlow weights to/from a plain-text file with
