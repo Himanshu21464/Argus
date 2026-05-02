@@ -215,4 +215,88 @@ void SGD::step(std::vector<double>& params,
   }
 }
 
+// ─── NN forward helpers on the autograd tape ──────────────────────────
+
+std::vector<Var> to_vars(Tape& t, const std::vector<double>& xs) {
+  std::vector<Var> out;
+  out.reserve(xs.size());
+  for (double x : xs) out.push_back(t.input(x));
+  return out;
+}
+
+std::vector<double> grads_of(const Tape& t, const std::vector<Var>& vs) {
+  std::vector<double> g;
+  g.reserve(vs.size());
+  for (const auto& v : vs) g.push_back(t.grad(v));
+  return g;
+}
+
+std::vector<Var> linear(Tape& t,
+                        const std::vector<Var>& weights,
+                        const std::vector<Var>& bias,
+                        const std::vector<Var>& input,
+                        std::size_t in_dim, std::size_t out_dim) {
+  if (weights.size() != in_dim * out_dim) {
+    die("ad::linear: weights size must equal in_dim * out_dim");
+  }
+  if (bias.size() != out_dim) die("ad::linear: bias size must equal out_dim");
+  if (input.size() != in_dim) die("ad::linear: input size must equal in_dim");
+  (void)t;
+  std::vector<Var> y;
+  y.reserve(out_dim);
+  for (std::size_t i = 0; i < out_dim; ++i) {
+    Var acc = bias[i];
+    for (std::size_t j = 0; j < in_dim; ++j) {
+      acc = acc + weights[i * in_dim + j] * input[j];
+    }
+    y.push_back(acc);
+  }
+  return y;
+}
+
+std::vector<Var> relu_vec(const std::vector<Var>& xs) {
+  std::vector<Var> out;
+  out.reserve(xs.size());
+  for (const auto& v : xs) {
+    // ReLU(x) = max(0, x). On the tape we use a piecewise-constant
+    // gradient: 1 if v.val > 0 else 0. Note this sub-gradient at 0 is
+    // 0 (consistent with most ML libs).
+    const double y = (v.val > 0.0) ? v.val : 0.0;
+    const double g = (v.val > 0.0) ? 1.0 : 0.0;
+    out.push_back(v.tape->record_unary(y, v.idx, g));
+  }
+  return out;
+}
+
+std::vector<Var> tanh_vec(const std::vector<Var>& xs) {
+  std::vector<Var> out;
+  out.reserve(xs.size());
+  for (const auto& v : xs) out.push_back(tanh(v));
+  return out;
+}
+
+std::vector<Var> sigmoid_vec(const std::vector<Var>& xs) {
+  std::vector<Var> out;
+  out.reserve(xs.size());
+  for (const auto& v : xs) {
+    const double s = 1.0 / (1.0 + std::exp(-v.val));
+    out.push_back(v.tape->record_unary(s, v.idx, s * (1.0 - s)));
+  }
+  return out;
+}
+
+Var mse(const std::vector<Var>& pred, const std::vector<Var>& target) {
+  if (pred.size() != target.size()) {
+    die("mse: pred and target must have equal length");
+  }
+  if (pred.empty()) die("mse: empty input");
+  Tape* t = pred.front().tape;
+  Var acc = t->input(0.0);
+  for (std::size_t i = 0; i < pred.size(); ++i) {
+    Var diff = pred[i] - target[i];
+    acc = acc + diff * diff;
+  }
+  return acc / static_cast<double>(pred.size());
+}
+
 }  // namespace argus::ad

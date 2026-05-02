@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.5.2 — 2026-05-02 — NN training via reverse-mode AD (end-to-end)
+
+The reverse-mode tape now drives a real neural-network training loop.
+A 1-input, 16-hidden, 1-output MLP fits sin(2x) end-to-end in pure
+C++: forward through Var-typed Linear + tanh, MSE loss, backward
+through the entire network, Adam updates parameters in place.
+
+This validates the full training pipeline that amortized-SBI
+normalizing flows are built on.
+
+### Added
+- **`argus::ad::to_vars(tape, doubles)`** — convert a vector of doubles
+  into leaf Vars on the tape. Used to upload trainable parameters
+  + per-step inputs.
+- **`argus::ad::grads_of(tape, vars)`** — read gradients for a vector
+  of Vars after backward(). Used to extract param grads for the
+  optimizer.
+- **`argus::ad::linear(tape, weights, bias, input, in_dim, out_dim)`**
+  — Linear-layer forward y = W·x + b, fully traced on the tape.
+- **`argus::ad::relu_vec / tanh_vec / sigmoid_vec`** — element-wise
+  activations on a `vector<Var>`.
+- **`argus::ad::mse(pred, target)`** — mean squared error as a single
+  Var; the standard regression loss.
+- **`test_nn_training`** (4 test groups):
+  * `ad::linear` matches `nn::Linear::forward` to bit-equality
+  * `ad::mse` returns 0 on equal vectors and 1.0 on offset-by-1
+  * **End-to-end MLP training**: a 1-16-1 MLP fits sin(2x) on 64
+    points; final loss < 5% of initial loss AND < 0.02 absolute;
+    held-out prediction within 0.10 of truth.
+  * 3 malformed-input throws.
+
+### Validated
+36/36 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+The same training pattern now scales to NormalizingFlow training:
+build the conditioner on the tape, define a flow log-likelihood loss,
+backward + step. That's the next iteration.
+
+---
+
 ## 0.5.1 — 2026-05-02 — Adam + SGD optimizers (training pipeline live)
 
 The reverse-mode autograd from v0.5.0 now drives a full training

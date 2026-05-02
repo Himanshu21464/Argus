@@ -170,4 +170,45 @@ class SGD {
   double lr_, momentum_;
 };
 
+// ─── NN forward helpers on the autograd tape ──────────────────────────
+//
+// These allow trainable neural-network layers to be built from
+// `argus::ad::Var` inputs so backward() through the loss yields
+// gradients on the weights and biases. The pattern is:
+//
+//   Tape t;
+//   auto W = ad::to_vars(t, weight_data);
+//   auto b = ad::to_vars(t, bias_data);
+//   auto x = ad::to_vars(t, input);
+//   auto h = ad::linear(t, W, b, x, in_dim, out_dim);
+//   auto y_hat = ad::tanh_vec(h);
+//   Var loss = mse(y_hat, target);
+//   t.backward(loss);
+//   auto W_grads = ad::grads_of(t, W);  // -> apply Adam.step
+//
+// These free functions compose with anything that produces `Var`s.
+
+// Convert a vector of doubles into leaf Vars on a tape.
+std::vector<Var> to_vars(Tape& t, const std::vector<double>& xs);
+
+// Read gradients of every Var in `vs` after backward() has been called.
+std::vector<double> grads_of(const Tape& t, const std::vector<Var>& vs);
+
+// Linear layer forward: y = W * x + b.
+//   weights row-major [out_dim x in_dim]
+//   bias    [out_dim]
+std::vector<Var> linear(Tape& t,
+                        const std::vector<Var>& weights,
+                        const std::vector<Var>& bias,
+                        const std::vector<Var>& input,
+                        std::size_t in_dim, std::size_t out_dim);
+
+// Element-wise activations on a vector<Var>.
+std::vector<Var> relu_vec(const std::vector<Var>& xs);
+std::vector<Var> tanh_vec(const std::vector<Var>& xs);
+std::vector<Var> sigmoid_vec(const std::vector<Var>& xs);
+
+// Mean squared error: (1/N) * Σ (pred - target)^2 as a single Var.
+Var mse(const std::vector<Var>& pred, const std::vector<Var>& target);
+
 }  // namespace argus::ad
