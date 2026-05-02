@@ -173,3 +173,11 @@ add_test(NAME sie_retrieval COMMAND test_sie_retrieval)
 add_executable(test_multi_component_retrieval test_multi_component_retrieval.cpp)
 target_link_libraries(test_multi_component_retrieval PRIVATE argus_core)
 add_test(NAME multi_component_retrieval COMMAND test_multi_component_retrieval)
+
+add_executable(test_lensing_benchmark test_lensing_benchmark.cpp)
+target_link_libraries(test_lensing_benchmark PRIVATE argus_core)
+add_test(NAME lensing_benchmark COMMAND test_lensing_benchmark)
+
+add_executable(test_interferometry_benchmark test_interferometry_benchmark.cpp)
+target_link_libraries(test_interferometry_benchmark PRIVATE argus_core)
+add_test(NAME interferometry_benchmark COMMAND test_interferometry_benchmark)

@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.7.8 — 2026-05-02 — Performance benchmarks for M4 + M5 kernels
+
+The "production-perfect" hygiene completion: every hot-path kernel now
+has an asserted wall-time baseline so future regressions are caught.
+
+### Added
+- **`test_lensing_benchmark`** — measures and asserts:
+  * SIE deflection per call (measured ≈ 40 ns; bound 5 µs)
+  * NFW deflection per call (measured ≈ 26 ns; bound 5 µs)
+  * CompoundLens (SIS + ExternalShear) per call (measured ≈ 6 ns;
+    bound 5 µs)
+  * `find_images` on SIE 60-grid (measured ≈ 1.2 ms; bound 200 ms)
+- **`test_interferometry_benchmark`** — measures and asserts:
+  * `predict_visibility` per call (measured ≈ 13 ns; bound 1 µs)
+  * `predict_visibilities` over a 27-antenna × 30-HA = 10 530 UV grid
+    with 2 Gaussian components (measured ≈ 0.25 ms = 12 ns/eval;
+    bound 500 ms / 200 ns/eval)
+  * `uv_coverage_track` for 27 antennas × 30 HAs (measured ≈ 22 µs;
+    bound 100 ms)
+
+### Performance baseline (single-threaded, GCC 15.2 -O2)
+| Kernel | per-call cost |
+|---|---|
+| SIE deflection         | 40 ns |
+| NFW deflection         | 26 ns |
+| CompoundLens (SIS+γ)   | 6 ns  |
+| find_images (SIE 60²)  | 1.2 ms |
+| predict_visibility     | 13 ns |
+| predict_visibilities (2-Gaussian × 10 530 UV) | 12 ns/eval |
+| uv_coverage_track (27 ant × 30 HA) | 22 µs |
+
+### Validated
+46/46 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.7 — 2026-05-02 — Runnable M4 + M5 examples
 
 Adds the lensing and interferometry equivalents of the existing
