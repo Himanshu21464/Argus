@@ -16,8 +16,19 @@ inference across three astrophysics domains:
 
 The substrate claim — *the same `argus::Spectrum` / `Retrieval` API
 recovers parameters across all three physics layers* — is demonstrated
-end-to-end by three independent retrieval tests
-(`test_retrieval` / `test_lensing_retrieval` / `test_interferometry_retrieval`).
+end-to-end by **five independent retrieval tests**:
+
+| Test | Layer | Free params | Recovery | Sampler |
+|---|---|---|---|---|
+| `test_retrieval` | atmospheric (M2/M3) | 2 | 1σ | MH |
+| `test_lensing_retrieval` | SIS lensing (M4) | 5 | 3σ | Ensemble |
+| `test_sie_retrieval` | SIE lensing (M4) | 7 | 0.5σ | Ensemble |
+| `test_interferometry_retrieval` | radio interferometry (M5) | 4 | 3σ | MH |
+| `test_multi_component_retrieval` | 2-component interferometry (M5) | 8 | 3σ | Ensemble |
+
+All five reuse the same `Spectrum` / `Retrieval::log_posterior` /
+`EnsembleSampler` / `MetropolisHastings` / `PosteriorSummary` /
+`posterior_predictive` infrastructure — only the forward model changes.
 
 ## Why this exists
 
@@ -60,7 +71,7 @@ Argus/
 │   ├── interferometry.hpp           visibility forward (Point + Gaussian sources) + UV coverage
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based hard tests (42 tests)
+├── tests/                           assert-based hard tests (44 tests)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
@@ -91,8 +102,8 @@ No external runtime dependencies for the M1 kernel.
 | **M1** | months 1–3 | ✅ shipped v0.1.0 | Argus IR, atmosphere/opacity/RT scaffolding |
 | **M2** | months 3–6 | ✅ shipped v0.3.0 | Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6), LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS partition functions, real-data tests, finite-diff autograd validation. CUDA residency (M2.5) and WASP-39b benchmark vs. petitRADTRANS (M3 wedge) outstanding. |
 | **M3** | months 6–9 | ✅ shipped v0.5.3 | MCMC + emcee ensemble + HMC (autograd-gradient) + Retrieval API + R̂/ESS + CSV I/O + 3 prior types + posterior-predictive + nn (Linear/Activation/Sequential) + AffineCoupling (Real NVP) + NormalizingFlow with save/load + reverse-mode autograd (Wengert tape) + Adam/SGD optimizers + end-to-end NN training (MLP fits sin(2x)) + end-to-end flow training (scale+shift recovers analytic optimum). Remaining for M3.5: ConditionalNF for true amortized SBI, WASP-39b benchmark vs. POSEIDON/CHIMERA. |
-| **M4** | months 9–12 | ✅ shipped v0.7.2 | Strong-lensing pass: SIS + SIE + external shear + CompoundLens + numerical image solver + lensing potential + Fermat time delays. Substrate-claim retrieval (`test_lensing_retrieval`) recovers (θ_E, lens, source) via the existing `Retrieval` API + `EnsembleSampler` to 3σ. |
-| **M5** | months 12–18 | ✅ shipped v0.7.1 | Radio-interferometry pass: PointSource + GaussianSource + visibility predictor + UV-coverage primitive. Substrate-claim retrieval (`test_interferometry_retrieval`) recovers (l, m, F, σ) of a Gaussian source on a 7-antenna array via the existing `Retrieval` API + single-chain MH to 3σ. |
+| **M4** | months 9–12 | ✅ shipped v0.7.5 | Strong-lensing pass: SIS + SIE + NFW + ExternalShear + CompoundLens + numerical image solver + lensing potential + Fermat time delays. Two substrate-claim retrievals: SIS recovers (θ_E, lens, source) to 3σ via `EnsembleSampler`; **SIE capstone** recovers all 7 SIE+source params (including q and φ) to 0.5σ via source-plane chi². |
+| **M5** | months 12–18 | ✅ shipped v0.7.6 | Radio-interferometry pass: PointSource + GaussianSource + visibility predictor + UV-coverage primitive (snapshot + Earth-rotation track). Two substrate-claim retrievals: 4-param Gaussian-source recovery to 3σ via single-chain MH; **2-component capstone** recovers 8 params (compact core + extended jet) over a 5-hour Earth-rotation track to 3σ via `EnsembleSampler`. |
 
 ### What v0.3.5 (M2-complete) adds over v0.2.0
 - **Verified Hui-Armstrong-Wray Voigt** (~1e-6 accuracy) replacing pseudo-Voigt (1%).
@@ -110,7 +121,7 @@ No external runtime dependencies for the M1 kernel.
 - **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-42 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+44 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 
@@ -163,16 +174,18 @@ No external runtime dependencies for the M1 kernel.
 
 | test | what it asserts |
 |---|---|
-| `test_lensing` | SIS deflection magnitude/direction, in-Einstein 2-image case + lens equation closure, off-axis collinearity, total magnification 2θ_E/β closed form, off-centre lens, degenerate ring; SIE q=1 reduces to SIS bit-exactly, major/minor-axis closed-form deflection, point-symmetry, rotation covariance, off-centre translation invariance, **4-image cusp config via numerical image solver** with lens-equation closure < 1e-8 on every image; ExternalShear closed forms + ∇ψ=α; CompoundLens deflection+potential sums; SIS+strong-shear quad config |
-| `test_lensing_retrieval` | **Substrate proof**: same `Retrieval` API recovers (θ_E, lens_x, lens_y, source_x, source_y) via `EnsembleSampler` to 3σ; posterior-predictive 5–95% band brackets every observation; bit-exact determinism |
+| `test_lensing` | SIS / SIE / NFW / ExternalShear / CompoundLens — 29 test groups: deflection / potential closed forms, lens-equation closure, 4-image cusp config via numerical solver, NFW Wright-Brainerd h(1) limit, find_images on shear-broken configurations |
+| `test_lensing_retrieval` | **Substrate proof (SIS)**: same `Retrieval` API recovers (θ_E, lens_x, lens_y, source_x, source_y) via `EnsembleSampler` to 3σ; posterior-predictive 5–95% band brackets every observation; bit-exact determinism |
+| `test_sie_retrieval` | **Substrate proof (SIE capstone)**: 7 free params (θ_E, q, φ, lens, source) recovered to **< 0.5σ** from 4 observed quad-image positions via source-plane chi²; 32×4000 ensemble sampler; bit-exact determinism |
 | `test_time_delays` | SIS potential closed form; ∇ψ_SIE = α via FD; SIE q=1 potential reduces to SIS; Fermat ∇τ=0 at lens-equation roots; SIS on-axis Δτ = 2θ_E·β; off-axis numerical agreement; translation invariance; SIE 4-image cusp pairwise τ-diffs |
 
 **Radio-interferometry layer (M5):**
 
 | test | what it asserts |
 |---|---|
-| `test_interferometry` | PointSource at origin → V = F + 0i; off-origin phase = -2π(u·l + v·m); visibility additivity over components; translation-theorem phase shift; conjugate symmetry V(-u,-v) = conj(V(u,v)); Gaussian decay exp(-2π² σ² r²); σ=0 reduces to point bit-exactly; 7-antenna UV-coverage primitive |
-| `test_interferometry_retrieval` | **Substrate proof**: same `Retrieval` API recovers (l, m, F, σ) of a Gaussian on a 7-antenna VLA-like array (21 baselines, 42 visibility components) to 3σ; posterior-predictive coverage ≥ 85%; bit-exact determinism |
+| `test_interferometry` | 15 test groups: PointSource at origin → V = F; off-origin phase = -2π(u·l + v·m); visibility additivity; translation theorem; conjugate symmetry; Gaussian decay exp(-2π² σ² r²); σ=0 reduces to point bit-exactly; UV-coverage snapshot; **Earth-rotation track ellipse identity** u²+(v/sin δ)² = (B_E/λ)² |
+| `test_interferometry_retrieval` | **Substrate proof (single Gaussian)**: same `Retrieval` API recovers (l, m, F, σ) on a 7-antenna VLA-like array (21 baselines, 42 components) to 3σ; posterior-predictive coverage ≥ 85%; bit-exact determinism |
+| `test_multi_component_retrieval` | **Substrate proof (2-component capstone)**: 8 free params (compact core + extended jet) recovered to 3σ from 210 visibility components sampled across a 5-hour Earth-rotation track on a 7-antenna VLA-like array; label-switching broken by non-overlapping size priors |
 
 ## Design principles
 
