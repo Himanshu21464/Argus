@@ -135,6 +135,131 @@ AffineCoupling::Output AffineCoupling::inverse(
   return out;
 }
 
+// ─── HalfSwap + NormalizingFlow ───────────────────────────────────────
+
+std::vector<double> HalfSwap::apply(const std::vector<double>& x) const {
+  // Cycle: [a, b] -> [b, a] when split * 2 == dim;
+  // For unequal splits, treat as a left rotation by `split`.
+  if (x.size() != dim) {
+    throw std::invalid_argument("HalfSwap: input size must equal dim");
+  }
+  std::vector<double> y(dim);
+  // y = x rotated left by `split`
+  for (std::size_t i = 0; i < dim; ++i) {
+    y[i] = x[(i + split) % dim];
+  }
+  return y;
+}
+
+NormalizingFlow::NormalizingFlow(std::size_t dim,
+                                 std::size_t n_couplings,
+                                 std::size_t split,
+                                 std::vector<std::size_t> hidden_dims,
+                                 Activation act)
+    : dim_(dim), init_split_(split) {
+  if (dim_ < 2) {
+    throw std::invalid_argument("NormalizingFlow: dim must be >= 2");
+  }
+  if (n_couplings == 0) {
+    throw std::invalid_argument(
+        "NormalizingFlow: n_couplings must be >= 1");
+  }
+  if (split < 1 || split >= dim_) {
+    throw std::invalid_argument(
+        "NormalizingFlow: split must be in [1, dim - 1]");
+  }
+  couplings_.reserve(n_couplings);
+  swaps_.reserve(n_couplings);
+  for (std::size_t i = 0; i < n_couplings; ++i) {
+    couplings_.emplace_back(dim_, split, hidden_dims, act);
+    swaps_.push_back({dim_, split});
+  }
+}
+
+void NormalizingFlow::init_xavier(std::uint64_t seed) {
+  std::mt19937_64 rng(seed);
+  for (auto& c : couplings_) c.init_xavier(rng());
+}
+
+AffineCoupling& NormalizingFlow::coupling(std::size_t i) {
+  if (i >= couplings_.size()) {
+    throw std::out_of_range(
+        "NormalizingFlow::coupling: index out of range");
+  }
+  return couplings_[i];
+}
+
+const AffineCoupling& NormalizingFlow::coupling(std::size_t i) const {
+  if (i >= couplings_.size()) {
+    throw std::out_of_range(
+        "NormalizingFlow::coupling: index out of range");
+  }
+  return couplings_[i];
+}
+
+AffineCoupling::Output NormalizingFlow::forward(
+    const std::vector<double>& x) const {
+  if (x.size() != dim_) {
+    throw std::invalid_argument(
+        "NormalizingFlow::forward: input size must equal dim");
+  }
+  AffineCoupling::Output state;
+  state.y = x;
+  state.log_det_jacobian = 0.0;
+  for (std::size_t i = 0; i < couplings_.size(); ++i) {
+    auto step = couplings_[i].forward(state.y);
+    state.y = std::move(step.y);
+    state.log_det_jacobian += step.log_det_jacobian;
+    // Permutation between layers (no log-det contribution).
+    if (i + 1 < couplings_.size()) {
+      state.y = swaps_[i].apply(state.y);
+    }
+  }
+  return state;
+}
+
+AffineCoupling::Output NormalizingFlow::inverse(
+    const std::vector<double>& z) const {
+  if (z.size() != dim_) {
+    throw std::invalid_argument(
+        "NormalizingFlow::inverse: input size must equal dim");
+  }
+  AffineCoupling::Output state;
+  state.y = z;
+  state.log_det_jacobian = 0.0;
+  // Reverse order; un-permute, then invert coupling.
+  for (std::size_t r = 0; r < couplings_.size(); ++r) {
+    const std::size_t i = couplings_.size() - 1 - r;
+    if (i + 1 < couplings_.size()) {
+      // Un-rotate: rotating left by `dim - split` is the inverse
+      // of rotating left by `split`.
+      HalfSwap inv_swap{dim_, dim_ - swaps_[i].split};
+      state.y = inv_swap.apply(state.y);
+    }
+    auto step = couplings_[i].inverse(state.y);
+    state.y = std::move(step.y);
+    state.log_det_jacobian += step.log_det_jacobian;
+  }
+  return state;
+}
+
+double NormalizingFlow::log_density(const std::vector<double>& x) const {
+  auto fw = forward(x);
+  double zz = 0.0;
+  for (double v : fw.y) zz += v * v;
+  constexpr double kLog2Pi = 1.8378770664093453;   // ln(2π)
+  return -0.5 * zz
+         - 0.5 * static_cast<double>(dim_) * kLog2Pi
+         + fw.log_det_jacobian;
+}
+
+std::vector<double> NormalizingFlow::sample(std::mt19937_64& rng) const {
+  std::normal_distribution<double> nd(0.0, 1.0);
+  std::vector<double> z(dim_);
+  for (auto& v : z) v = nd(rng);
+  return inverse(z).y;
+}
+
 // ─── Sequential ───────────────────────────────────────────────────────
 
 Sequential::Sequential(std::size_t in_dim,

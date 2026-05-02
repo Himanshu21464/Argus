@@ -176,4 +176,75 @@ class AffineCoupling {
   Sequential conditioner_;     // (split) -> 2 * (dim - split) for [s, t]
 };
 
+// Permutation: deterministically swap halves so successive coupling
+// layers can transform the previously-passive dimensions. Trivial
+// log-det = 0 since permutations preserve volume.
+struct HalfSwap {
+  std::size_t dim;
+  std::size_t split;
+  std::vector<double> apply(const std::vector<double>& x) const;
+};
+
+// Stack of AffineCoupling layers separated by half-swap permutations,
+// trained against a standard-Gaussian base distribution. The standard
+// Real NVP / Glow architecture for amortized SBI in exoplanet
+// retrieval pipelines (see e.g. DINGO for gravitational-wave PE).
+//
+// Forward direction: x (data) -> z (base). z is N(0, I) under a
+// well-trained flow.
+// Inverse direction: z (base) -> x (sample from learned distribution).
+//
+// log_density(x) = log p_z(z) + log|det df/dx|  (change-of-variables)
+//                = -0.5 * |z|^2 - 0.5 * D * log(2π) + Σ log_det_i
+//
+// Sampling: z ~ N(0, I), then x = inverse(z). Useful for amortized
+// SBI: train the flow on (params, observation) pairs to learn
+// p(params | observation), sample posterior conditional on a new
+// observation by inverting.
+class NormalizingFlow {
+ public:
+  // dim          — data dimensionality
+  // n_couplings  — number of coupling layers; each is followed by a
+  //                half-swap so dimensions get equal time as "active"
+  // split        — initial split index (default dim/2)
+  // hidden_dims  — conditioner MLP hidden widths
+  // act          — conditioner activation
+  NormalizingFlow(std::size_t dim,
+                  std::size_t n_couplings,
+                  std::size_t split,
+                  std::vector<std::size_t> hidden_dims,
+                  Activation act = Activation::Tanh);
+
+  std::size_t dim()         const noexcept { return dim_; }
+  std::size_t n_couplings() const noexcept { return couplings_.size(); }
+
+  void init_xavier(std::uint64_t seed = 0);
+
+  // Mutable access for pretrained-weight loading.
+  AffineCoupling& coupling(std::size_t i);
+  const AffineCoupling& coupling(std::size_t i) const;
+
+  // Forward: x (data) -> z (base). Returns z and the cumulative
+  // log_det_jacobian Σ log|det J_i|.
+  AffineCoupling::Output forward(const std::vector<double>& x) const;
+
+  // Inverse: z (base) -> x (data). Returns x and the cumulative
+  // log_det_jacobian (negative of forward).
+  AffineCoupling::Output inverse(const std::vector<double>& z) const;
+
+  // log p_x(x) under the flow (with N(0, I) base):
+  //   log_p_x = -0.5 |z|^2 - 0.5 D ln(2π) + log|det dz/dx|
+  double log_density(const std::vector<double>& x) const;
+
+  // Draw a sample from the flow given a base sample z ~ N(0, I).
+  // Caller controls the RNG (test determinism, parallel sampling).
+  std::vector<double> sample(std::mt19937_64& rng) const;
+
+ private:
+  std::size_t dim_;
+  std::size_t init_split_;
+  std::vector<AffineCoupling> couplings_;
+  std::vector<HalfSwap> swaps_;
+};
+
 }  // namespace argus::nn

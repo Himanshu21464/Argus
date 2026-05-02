@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.4.8 — 2026-05-02 — Normalizing flow (stacked Real NVP)
+
+The actual normalizing-flow primitive: a stack of N AffineCoupling
+layers separated by deterministic half-rotations, trained against a
+standard-Gaussian base distribution. The infrastructure DINGO-class
+amortized SBI is built on.
+
+### Added
+- **`argus::nn::HalfSwap`** — deterministic dimension rotation
+  between coupling layers so successive layers see different
+  "active" subsets. Identity-volume permutation; no log-det
+  contribution.
+- **`argus::nn::NormalizingFlow`**:
+    `forward(x)`  — data → base; returns z + cumulative log_det
+    `inverse(z)`  — base → data; returns x + cumulative log_det
+    `log_density(x)` — change-of-variables formula:
+        log p_x(x) = -½|z|² - ½ D ln(2π) + Σ log_det
+    `sample(rng)` — z ~ N(0, I), then x = inverse(z)
+    `coupling(i)` — mutable access for pretrained weights
+- **`test_normalizing_flow`** (5 test groups):
+  * Inverse-of-forward recovers input bit-exact under Xavier init
+  * `log_density(x)` matches the change-of-variables formula
+  * `sample(rng)` reproducible across identical seeds + finite
+  * Identity-config flow (zeroed conditioner, n_couplings=1) gives
+    forward(x) = x with log_det = 0 and standard-Gaussian density
+  * 7 malformed-input throws
+
+### Validated
+32/32 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. The next iteration ships the amortized-SBI training loop
+that learns conditioner weights so `flow.sample()` draws from the
+posterior given a JWST observation.
+
+---
+
 ## 0.4.7 — 2026-05-02 — Affine coupling layer (Real NVP / Glow block)
 
 The fundamental building block of normalizing-flow posteriors used in

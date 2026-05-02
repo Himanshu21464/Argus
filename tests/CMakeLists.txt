@@ -121,3 +121,7 @@ add_test(NAME posterior_predictive COMMAND test_posterior_predictive)
 add_executable(test_nn test_nn.cpp)
 target_link_libraries(test_nn PRIVATE argus_core)
 add_test(NAME nn COMMAND test_nn)
+
+add_executable(test_normalizing_flow test_normalizing_flow.cpp)
+target_link_libraries(test_normalizing_flow PRIVATE argus_core)
+add_test(NAME normalizing_flow COMMAND test_normalizing_flow)
