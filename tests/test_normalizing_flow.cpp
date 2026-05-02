@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -100,7 +101,55 @@ int main() {
     assert(close(flow.log_density(x), expected, 1.0e-12));
   }
 
-  // ─── 5. Bad inputs throw. ───────────────────────────────────────────
+  // ─── 5. Save / load round-trip: weights bit-exact via hex-float. ────
+  {
+    NormalizingFlow flow_a(4, 3, 2, {16, 16}, Activation::Tanh);
+    flow_a.init_xavier(2026);
+    const std::string path = "/tmp/argus_flow_test.txt";
+    flow_a.save(path);
+
+    NormalizingFlow flow_b(4, 3, 2, {16, 16}, Activation::Tanh);
+    // Different seed gives different starting weights; load should overwrite.
+    flow_b.init_xavier(99);
+    flow_b.load(path);
+
+    // Forward output should agree bit-exact for both flows.
+    std::vector<double> x{0.3, -0.4, 0.5, -0.6};
+    auto fa = flow_a.forward(x);
+    auto fb = flow_b.forward(x);
+    for (std::size_t i = 0; i < fa.y.size(); ++i) {
+      assert(fa.y[i] == fb.y[i]);
+    }
+    assert(fa.log_det_jacobian == fb.log_det_jacobian);
+    std::remove(path.c_str());
+  }
+
+  // ─── 6. Load with shape mismatch throws. ─────────────────────────────
+  {
+    NormalizingFlow flow_a(4, 2, 2, {16}, Activation::Tanh);
+    flow_a.init_xavier(7);
+    const std::string path = "/tmp/argus_flow_mismatch.txt";
+    flow_a.save(path);
+
+    // Try to load into a flow with different architecture.
+    NormalizingFlow flow_b(4, 2, 2, {32}, Activation::Tanh);  // wider hidden
+    bool threw = false;
+    try { flow_b.load(path); }
+    catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+    std::remove(path.c_str());
+  }
+
+  // ─── 7. Missing file throws on load. ─────────────────────────────────
+  {
+    NormalizingFlow flow(4, 2, 2, {8});
+    bool threw = false;
+    try { flow.load("/tmp/argus_nonexistent_flow_12345.txt"); }
+    catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+  }
+
+  // ─── 8. Bad inputs throw. ───────────────────────────────────────────
   {
     bool threw = false;
     try { NormalizingFlow(1, 4, 0, {8}); }      // dim < 2

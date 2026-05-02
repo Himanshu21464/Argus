@@ -240,6 +240,28 @@ class NormalizingFlow {
   // Caller controls the RNG (test determinism, parallel sampling).
   std::vector<double> sample(std::mt19937_64& rng) const;
 
+  // Serialise the flow to a plain-text file. The format:
+  //
+  //   # argus.nn.NormalizingFlow v0.4.x
+  //   # dim=4 n_couplings=6 init_split=2
+  //   # hidden_dims=16,16 activation=Tanh
+  //   # coupling 0 conditioner_layers=3
+  //   layer 0 in=2 out=16
+  //   <flat weights as %a hex-floats, one per line>
+  //   bias
+  //   <bias values, one per line>
+  //   layer 1 in=16 out=16
+  //   ...
+  //
+  // The format is line-oriented and self-describing so future versions
+  // can extend it without breaking older files. Hex-float encoding
+  // preserves bit-exact round-trip.
+  void save(const std::string& path) const;
+
+  // Deserialise from a file produced by save(). Throws on schema or
+  // shape mismatch.
+  void load(const std::string& path);
+
  private:
   std::size_t dim_;
   std::size_t init_split_;

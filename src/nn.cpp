@@ -1,9 +1,34 @@
 #include "argus/nn.hpp"
 
 #include <cmath>
+#include <cstdio>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
+#include <string>
+
+#include "argus/version.hpp"
 
 namespace argus::nn {
+
+namespace {
+
+std::string hex_dbl(double x) {
+  char buf[64];
+  std::snprintf(buf, sizeof(buf), "%a", x);
+  return buf;
+}
+
+double parse_dbl(const std::string& s) {
+  char* end = nullptr;
+  const double v = std::strtod(s.c_str(), &end);
+  if (end == s.c_str()) {
+    throw std::runtime_error("NormalizingFlow::load: bad number '" + s + "'");
+  }
+  return v;
+}
+
+}  // namespace
 
 Linear::Linear(std::size_t in_dim, std::size_t out_dim)
     : in_dim_(in_dim), out_dim_(out_dim),
@@ -258,6 +283,122 @@ std::vector<double> NormalizingFlow::sample(std::mt19937_64& rng) const {
   std::vector<double> z(dim_);
   for (auto& v : z) v = nd(rng);
   return inverse(z).y;
+}
+
+void NormalizingFlow::save(const std::string& path) const {
+  std::ofstream out(path);
+  if (!out) {
+    throw std::runtime_error("NormalizingFlow::save: cannot open '" +
+                             path + "'");
+  }
+  out << "# argus.nn.NormalizingFlow " << argus::version_string() << "\n";
+  out << "# dim=" << dim_
+      << " n_couplings=" << couplings_.size()
+      << " init_split=" << init_split_ << "\n";
+  for (std::size_t k = 0; k < couplings_.size(); ++k) {
+    const auto& cond = couplings_[k].conditioner();
+    out << "# coupling " << k
+        << " conditioner_layers=" << cond.n_layers() << "\n";
+    for (std::size_t l = 0; l < cond.n_layers(); ++l) {
+      const auto& lin = cond.layer(l);
+      out << "layer " << l << " in=" << lin.in_dim()
+          << " out=" << lin.out_dim() << "\n";
+      for (double w : lin.weights()) out << hex_dbl(w) << "\n";
+      out << "bias\n";
+      for (double b : lin.bias()) out << hex_dbl(b) << "\n";
+    }
+  }
+}
+
+void NormalizingFlow::load(const std::string& path) {
+  std::ifstream in(path);
+  if (!in) {
+    throw std::runtime_error("NormalizingFlow::load: cannot open '" +
+                             path + "'");
+  }
+  std::string line;
+  std::size_t k = 0, l = 0;
+  bool have_layer_header = false;
+  std::size_t expected_in = 0, expected_out = 0;
+  std::vector<double> w_buf;
+  std::vector<double> b_buf;
+  bool reading_bias = false;
+  std::size_t expected_w = 0;
+
+  auto commit_layer = [&]() {
+    if (k >= couplings_.size() || l >= couplings_[k].conditioner().n_layers()) {
+      throw std::runtime_error(
+          "NormalizingFlow::load: more layers in file than in flow");
+    }
+    auto& lin = couplings_[k].conditioner().layer(l);
+    if (lin.in_dim() != expected_in || lin.out_dim() != expected_out) {
+      throw std::runtime_error(
+          "NormalizingFlow::load: layer shape mismatch at coupling " +
+          std::to_string(k) + " layer " + std::to_string(l));
+    }
+    if (w_buf.size() != lin.weights().size()) {
+      throw std::runtime_error(
+          "NormalizingFlow::load: weight count mismatch at coupling " +
+          std::to_string(k) + " layer " + std::to_string(l));
+    }
+    if (b_buf.size() != lin.bias().size()) {
+      throw std::runtime_error(
+          "NormalizingFlow::load: bias count mismatch at coupling " +
+          std::to_string(k) + " layer " + std::to_string(l));
+    }
+    lin.set_weights(std::move(w_buf));
+    lin.set_bias(std::move(b_buf));
+    w_buf.clear();
+    b_buf.clear();
+    have_layer_header = false;
+    ++l;
+    if (l >= couplings_[k].conditioner().n_layers()) {
+      l = 0;
+      ++k;
+    }
+  };
+
+  while (std::getline(in, line)) {
+    if (!line.empty() && line.back() == '\r') line.pop_back();
+    if (line.empty()) continue;
+    if (line.front() == '#') continue;
+
+    if (line.rfind("layer ", 0) == 0) {
+      if (have_layer_header) commit_layer();
+      // Parse "layer L in=N out=M"
+      std::stringstream ss(line);
+      std::string token;
+      ss >> token;       // "layer"
+      std::size_t L; ss >> L;
+      std::string in_kv, out_kv;
+      ss >> in_kv >> out_kv;
+      if (in_kv.rfind("in=", 0) != 0 || out_kv.rfind("out=", 0) != 0) {
+        throw std::runtime_error(
+            "NormalizingFlow::load: malformed layer header");
+      }
+      expected_in  = std::stoul(in_kv.substr(3));
+      expected_out = std::stoul(out_kv.substr(4));
+      expected_w   = expected_in * expected_out;
+      reading_bias = false;
+      have_layer_header = true;
+      continue;
+    }
+    if (line == "bias") { reading_bias = true; continue; }
+    if (!have_layer_header) continue;
+
+    const double v = parse_dbl(line);
+    if (!reading_bias) {
+      if (w_buf.size() < expected_w) {
+        w_buf.push_back(v);
+      } else {
+        throw std::runtime_error(
+            "NormalizingFlow::load: extra weight before 'bias' marker");
+      }
+    } else {
+      b_buf.push_back(v);
+    }
+  }
+  if (have_layer_header) commit_layer();
 }
 
 // ─── Sequential ───────────────────────────────────────────────────────

@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.4.9 — 2026-05-02 — NormalizingFlow weight I/O
+
+Save and load NormalizingFlow weights to/from a plain-text file with
+hex-float values for bit-exact round-trip. Practical hand-off so
+users can train flows in PyTorch (or any framework with an export
+adapter) and run amortized-SBI inference in Argus.
+
+### Added
+- **`NormalizingFlow::save(path)`** — writes a self-describing
+  text file:
+    ```
+    # argus.nn.NormalizingFlow v0.4.x
+    # dim=4 n_couplings=6 init_split=2
+    # coupling 0 conditioner_layers=3
+    layer 0 in=2 out=16
+    <weights as hex-floats, one per line>
+    bias
+    <bias values, one per line>
+    ...
+    ```
+- **`NormalizingFlow::load(path)`** — reads a file produced by
+  save(); strict shape validation throws on architectural mismatch
+  (different dim, n_couplings, hidden widths, or layer dims).
+- **`test_normalizing_flow`** extended with 3 round-trip groups:
+  * Round-trip preserves forward output bit-exact (verified on a
+    flow initialised with one seed, saved, then loaded into a
+    flow initialised with a different seed).
+  * Architecture mismatch throws on load.
+  * Missing file throws on load.
+
+### Validated
+32/32 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.4.8 — 2026-05-02 — Normalizing flow (stacked Real NVP)
 
 The actual normalizing-flow primitive: a stack of N AffineCoupling
