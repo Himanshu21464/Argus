@@ -26,9 +26,9 @@
       </svg>
     </a>
     <div class="cmd-meta">
-      <span class="meta-pill"><span class="led led-on"></span>M5 · v0.7.6</span>
+      <span class="meta-pill"><span class="led led-on"></span>M5 · v0.7.8</span>
       <span class="meta-sep">·</span>
-      <span class="meta-mono">44 tests · 5 retrieval substrates</span>
+      <span class="meta-mono">46 tests · 5 retrieval substrates · perf bench</span>
       <span class="meta-sep">·</span>
       <span class="meta-mono">2026-05-02</span>
     </div>
@@ -462,7 +462,10 @@
         <h2>End-to-end in 30 lines.</h2>
         <p class="band-lede">
           What ships in <code>examples/01_transmission_spectrum.cpp</code>
-          today, M1.
+          today, v0.7.8 — atmospheric retrieval shown here is one of
+          three physics layers in the kernel
+          (lensing in <code>examples/05_lensing.cpp</code>;
+          interferometry in <code>examples/06_interferometry.cpp</code>).
         </p>
       </div>
 
@@ -485,7 +488,7 @@ Atmosphere atm = isothermal(<span class="c-num">1200.0</span>,    <span class="c
                             <span class="c-num">1.0e-3</span>);    <span class="c-cmt">// VMR</span>
 
 <span class="c-cmt">// 2. Attach an opacity kernel.</span>
-<span class="c-cmt">// M2 swaps GreyOpacity for HITRAN+CUDA Voigt — call site unchanged.</span>
+<span class="c-cmt">// HITRAN-grade Hui-Armstrong-Wray Voigt ships from v0.3.0 — same call site.</span>
 <span class="c-kw">auto</span> opacity = std::make_shared&lt;GreyOpacity&gt;(<span class="c-str">"H2O"</span>, <span class="c-num">1.0e-22</span>);
 
 <span class="c-cmt">// 3. Forward model.</span>
@@ -502,9 +505,9 @@ ir::Graph g;
 
 std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e00f4ea93</span></code></pre>
         <div class="term-foot">
-          <span class="tf-ok">✓</span> compiles clean under <code>-Wpedantic -Wconversion</code>
+          <span class="tf-ok">✓</span> compiles clean under <code>-Wpedantic -Wconversion -Wsign-conversion</code>
           &nbsp; · &nbsp;
-          <span class="tf-ok">✓</span> three smoke tests pass (atmosphere · RT · IR)
+          <span class="tf-ok">✓</span> 46 / 46 hard tests pass (5 retrieval substrate proofs)
           &nbsp; · &nbsp;
           <span class="tf-ok">✓</span> zero external runtime deps
         </div>
@@ -542,11 +545,12 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
           <div class="tl-dot"></div>
           <div class="tl-when">T + 3 mo</div>
           <div class="tl-card">
-            <div class="tl-h"><span class="tl-id">M2</span><span class="tl-name">The kernel</span><span class="tl-status status-next">NEXT</span></div>
-            <p>GPU-resident HITRAN / HITEMP / ExoMol opacity. Voigt CUDA
-              kernel. First differentiable transmission-spectrum solver in
-              C++/CUDA. Validate against petitRADTRANS on the WASP-39b
-              benchmark.</p>
+            <div class="tl-h"><span class="tl-id">M2</span><span class="tl-name">The kernel</span><span class="tl-status status-shipped">SHIPPED · v0.3.6</span></div>
+            <p>Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6 accuracy),
+              LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS
+              partition functions, self-broadening, pressure shift,
+              Guillot 2010 T-P, gray cloud deck, Rayleigh, end-to-end
+              hot-Jupiter test. CUDA residency outstanding.</p>
           </div>
         </li>
 
@@ -554,10 +558,14 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
           <div class="tl-dot"></div>
           <div class="tl-when">T+6mo</div>
           <div class="tl-card">
-            <div class="tl-h"><span class="tl-id">M3</span><span class="tl-name">The inference engine</span></div>
-            <p>Amortized SBI via normalizing flows. Compare against POSEIDON /
-              CHIMERA on public JWST spectra. <strong>Target: 10× speed,
-              equal or better posteriors, no spectral binning.</strong></p>
+            <div class="tl-h"><span class="tl-id">M3</span><span class="tl-name">The inference engine</span><span class="tl-status status-shipped">SHIPPED · v0.5.3</span></div>
+            <p>MCMC + emcee ensemble + autograd HMC + Retrieval API +
+              Gelman-Rubin R̂ / ESS + CSV chain I/O + 3 prior types +
+              posterior-predictive bands + nn primitives + Real NVP
+              coupling + stacked NormalizingFlow + reverse-mode autograd
+              (Wengert tape) + Adam/SGD + end-to-end MLP and flow training.
+              Atmospheric substrate proof (<code>test_retrieval</code>):
+              recovers (T, log10 VMR) within 1σ.</p>
           </div>
         </li>
 
@@ -761,23 +769,25 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
 
       <div class="build-grid">
         <div class="build-block">
-          <div class="bb-head">CLONE &amp; RUN M1</div>
+          <div class="bb-head">CLONE &amp; RUN</div>
 <pre class="bb-code"><code>git clone https://github.com/Himanshu21464/Argus
 cd Argus
 cmake -S . -B build
 cmake --build build -j
-ctest --test-dir build
-./build/examples/example_01_transmission_spectrum</code></pre>
+ctest --test-dir build           # 46 / 46 pass
+./build/examples/example_05_lensing
+./build/examples/example_06_interferometry</code></pre>
         </div>
 
         <div class="build-block">
           <div class="bb-head">WHERE HELP IS WANTED</div>
           <ul class="want">
-            <li><span class="want-pill want-m2">M2</span> HITRAN/HITEMP/ExoMol loaders + Voigt CUDA kernel</li>
-            <li><span class="want-pill want-m2">M2</span> WASP-39b benchmark vs. petitRADTRANS</li>
-            <li><span class="want-pill want-m3">M3</span> Normalizing-flow SBI engine</li>
+            <li><span class="want-pill want-m2">M2.5</span> CUDA-resident Voigt opacity kernel</li>
+            <li><span class="want-pill want-m3">M3.5</span> ConditionalNF for amortized SBI &middot; WASP-39b benchmark vs petitRADTRANS / POSEIDON</li>
+            <li><span class="want-pill want-m2">M4.5</span> Real-data fixtures (HE 0435-1223 quad lens) &middot; AD-templated lens deflection for HMC</li>
+            <li><span class="want-pill want-m3">M5.5</span> CLEAN-style image reconstruction &middot; self-cal &middot; UV-FITS / Measurement-Set ingest</li>
             <li><span class="want-pill want-doc">DOC</span> Architecture diagrams &amp; design rationale</li>
-            <li><span class="want-pill want-py">PY</span> pybind11 bindings</li>
+            <li><span class="want-pill want-py">PY</span> pybind11 bindings for the full surface</li>
           </ul>
         </div>
 
@@ -802,18 +812,18 @@ ctest --test-dir build
   <div class="container">
     <div class="jf-row">
       <div class="jf-cite">
-        <div class="jf-id">ARGUS · v0.7.6 · M5</div>
+        <div class="jf-id">ARGUS · v0.7.8 · M5</div>
         <div class="jf-cite-text">
           A differentiable astrophysical inference kernel — atmospheres,
           lensing, interferometry on one substrate. Five retrieval
-          substrate proofs.<br>
+          substrate proofs, perf-asserted hot paths, six runnable examples.<br>
           <em>Future Project Brief, May 2026.</em>
           &nbsp;Apache 2.0.
         </div>
       </div>
       <div class="jf-meta">
         <div><span class="jf-key">REPO</span> <a href="https://github.com/Himanshu21464/Argus" target="_blank">github.com/Himanshu21464/Argus</a></div>
-        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · 44 tests · all green</div>
+        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · 46 tests · all green</div>
         <div><span class="jf-key">DEPS</span> none (header + CMake)</div>
         <div><span class="jf-key">TARGETS</span> JWST · Ariel · HWO</div>
       </div>

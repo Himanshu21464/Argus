@@ -71,7 +71,7 @@ Argus/
 │   ├── interferometry.hpp           visibility forward (Point + Gaussian sources) + UV coverage
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based hard tests (44 tests)
+├── tests/                           assert-based hard tests (46 tests, incl. 2 perf benchmarks)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
@@ -121,7 +121,7 @@ No external runtime dependencies for the M1 kernel.
 - **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-44 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+46 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 
@@ -186,6 +186,8 @@ No external runtime dependencies for the M1 kernel.
 | `test_interferometry` | 15 test groups: PointSource at origin → V = F; off-origin phase = -2π(u·l + v·m); visibility additivity; translation theorem; conjugate symmetry; Gaussian decay exp(-2π² σ² r²); σ=0 reduces to point bit-exactly; UV-coverage snapshot; **Earth-rotation track ellipse identity** u²+(v/sin δ)² = (B_E/λ)² |
 | `test_interferometry_retrieval` | **Substrate proof (single Gaussian)**: same `Retrieval` API recovers (l, m, F, σ) on a 7-antenna VLA-like array (21 baselines, 42 components) to 3σ; posterior-predictive coverage ≥ 85%; bit-exact determinism |
 | `test_multi_component_retrieval` | **Substrate proof (2-component capstone)**: 8 free params (compact core + extended jet) recovered to 3σ from 210 visibility components sampled across a 5-hour Earth-rotation track on a 7-antenna VLA-like array; label-switching broken by non-overlapping size priors |
+| `test_lensing_benchmark` | Wall-time baseline: SIE deflection ≈ 40 ns; NFW ≈ 26 ns; CompoundLens(SIS+γ) ≈ 6 ns; find_images(SIE 60²) ≈ 1.2 ms |
+| `test_interferometry_benchmark` | Wall-time baseline: predict_visibility ≈ 13 ns; predict_visibilities(2-Gauss × 10 530 UV) ≈ 12 ns/eval; uv_coverage_track(27 ant × 30 HA) ≈ 22 µs |
 
 ## Design principles
 
