@@ -10,12 +10,25 @@
 
 namespace argus {
 
-// Free parameter in a retrieval. M3 ships uniform priors only; M3.5
-// will add Gaussian and log-uniform.
+// Prior distribution shape. Hard-clipped to [prior_min, prior_max] in
+// every type — the prior is zero outside the box even for Gaussian.
+enum class PriorType {
+  Uniform,        // log_prior = 0 inside box
+  Gaussian,       // log_prior = -0.5 * ((x - mean) / stddev)^2 inside box
+  LogUniform,     // log_prior = -ln(x) inside box (x > 0)
+};
+
+// Free parameter in a retrieval. Defaults to a uniform prior on
+// [prior_min, prior_max] for backward compatibility.
 struct Parameter {
   std::string name;
   double prior_min;
   double prior_max;
+  // Prior shape inside the box. Defaults to Uniform.
+  PriorType prior_type = PriorType::Uniform;
+  // Used only when prior_type == Gaussian.
+  double prior_mean   = 0.0;
+  double prior_stddev = 1.0;
 };
 
 // Per-parameter posterior summary: median + symmetric 1-sigma credible

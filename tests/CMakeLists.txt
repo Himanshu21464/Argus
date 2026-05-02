@@ -109,3 +109,7 @@ add_test(NAME diagnostics COMMAND test_diagnostics)
 add_executable(test_chain_io test_chain_io.cpp)
 target_link_libraries(test_chain_io PRIVATE argus_core)
 add_test(NAME chain_io COMMAND test_chain_io)
+
+add_executable(test_priors test_priors.cpp)
+target_link_libraries(test_priors PRIVATE argus_core)
+add_test(NAME priors COMMAND test_priors)

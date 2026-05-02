@@ -3,7 +3,7 @@
 namespace argus {
 
 std::string_view version_string() noexcept {
-  return "0.4.3";
+  return "0.4.4";
 }
 
 }  // namespace argus

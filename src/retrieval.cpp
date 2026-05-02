@@ -107,10 +107,32 @@ double Retrieval::log_posterior(const std::vector<double>& state) const {
     throw std::invalid_argument(
         "Retrieval::log_posterior: state.size() does not match parameter count");
   }
-  // Uniform prior: 0 inside the box, -inf outside.
+  // Bounds + prior contribution per parameter.
+  double log_prior = 0.0;
   for (std::size_t i = 0; i < params_.size(); ++i) {
-    if (state[i] < params_[i].prior_min || state[i] > params_[i].prior_max) {
+    const double x = state[i];
+    const Parameter& p = params_[i];
+    // All prior types hard-clip to [prior_min, prior_max].
+    if (x < p.prior_min || x > p.prior_max) {
       return -std::numeric_limits<double>::infinity();
+    }
+    switch (p.prior_type) {
+      case PriorType::Uniform:
+        // log_prior = -ln(prior_max - prior_min); constant offset
+        // omitted (does not affect MCMC acceptance ratios).
+        break;
+      case PriorType::Gaussian: {
+        const double r = (x - p.prior_mean) / p.prior_stddev;
+        log_prior += -0.5 * r * r;
+        break;
+      }
+      case PriorType::LogUniform:
+        // p(x) ∝ 1/x, so log_prior += -ln(x). Requires x > 0.
+        if (!(x > 0.0)) {
+          return -std::numeric_limits<double>::infinity();
+        }
+        log_prior += -std::log(x);
+        break;
     }
   }
   // Chi-squared log-likelihood:
@@ -125,7 +147,7 @@ double Retrieval::log_posterior(const std::vector<double>& state) const {
                      uncertainty_[i];
     chi2 += r * r;
   }
-  return -0.5 * chi2;
+  return log_prior - 0.5 * chi2;
 }
 
 Retrieval::Result Retrieval::run_mcmc(

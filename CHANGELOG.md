@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.4 — 2026-05-02 — Extended priors (Gaussian + LogUniform)
+
+Real exoplanet retrievals need flexible priors beyond uniform — e.g.
+Gaussian priors on stellar parameters (constrained from independent
+photometric data) and log-uniform priors on quantities that span many
+decades (e.g. molecular VMRs, cloud opacities).
+
+### Added
+- **`argus::PriorType`** enum: `Uniform` (default), `Gaussian`,
+  `LogUniform`.
+- **`argus::Parameter`** gains `prior_type`, `prior_mean`,
+  `prior_stddev`. Defaults preserve existing semantics (Uniform on
+  [prior_min, prior_max]).
+- **`Retrieval::log_posterior`** evaluates each parameter's prior
+  contribution by type:
+    Uniform: log_prior += 0
+    Gaussian: log_prior += -0.5 · ((x - mean)/stddev)²
+    LogUniform: log_prior += -ln(x); requires x > 0
+  All prior types still hard-clip to [prior_min, prior_max].
+- **`test_priors`** (6 test groups):
+  * Uniform on [-2, 4] → mean = 1.0, std = √3
+  * Standard Gaussian clipped to ±3σ → mean ≈ 0, std ≈ 1
+  * Gaussian centred at (5, σ=0.5) clipped to [3, 7] → recovered
+  * LogUniform on [1, 100] → mean ≈ 21.5, std ≈ 25
+  * Bounds clip applies to all prior types (Gaussian outside box → -inf)
+  * LogUniform with x ≤ 0 returns -inf
+
+### Validated
+29/29 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free. All existing M2/M3 tests
+still pass (Uniform default preserves backward compatibility).
+
+---
+
 ## 0.4.3 — 2026-05-02 — CSV chain I/O (bit-exact round-trip)
 
 Adds the offline-analysis hand-off: save MCMC chains to CSV and load
