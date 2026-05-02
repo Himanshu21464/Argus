@@ -129,3 +129,7 @@ add_test(NAME normalizing_flow COMMAND test_normalizing_flow)
 add_executable(test_hmc test_hmc.cpp)
 target_link_libraries(test_hmc PRIVATE argus_core)
 add_test(NAME hmc COMMAND test_hmc)
+
+add_executable(test_ad test_ad.cpp)
+target_link_libraries(test_ad PRIVATE argus_core)
+add_test(NAME ad COMMAND test_ad)

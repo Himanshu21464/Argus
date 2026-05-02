@@ -1,5 +1,58 @@
 # Changelog
 
+## 0.5.0 — 2026-05-02 — Reverse-mode autograd (Wengert tape)
+
+The major M3 milestone: reverse-mode automatic differentiation via a
+Wengert tape. ONE forward + ONE backward pass yields the gradient
+regardless of input dimensionality. This is the algorithm
+PyTorch/JAX/TensorFlow use; it's the unlock for training neural
+networks and normalizing flows in C++ at scale.
+
+Forward-mode `Dual<T>` is O(D) forward passes; reverse-mode is O(1).
+For a 1000-parameter retrieval that's a 1000× speedup per gradient.
+
+### Added
+- **`argus::ad::Tape`** — append-only computation log; each node
+  records (value, parent indices, local-gradient values).
+- **`argus::ad::Var`** — lightweight handle (tape pointer + index +
+  cached value). Operator overloading records arithmetic; math
+  free-functions record exp/log/sqrt/pow/sin/cos/tanh.
+- **`Tape::backward(output)`** — reverse-topological traversal that
+  populates gradients on every leaf; lookup via `tape.grad(var)`.
+- **`Tape::reset()`** — wipe + reuse for the next iteration.
+- **`test_ad`** (10 test groups, 60+ assertions):
+  * Arithmetic gradients (+, -, *, /, unary -) match analytic
+  * `1/x` gradient at x=2 matches `-1/x²`
+  * exp/log/sqrt composition + chain rule
+  * `pow + chain rule`: `d/dx (x²+1)³ = 6x(x²+1)²`
+  * `sin/cos` chain
+  * Cross-validation against forward-mode `Dual<T>` on 5-D
+    function across 3 random points → agree to 1e-10
+  * 100-input sum-of-squares: gradient on each input correct
+    (where forward-mode would need 100 evaluations)
+  * `Tape::reset()` enables clean reuse
+  * Wrong-tape ops throw
+  * `tanh` gradient matches `1 - tanh(x)²`
+
+### Validated
+34/34 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+### Why this is a major (0.4 → 0.5) bump
+Reverse-mode autograd is the gating piece for the rest of M3 → M4:
+- NF training loop in C++ (instead of training in PyTorch + loading)
+- HMC for high-D retrieval (HMC currently uses forward-mode Dual,
+  fine for ~10 params but breaks at 100+)
+- Variational inference, score matching, neural posterior estimation
+- Differentiable physics: gradient through the entire Argus forward
+  model, end-to-end inversion via gradient descent
+
+The next iteration wires the new tape into NN forward passes and a
+loss-function training loop.
+
+---
+
 ## 0.4.10 — 2026-05-02 — Hamiltonian Monte Carlo (autograd-based)
 
 Gradient-based MCMC: Hamiltonian Monte Carlo with leapfrog

@@ -2,6 +2,7 @@
 
 // Umbrella header — pulls in the public Argus surface in one include.
 
+#include "ad.hpp"
 #include "atmosphere.hpp"
 #include "chain_io.hpp"
 #include "diagnostics.hpp"
