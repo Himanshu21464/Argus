@@ -114,4 +114,66 @@ class Sequential {
   Activation hidden_act_;
 };
 
+// Affine coupling layer (Real NVP, Dinh et al. 2017; refined as Glow,
+// Kingma & Dhariwal 2018). The fundamental building block of
+// normalizing-flow posteriors used in amortized SBI.
+//
+// For input x ∈ R^D, split into x_a (first `split` dims) and x_b
+// (remaining D-split dims). The forward transform is:
+//
+//     y_a = x_a
+//     y_b = x_b · exp(s(x_a)) + t(x_a)
+//
+// where s and t are arbitrary MLPs of input width `split` and output
+// width `D - split`. Both share an `Sequential` of input dim `split`
+// and output dim `2 * (D - split)` (concatenated [s, t]).
+//
+// Jacobian determinant (forward direction) is sum_i exp(s_i(x_a)) since
+// only y_b depends on x_b in a separable way → log|det J| = Σ s_i(x_a).
+//
+// Stacking N AffineCoupling layers (alternating which half is passive)
+// gives a Real NVP normalizing flow. Sampling: draw z ~ N(0, I), apply
+// the inverse stack to get a sample from the learned distribution.
+class AffineCoupling {
+ public:
+  // dim   — total input/output dimensionality D
+  // split — number of dimensions in the "passive" half x_a (must be in
+  //         [1, dim - 1])
+  // hidden_dims — MLP hidden widths for the conditioner
+  // act   — activation between hidden layers (default Tanh, smooth)
+  AffineCoupling(std::size_t dim,
+                 std::size_t split,
+                 std::vector<std::size_t> hidden_dims,
+                 Activation act = Activation::Tanh);
+
+  std::size_t dim()   const noexcept { return dim_; }
+  std::size_t split() const noexcept { return split_; }
+
+  // Initialise the conditioner with Xavier; deterministic seed.
+  void init_xavier(std::uint64_t seed = 0);
+
+  // Direct access to the underlying conditioner network for
+  // pretrained-weight loading.
+  Sequential& conditioner() noexcept { return conditioner_; }
+  const Sequential& conditioner() const noexcept { return conditioner_; }
+
+  // Forward: z = f(x). Also returns the log-determinant of the Jacobian
+  // |df/dx| so the flow can be used as a normalizing flow for density
+  // computation: log p_z(z) = log p_x(x) - log|det J|.
+  struct Output {
+    std::vector<double> y;
+    double log_det_jacobian;
+  };
+  Output forward(const std::vector<double>& x) const;
+
+  // Inverse: x = f^{-1}(z). Returns the same struct; log_det_jacobian
+  // is the log-det of the INVERSE map, i.e. -forward.log_det_jacobian.
+  Output inverse(const std::vector<double>& y) const;
+
+ private:
+  std::size_t dim_;
+  std::size_t split_;
+  Sequential conditioner_;     // (split) -> 2 * (dim - split) for [s, t]
+};
+
 }  // namespace argus::nn

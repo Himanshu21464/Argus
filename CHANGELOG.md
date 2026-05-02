@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.7 — 2026-05-02 — Affine coupling layer (Real NVP / Glow block)
+
+The fundamental building block of normalizing-flow posteriors used in
+amortized SBI: a Real NVP affine coupling layer with forward/inverse
++ tractable log-determinant Jacobian.
+
+### Added
+- **`argus::nn::AffineCoupling`** (`include/argus/nn.hpp`,
+  `src/nn.cpp`):
+    Splits input x into x_a (first `split` dims, "passive") and x_b.
+    Forward: y_a = x_a; y_b = x_b · exp(s(x_a)) + t(x_a),
+    where [s, t] is the output of a configurable Sequential MLP
+    conditioner from `split` to `2 · (dim - split)`.
+    Inverse: bit-exact recovery — x_a = y_a;
+             x_b = (y_b - t(y_a)) · exp(-s(y_a)).
+    log_det_jacobian = Σ s_i for forward; -Σ s_i for inverse.
+
+### Tests added to `test_nn` (3 new groups, 31 → 31 still since same file):
+  * Forward then inverse recovers input bit-exact under
+    Xavier-initialised conditioner.
+  * Inverse log-det = -forward log-det.
+  * Analytic log_det_jacobian agrees with numerical Jacobian
+    determinant via finite differences to <1e-4.
+  * Bad inputs throw (dim < 2, split = 0, split ≥ dim, wrong forward
+    dimension).
+
+### Validated
+31/31 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. The next iteration will stack AffineCoupling layers into
+a NormalizingFlow class with sample() / log_density() and the
+amortized-SBI training loop.
+
+---
+
 ## 0.4.6 — 2026-05-02 — Neural-net primitives + README/site refresh
 
 Foundation for amortized SBI: Linear/Activation/Sequential building

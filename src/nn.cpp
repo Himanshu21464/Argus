@@ -56,6 +56,85 @@ std::vector<double> Linear::forward(const std::vector<double>& x) const {
   return y;
 }
 
+// ─── AffineCoupling ───────────────────────────────────────────────────
+
+AffineCoupling::AffineCoupling(std::size_t dim,
+                               std::size_t split,
+                               std::vector<std::size_t> hidden_dims,
+                               Activation act)
+    : dim_(dim),
+      split_(split),
+      conditioner_(split, 2 * (dim - split),
+                   std::move(hidden_dims), act) {
+  if (dim_ < 2) {
+    throw std::invalid_argument("AffineCoupling: dim must be >= 2");
+  }
+  if (split_ < 1 || split_ >= dim_) {
+    throw std::invalid_argument(
+        "AffineCoupling: split must be in [1, dim - 1]");
+  }
+}
+
+void AffineCoupling::init_xavier(std::uint64_t seed) {
+  conditioner_.init_xavier(seed);
+}
+
+AffineCoupling::Output AffineCoupling::forward(
+    const std::vector<double>& x) const {
+  if (x.size() != dim_) {
+    throw std::invalid_argument(
+        "AffineCoupling::forward: input size must equal dim");
+  }
+  const std::size_t n_b = dim_ - split_;
+  const auto split_off = static_cast<std::ptrdiff_t>(split_);
+  std::vector<double> x_a(x.begin(), x.begin() + split_off);
+  std::vector<double> x_b(x.begin() + split_off, x.end());
+
+  // Conditioner output: [s_0, s_1, ..., s_{n_b-1}, t_0, ..., t_{n_b-1}]
+  std::vector<double> st = conditioner_.forward(x_a);
+
+  Output out;
+  out.y.resize(dim_);
+  for (std::size_t i = 0; i < split_; ++i) out.y[i] = x_a[i];
+
+  double log_det = 0.0;
+  for (std::size_t i = 0; i < n_b; ++i) {
+    const double s = st[i];
+    const double t = st[n_b + i];
+    out.y[split_ + i] = x_b[i] * std::exp(s) + t;
+    log_det += s;
+  }
+  out.log_det_jacobian = log_det;
+  return out;
+}
+
+AffineCoupling::Output AffineCoupling::inverse(
+    const std::vector<double>& y) const {
+  if (y.size() != dim_) {
+    throw std::invalid_argument(
+        "AffineCoupling::inverse: input size must equal dim");
+  }
+  const std::size_t n_b = dim_ - split_;
+  const auto split_off = static_cast<std::ptrdiff_t>(split_);
+  // y_a == x_a since the passive half is unchanged.
+  std::vector<double> x_a(y.begin(), y.begin() + split_off);
+  std::vector<double> st = conditioner_.forward(x_a);
+
+  Output out;
+  out.y.resize(dim_);
+  for (std::size_t i = 0; i < split_; ++i) out.y[i] = x_a[i];
+
+  double log_det = 0.0;
+  for (std::size_t i = 0; i < n_b; ++i) {
+    const double s = st[i];
+    const double t = st[n_b + i];
+    out.y[split_ + i] = (y[split_ + i] - t) * std::exp(-s);
+    log_det += -s;       // log-det of inverse map
+  }
+  out.log_det_jacobian = log_det;
+  return out;
+}
+
 // ─── Sequential ───────────────────────────────────────────────────────
 
 Sequential::Sequential(std::size_t in_dim,

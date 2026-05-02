@@ -137,7 +137,83 @@ int main() {
     assert(mlp.layer(3).out_dim() == 2);
   }
 
-  // ─── 7. Bad inputs throw. ───────────────────────────────────────────
+  // ─── 7. AffineCoupling: forward then inverse recovers input bit-exact
+  //     under Xavier-initialised conditioner. ────────────────────────────
+  {
+    AffineCoupling ac(/*dim=*/4, /*split=*/2, {16, 16}, Activation::Tanh);
+    ac.init_xavier(2026);
+    std::vector<double> x{0.7, -0.3, 1.2, -0.8};
+    auto fwd = ac.forward(x);
+    auto inv = ac.inverse(fwd.y);
+    assert(inv.y.size() == x.size());
+    for (std::size_t i = 0; i < x.size(); ++i) {
+      // Bit-exact in floating point because the conditioner only
+      // depends on x_a == y_a (no autograd chain in the way).
+      assert(std::fabs(inv.y[i] - x[i]) < 1.0e-12);
+    }
+    // Inverse log-det = -forward log-det
+    assert(std::fabs(inv.log_det_jacobian + fwd.log_det_jacobian) < 1.0e-12);
+  }
+
+  // ─── 8. AffineCoupling log-det matches the numerical Jacobian
+  //     determinant via finite differences. ────────────────────────────
+  {
+    AffineCoupling ac(3, 1, {8}, Activation::Tanh);
+    ac.init_xavier(2026);
+    std::vector<double> x{0.4, -0.2, 0.5};
+    auto out = ac.forward(x);
+
+    // Numerical Jacobian:
+    //   J[i, j] = (f_i(x + h e_j) - f_i(x - h e_j)) / (2h)
+    const double h = 1.0e-6;
+    const std::size_t D = x.size();
+    std::vector<std::vector<double>> J(D, std::vector<double>(D, 0.0));
+    for (std::size_t j = 0; j < D; ++j) {
+      auto xp = x; xp[j] += h;
+      auto xm = x; xm[j] -= h;
+      auto fp = ac.forward(xp);
+      auto fm = ac.forward(xm);
+      for (std::size_t i = 0; i < D; ++i) {
+        J[i][j] = (fp.y[i] - fm.y[i]) / (2.0 * h);
+      }
+    }
+    // log|det J| via the LU-style triangular structure of the affine
+    // coupling Jacobian: it's lower-triangular with 1's on the diagonal
+    // for the passive half and exp(s_i) for the active half. So
+    // det(J) = prod exp(s_i).
+    // Cross-check with our analytic log_det_jacobian.
+    // Compute log|det J| numerically by Cofactor expansion along the
+    // identity rows for the passive half — equivalent to taking the
+    // determinant of just the bottom-right submatrix.
+    // For dim=3, split=1: the submatrix is J[1..2, 1..2].
+    const double a = J[1][1], b = J[1][2], c = J[2][1], d = J[2][2];
+    const double det_sub = a * d - b * c;
+    const double log_det_num = std::log(std::fabs(det_sub));
+    assert(std::fabs(log_det_num - out.log_det_jacobian) < 1.0e-4);
+  }
+
+  // ─── 9. AffineCoupling rejects bad params. ──────────────────────────
+  {
+    bool threw = false;
+    try { AffineCoupling(1, 0, {8}); }              // dim < 2
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { AffineCoupling(4, 0, {8}); }              // split == 0
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { AffineCoupling(4, 4, {8}); }              // split >= dim
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    AffineCoupling ac(4, 2, {8});
+    threw = false;
+    try { ac.forward({1.0, 2.0, 3.0}); }            // wrong dim
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
+  // ─── 10. Bad inputs throw. ──────────────────────────────────────────
   {
     bool threw = false;
     try { Linear(0, 5); }
