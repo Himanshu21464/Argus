@@ -6,7 +6,7 @@ namespace argus {
 
 constexpr int version_major = 0;
 constexpr int version_minor = 7;
-constexpr int version_patch = 6;
+constexpr int version_patch = 7;
 
 std::string_view version_string() noexcept;
 

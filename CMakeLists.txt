@@ -74,6 +74,22 @@ set_target_properties(example_04_retrieval PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
 )
 
+add_executable(example_05_lensing
+  examples/05_lensing.cpp
+)
+target_link_libraries(example_05_lensing PRIVATE argus_core)
+set_target_properties(example_05_lensing PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)
+
+add_executable(example_06_interferometry
+  examples/06_interferometry.cpp
+)
+target_link_libraries(example_06_interferometry PRIVATE argus_core)
+set_target_properties(example_06_interferometry PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)
+
 # ─── tests ─────────────────────────────────────────────────────────────
 enable_testing()
 add_subdirectory(tests)

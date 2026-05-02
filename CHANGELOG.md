@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.7.7 — 2026-05-02 — Runnable M4 + M5 examples
+
+Adds the lensing and interferometry equivalents of the existing
+`example_03_real_hitran` and `example_04_retrieval` demos: short
+runnable programs that exercise the full forward-model surface for
+each of the new physics layers.
+
+### Added
+- **`examples/05_lensing.cpp`** — SIE + ExternalShear lens, forward
+  through `find_images`, prints 4 quad-image positions + magnifications
+  + 16 pairwise Fermat-potential time-delay differences (the same
+  kernel surface fitted by `test_sie_retrieval`). Output explicitly
+  flags Δτ × (1+z_l)·D_Δt/c as the COSMOGRAIL/TDCOSMO observable for
+  H₀ inference.
+- **`examples/06_interferometry.cpp`** — 7-antenna Y-array,
+  Earth-rotation track at dec=30°, lat=34°, λ=21 cm, 105 baselines
+  total. Predicts visibilities of a compact-core + extended-jet
+  2-Gaussian source and prints an ASCII `<|V|>` vs |uv| histogram
+  showing the jet's exp(-2π² σ² r²) envelope falling off at long
+  baselines. Same kernel surface fitted by
+  `test_multi_component_retrieval`.
+
+### Validated
+44/44 tests still pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. All 6 examples build warning-free.
+
+---
+
 ## 0.7.6 — 2026-05-02 — M5 capstone: 2-component interferometric retrieval
 
 The most rigorous M5 substrate proof: 8-parameter retrieval recovers
