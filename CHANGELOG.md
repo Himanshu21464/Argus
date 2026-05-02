@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.7.6 — 2026-05-02 — M5 capstone: 2-component interferometric retrieval
+
+The most rigorous M5 substrate proof: 8-parameter retrieval recovers
+both components (compact core + extended jet) of a multi-component
+radio source from synthetic visibilities sampled across an Earth-
+rotation track on a 7-antenna VLA-like array.
+
+Real radio sources (AGN, quasars, starbursts) are typically multi-
+component. Argus's substrate claim now covers this end-to-end with
+no special-casing — the 2-Gaussian forward model is just two calls
+to `predict_visibility` summed pairwise, and the same `Retrieval` API
+recovers all 8 parameters.
+
+### Added
+- **`test_multi_component_retrieval`** — full M5 capstone:
+  * 7-antenna Y-array, 5 hour angles spanning ±2.5 h, source at
+    dec=30° from latitude 34°: **105 baselines × 2 = 210 observations**
+    via `uv_coverage_track`.
+  * Truth: compact core (l=0, m=0, F=1.0, σ=1e-5) + extended jet
+    (l=1.5e-5, m=5e-6, F=0.3, σ=3e-5).
+  * 8 free params, label-switching broken by **non-overlapping size
+    priors** (σ_core ∈ [0, 2e-5]; σ_jet ∈ [2e-5, 8e-5]).
+  * EnsembleSampler 32 × 4000: 36% acceptance, recovery within 3σ on
+    every parameter.
+  * Bit-exact determinism on identical seed.
+
+### Substrate-claim status (final inventory)
+| Layer | Test | Free params | Recovery | Sampler |
+|---|---|---|---|---|
+| **M2/M3** atmospheres | `test_retrieval` | (T, log10 VMR) | 1σ | MH |
+| **M4** SIS lensing    | `test_lensing_retrieval`           | 5 | 3σ | Ensemble |
+| **M4** SIE lensing    | `test_sie_retrieval`               | 7 | 0.5σ | Ensemble |
+| **M5** interferometry | `test_interferometry_retrieval`    | 4 | 3σ | MH |
+| **M5** multi-component| `test_multi_component_retrieval`   | 8 | 3σ | Ensemble |
+
+Five independent retrieval tests across three physics layers, all
+reusing the same `Spectrum` / `Retrieval` / `EnsembleSampler` /
+`MetropolisHastings` / `PosteriorSummary` / `posterior_predictive`
+infrastructure. Substrate claim demonstrably backed.
+
+### Validated
+44/44 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.5 — 2026-05-02 — M4 capstone: full SIE retrieval substrate proof
 
 The most rigorous M4 substrate proof yet: 7-parameter SIE retrieval
