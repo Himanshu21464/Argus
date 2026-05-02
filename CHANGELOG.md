@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.7.1 — 2026-05-02 — M5 wedge 2: interferometry retrieval (substrate proof)
+
+The full M5 substrate-claim test: the same `argus::Retrieval` API used
+for atmospheric retrieval and gravitational-lensing parameter recovery
+now drives radio-interferometric source-parameter inference from
+observed visibilities. Different physics, identical infrastructure.
+
+### Added
+- **`test_interferometry_retrieval`** — 4-parameter MCMC retrieval
+  over (l, m, F, σ) for a circular Gaussian source from synthetic
+  noisy visibilities on a 7-antenna VLA-like Y-array (21 baselines,
+  42 real-valued observations, λ = 21 cm). Truth is recovered to
+  within 3σ on every parameter; posterior-predictive 5–95% band ± 2 σ_V
+  brackets ≥ 85% of observations. Pipeline reuses `argus::Spectrum` /
+  `Retrieval::log_posterior` / `Retrieval::run_mcmc` /
+  `PosteriorSummary` / `Retrieval::posterior_predictive` unchanged.
+  The only interferometry-specific code is the `Retrieval::Forward`
+  closure on top of `argus::interferometry::predict_visibilities`.
+
+### Substrate-claim status
+- **Atmospheric retrieval (M2/M3)** → recover (T, log10 VMR), 1 σ
+- **Strong-lensing retrieval (M4)** → recover (θ_E, lens_xy, source_xy)
+  via `EnsembleSampler`, 3 σ
+- **Interferometric retrieval (M5)** → recover (l, m, F, σ) via single-
+  chain MH, 3 σ
+All three reuse the same `Spectrum` / `Retrieval` / sampler /
+`PosteriorSummary` / `posterior_predictive` infrastructure. The
+substrate claim is now backed by 3 independent physics layers.
+
+### Validated
+42/42 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.0 — 2026-05-02 — M5 starting wedge: interferometry visibility model
 
 The third physics layer for the substrate claim: radio interferometry.

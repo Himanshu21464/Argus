@@ -161,3 +161,7 @@ add_test(NAME time_delays COMMAND test_time_delays)
 add_executable(test_interferometry test_interferometry.cpp)
 target_link_libraries(test_interferometry PRIVATE argus_core)
 add_test(NAME interferometry COMMAND test_interferometry)
+
+add_executable(test_interferometry_retrieval test_interferometry_retrieval.cpp)
+target_link_libraries(test_interferometry_retrieval PRIVATE argus_core)
+add_test(NAME interferometry_retrieval COMMAND test_interferometry_retrieval)
