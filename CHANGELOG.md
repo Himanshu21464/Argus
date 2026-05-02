@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.6.0 — 2026-05-02 — M4 starting wedge: strong-lensing pass
+
+Argus's substrate claim — same Argus IR + Retrieval pattern generalises
+across exoplanet atmospheres, gravitational lensing, and radio
+interferometry — gets its first proof beyond M2 with a clean
+analytically-verifiable lensing physics layer.
+
+### Added
+- **`argus::lensing` namespace**:
+    `Vec2`, `Lens` (virtual base), `SIS` (Singular Isothermal Sphere),
+    `lens_equation(lens, θ)`, `Image` (position + magnification),
+    `sis_images(SIS, β)` — closed-form 1-or-2-image solver.
+- **`test_lensing`** (8 test groups): deflection magnitude/direction,
+  in-Einstein-radius two-image case + lens-equation closure,
+  outside-radius single-image case, off-axis collinearity, total
+  magnification 2θ_E/β closed form, off-centre lens, degenerate
+  Einstein-ring source-on-centre case, malformed-input throws.
+
+### Validated
+38/38 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+Future M4 patches: SIE (Singular Isothermal Ellipsoid), magnification
+maps, time delays, lensing-parameter MCMC retrieval via
+`argus::Retrieval`.
+
+---
+
 ## 0.5.3 — 2026-05-02 — Flow training via reverse-mode AD
 
 A learnable scale+shift 1-D normalizing flow trained end-to-end via
