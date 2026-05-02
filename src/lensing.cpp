@@ -321,6 +321,57 @@ std::vector<Image> find_images(const Lens& lens,
   return roots;
 }
 
+// ─── ExternalShear ────────────────────────────────────────────────────
+
+ExternalShear::ExternalShear(double gamma1, double gamma2)
+    : gamma1_(gamma1), gamma2_(gamma2) {}
+
+Vec2 ExternalShear::deflection(Vec2 theta) const {
+  return {gamma1_ * theta.x + gamma2_ * theta.y,
+          gamma2_ * theta.x - gamma1_ * theta.y};
+}
+
+double ExternalShear::potential(Vec2 theta) const {
+  return 0.5 * (gamma1_ * (theta.x * theta.x - theta.y * theta.y) +
+                2.0 * gamma2_ * theta.x * theta.y);
+}
+
+// ─── CompoundLens ─────────────────────────────────────────────────────
+
+CompoundLens::CompoundLens(std::vector<std::shared_ptr<const Lens>> components)
+    : components_(std::move(components)) {
+  for (const auto& c : components_) {
+    if (!c) {
+      throw std::invalid_argument("CompoundLens: null component lens");
+    }
+  }
+}
+
+void CompoundLens::add(std::shared_ptr<const Lens> lens) {
+  if (!lens) {
+    throw std::invalid_argument("CompoundLens::add: null lens");
+  }
+  components_.push_back(std::move(lens));
+}
+
+Vec2 CompoundLens::deflection(Vec2 theta) const {
+  Vec2 sum{0.0, 0.0};
+  for (const auto& c : components_) {
+    Vec2 a = c->deflection(theta);
+    sum.x += a.x;
+    sum.y += a.y;
+  }
+  return sum;
+}
+
+double CompoundLens::potential(Vec2 theta) const {
+  double sum = 0.0;
+  for (const auto& c : components_) {
+    sum += c->potential(theta);
+  }
+  return sum;
+}
+
 // ─── Fermat potential + time delay ────────────────────────────────────
 
 double fermat_potential(const Lens& lens, Vec2 theta, Vec2 beta) {

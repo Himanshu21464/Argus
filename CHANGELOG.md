@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.7.2 — 2026-05-02 — External shear + compound lens
+
+The standard real-strong-lensing modelling primitive: SIE + external
+shear is the workhorse model used in 99% of published lensed-quasar
+analyses. Argus now ships both the shear field and a generic
+CompoundLens that sums deflection + potential over multiple
+components, so any combination (SIS + shear, SIE + shear, SIE + NFW
+once NFW is added, etc.) just works through `find_images`,
+`fermat_potential`, and `time_delay_arcsec2`.
+
+### Added
+- **`argus::lensing::ExternalShear(γ_1, γ_2)`** — pure-shear lens
+  field: α = (γ_1 θ_x + γ_2 θ_y, γ_2 θ_x - γ_1 θ_y);
+  ψ = ½(γ_1 (θ_x²-θ_y²) + 2 γ_2 θ_x θ_y). Shear is centred at the
+  origin by convention; pivot elsewhere by composing with a
+  translated SIS/SIE.
+- **`argus::lensing::CompoundLens`** — owns a
+  `vector<shared_ptr<const Lens>>`; `deflection` and `potential`
+  return the per-component sums. `add(lens)` extends in place.
+- **`test_lensing` extended (18 → 23 test groups)**:
+  * Shear deflection closed form on 3 sample points
+  * Shear potential gradient = α via central FD on 3 points
+  * Compound lens sums deflection + potential of (SIS + shear)
+  * SIS + strong shear (γ_1=0.10): `find_images` recovers ≥ 2
+    images, lens equation closes <1e-7 on each, magnifications finite
+  * Null-component throws (constructor + `add`)
+
+### Validated
+42/42 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.1 — 2026-05-02 — M5 wedge 2: interferometry retrieval (substrate proof)
 
 The full M5 substrate-claim test: the same `argus::Retrieval` API used

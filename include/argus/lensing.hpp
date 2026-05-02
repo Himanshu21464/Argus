@@ -150,6 +150,50 @@ std::vector<Image> find_images(const Lens& lens,
                                double dedup_tol = 1.0e-4,
                                std::size_t newton_max_iter = 50);
 
+// External tidal shear field — the standard ingredient in real
+// strong-lensing models. Combines with an SIE (or any other lens)
+// via CompoundLens to model perturbations from large-scale structure
+// or nearby galaxies.
+//
+// Convention: shear matrix [[γ_1, γ_2], [γ_2, -γ_1]]. The deflection
+// is then α_x = γ_1 θ_x + γ_2 θ_y, α_y = γ_2 θ_x - γ_1 θ_y, and the
+// scalar potential is ψ = 0.5 [γ_1 (θ_x² - θ_y²) + 2 γ_2 θ_x θ_y].
+// The shear is centred at the origin by convention; compose with a
+// translated lens for a different effective shear pivot.
+class ExternalShear final : public Lens {
+ public:
+  ExternalShear(double gamma1, double gamma2);
+
+  Vec2   deflection(Vec2 theta) const override;
+  double potential (Vec2 theta) const override;
+
+  double gamma1() const noexcept { return gamma1_; }
+  double gamma2() const noexcept { return gamma2_; }
+
+ private:
+  double gamma1_;
+  double gamma2_;
+};
+
+// Compound lens: deflection / potential of the sum of multiple lens
+// components. The owning std::shared_ptr design makes the components
+// safe to share between models (e.g. fix a galaxy halo while varying
+// shear and source).
+class CompoundLens final : public Lens {
+ public:
+  CompoundLens() = default;
+  explicit CompoundLens(std::vector<std::shared_ptr<const Lens>> components);
+
+  void add(std::shared_ptr<const Lens> lens);
+  std::size_t size() const noexcept { return components_.size(); }
+
+  Vec2   deflection(Vec2 theta) const override;
+  double potential (Vec2 theta) const override;
+
+ private:
+  std::vector<std::shared_ptr<const Lens>> components_;
+};
+
 // Fermat potential (the time-arrival surface, modulo a global
 // constant): τ(θ; β) = 0.5 · |θ - β|² - ψ(θ). Critical points of τ
 // are images of β; the values of τ at images give image arrival times

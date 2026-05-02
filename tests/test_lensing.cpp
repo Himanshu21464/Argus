@@ -297,5 +297,85 @@ int main() {
     assert(threw);
   }
 
+  // ─── 19. ExternalShear deflection closed form. ──────────────────────
+  // α_x = γ_1 θ_x + γ_2 θ_y, α_y = γ_2 θ_x - γ_1 θ_y.
+  {
+    ExternalShear sh(/*g1=*/0.05, /*g2=*/-0.03);
+    for (Vec2 t : {Vec2{1.0, 0.5}, Vec2{0.0, 1.0}, Vec2{-2.0, 0.7}}) {
+      Vec2 a = sh.deflection(t);
+      assert(close(a.x,  0.05 * t.x + (-0.03) * t.y, 1.0e-12));
+      assert(close(a.y, -0.03 * t.x - ( 0.05) * t.y, 1.0e-12));
+    }
+  }
+
+  // ─── 20. ExternalShear potential is gradient-consistent with α. ────
+  {
+    ExternalShear sh(0.06, 0.04);
+    const double h = 1.0e-5;
+    for (Vec2 t : {Vec2{0.7, -0.2}, Vec2{1.5, 1.0}, Vec2{-0.9, 0.4}}) {
+      const double pxp = sh.potential({t.x + h, t.y});
+      const double pxm = sh.potential({t.x - h, t.y});
+      const double pyp = sh.potential({t.x, t.y + h});
+      const double pym = sh.potential({t.x, t.y - h});
+      const double gx = (pxp - pxm) / (2.0 * h);
+      const double gy = (pyp - pym) / (2.0 * h);
+      Vec2 a = sh.deflection(t);
+      assert(close(gx, a.x, 1.0e-7, 1.0e-9));
+      assert(close(gy, a.y, 1.0e-7, 1.0e-9));
+    }
+  }
+
+  // ─── 21. CompoundLens sums deflection and potential. ───────────────
+  {
+    auto sis = std::make_shared<SIS>(1.0);
+    auto sh  = std::make_shared<ExternalShear>(0.05, -0.02);
+    CompoundLens c{{sis, sh}};
+    for (Vec2 t : {Vec2{1.0, 0.5}, Vec2{-0.3, 1.5}, Vec2{0.7, -0.7}}) {
+      Vec2 a_sum = sis->deflection(t);
+      Vec2 a_sh  = sh->deflection(t);
+      Vec2 a_c   = c.deflection(t);
+      assert(close(a_c.x, a_sum.x + a_sh.x, 1.0e-12));
+      assert(close(a_c.y, a_sum.y + a_sh.y, 1.0e-12));
+      const double p_c = c.potential(t);
+      const double p_sum = sis->potential(t) + sh->potential(t);
+      assert(close(p_c, p_sum, 1.0e-12));
+    }
+  }
+
+  // ─── 22. SIS + strong shear: 4-image quad config via find_images. ──
+  // Shear breaks the SIS axisymmetry → up to 4 images for source
+  // inside the tangential caustic. Verify lens-equation closure on
+  // every image.
+  {
+    auto sis = std::make_shared<SIS>(1.0);
+    auto sh  = std::make_shared<ExternalShear>(0.10, 0.0);   // axis-aligned
+    CompoundLens c{{sis, sh}};
+    Vec2 beta{0.05, 0.02};
+    auto imgs = find_images(c, beta, /*radius=*/2.0, /*grid=*/120);
+    assert(imgs.size() >= 2);                                // at minimum 2
+    for (const auto& im : imgs) {
+      Vec2 b = lens_equation(c, im.theta);
+      assert(close(b.x, beta.x, 1.0e-7, 1.0e-7));
+      assert(close(b.y, beta.y, 1.0e-7, 1.0e-7));
+      assert(std::isfinite(im.magnification));
+    }
+  }
+
+  // ─── 23. CompoundLens null component throws. ───────────────────────
+  {
+    bool threw = false;
+    try {
+      std::vector<std::shared_ptr<const Lens>> bad{nullptr};
+      CompoundLens c{bad};
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try {
+      CompoundLens c;
+      c.add(nullptr);
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }
