@@ -79,4 +79,29 @@ std::vector<UVPoint> uv_coverage_snapshot(
     const std::vector<double>& antenna_north_m,
     double                     wavelength_m);
 
+// Earth-rotation UV synthesis (the standard real-array trick): as
+// the Earth rotates, projected baselines sweep tracks in the UV
+// plane. For a source at (HA, dec) seen from a station at latitude L
+// the local ENU baseline (B_E, B_N, 0) is rotated into equatorial
+// coords then projected onto the UV plane perpendicular to the source
+// direction:
+//
+//     B_X = -sin(L) · B_N,    B_Y = B_E,    B_Z = +cos(L) · B_N
+//     u =  sin(h) · B_X + cos(h) · B_Y
+//     v = -sin(δ) cos(h) · B_X + sin(δ) sin(h) · B_Y + cos(δ) · B_Z
+//
+// (u, v) are then divided by wavelength.
+//
+// Returns N·(N-1)/2 · N_HA UVPoints in HA-major order: all baselines
+// at hour_angles[0], then all at hour_angles[1], ... All antennas are
+// assumed to be at altitude 0 (no B_U); for real arrays this is a
+// negligible approximation at the array footprint.
+std::vector<UVPoint> uv_coverage_track(
+    const std::vector<double>& antenna_east_m,
+    const std::vector<double>& antenna_north_m,
+    double                     latitude_rad,
+    const std::vector<double>& hour_angles_rad,
+    double                     declination_rad,
+    double                     wavelength_m);
+
 }  // namespace argus::interferometry

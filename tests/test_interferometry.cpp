@@ -207,5 +207,82 @@ int main() {
     }
   }
 
+  // ─── 12. uv_coverage_track size = N_baselines · N_HA. ───────────────
+  {
+    std::vector<double> east{0.0, 100.0, 50.0};
+    std::vector<double> north{0.0, 0.0, 86.6};
+    std::vector<double> ha{-1.0, -0.5, 0.0, 0.5, 1.0};   // 5 hour angles
+    auto track = uv_coverage_track(east, north, /*lat=*/0.6,
+                                   ha, /*dec=*/0.5, 0.21);
+    assert(track.size() == 3 * 5);   // 3 baselines × 5 HAs
+  }
+
+  // ─── 13. Track at HA=0 with source at zenith (δ=L) reduces to
+  //     the meridian-snapshot uv_coverage_snapshot. ──────────────────
+  {
+    std::vector<double> east{0.0, 100.0, 50.0, 0.0};
+    std::vector<double> north{0.0, 0.0, 86.6, 200.0};
+    const double lat = 0.5;        // arbitrary latitude
+    auto snap  = uv_coverage_snapshot(east, north, 0.21);
+    auto track = uv_coverage_track(east, north, lat,
+                                   /*ha=*/{0.0}, /*dec=*/lat, 0.21);
+    assert(snap.size() == track.size());
+    for (std::size_t i = 0; i < snap.size(); ++i) {
+      assert(close(snap[i].u, track[i].u, 1.0e-12));
+      assert(close(snap[i].v, track[i].v, 1.0e-12));
+    }
+  }
+
+  // ─── 14. Single East-West baseline traces an ellipse over an HA
+  //     track: u(h) = B_E cos(h)/λ, v(h) = B_E sin(δ) sin(h)/λ.
+  //     Therefore u² + (v/sin δ)² = (B_E/λ)². ─────────────────────────
+  {
+    const double BE = 800.0;        // metres, East-only baseline
+    const double lambda = 0.21;
+    const double dec = 0.7;
+    std::vector<double> east{0.0, BE};
+    std::vector<double> north{0.0, 0.0};
+    std::vector<double> ha;
+    for (int k = -10; k <= 10; ++k) ha.push_back(k * 0.1);
+    auto track = uv_coverage_track(east, north, /*lat=*/0.5, ha, dec, lambda);
+    const double R = BE / lambda;
+    const double sd = std::sin(dec);
+    for (std::size_t i = 0; i < track.size(); ++i) {
+      const double u = track[i].u;
+      const double v = track[i].v;
+      const double e = u * u + (v / sd) * (v / sd);
+      assert(close(e, R * R, 1.0e-10, 1.0e-6));
+    }
+    // Also sanity-check one explicit value: at h=0, u=BE/λ, v=0.
+    auto t0 = uv_coverage_track(east, north, 0.5, {0.0}, dec, lambda);
+    assert(t0.size() == 1);
+    assert(close(t0[0].u, R, 1.0e-12));
+    assert(std::fabs(t0[0].v) < 1.0e-12);
+  }
+
+  // ─── 15. uv_coverage_track bad inputs throw. ────────────────────────
+  {
+    bool threw = false;
+    try {
+      (void)uv_coverage_track({0.0, 1.0}, {0.0}, 0.5, {0.0}, 0.5, 1.0);
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try {
+      (void)uv_coverage_track({0.0}, {0.0}, 0.5, {0.0}, 0.5, 1.0);
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try {
+      (void)uv_coverage_track({0.0, 1.0}, {0.0, 1.0}, 0.5, {}, 0.5, 1.0);
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try {
+      (void)uv_coverage_track({0.0, 1.0}, {0.0, 1.0}, 0.5, {0.0}, 0.5, 0.0);
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }

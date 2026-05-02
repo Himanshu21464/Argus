@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.7.4 — 2026-05-02 — Earth-rotation UV synthesis
+
+The standard real-array trick: as the Earth rotates, projected
+baselines sweep tracks in the UV plane. Single snapshot has only
+N(N-1)/2 baselines; a multi-hour track samples thousands of UV
+points. Argus now ships the closed-form ENU → equatorial → UV
+projection used in CASA / WSClean / AIPS so any real array layout
++ source position + integration schedule produces the corresponding
+UV coverage.
+
+### Added
+- **`argus::interferometry::uv_coverage_track(east, north, latitude,
+  hour_angles, declination, λ)`** — for each (HA), rotates each ENU
+  baseline into equatorial (X = -sin L · B_N; Y = B_E; Z = cos L · B_N)
+  then projects onto the UV plane perpendicular to source direction:
+      u =  sin h · B_X + cos h · B_Y
+      v = -sin δ cos h · B_X + sin δ sin h · B_Y + cos δ · B_Z
+  Returns N_baselines · N_HA UVPoints in HA-major order.
+- **`test_interferometry` extended (11 → 15 test groups)**:
+  * Track size = N_baselines · N_HA
+  * Snapshot at HA=0 with source at zenith (δ=L) reduces to the
+    existing meridian-snapshot uv_coverage_snapshot bit-exactly
+  * **Single E-W baseline traces an ellipse**: u² + (v/sin δ)² =
+    (B_E/λ)² verified at 21 HAs with explicit (h=0) sanity check
+  * 4 bad-input throws
+
+### Validated
+42/42 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.3 — 2026-05-02 — NFW dark-matter halo lens
 
 The universal cosmological-simulation density profile (Navarro-Frenk-
