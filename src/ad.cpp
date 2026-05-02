@@ -168,4 +168,51 @@ Var operator/(double s, const Var& a) {
   return a.tape->record_unary(v, a.idx, -s / (a.val * a.val));
 }
 
+// ─── Optimizers ──────────────────────────────────────────────────────
+
+Adam::Adam(std::size_t n_params,
+           double lr, double beta1, double beta2, double eps)
+    : m_(n_params, 0.0), v_(n_params, 0.0),
+      lr_(lr), beta1_(beta1), beta2_(beta2), eps_(eps) {
+  if (!(lr > 0.0)) die("Adam: lr must be positive");
+  if (!(beta1 >= 0.0 && beta1 < 1.0)) die("Adam: beta1 in [0, 1)");
+  if (!(beta2 >= 0.0 && beta2 < 1.0)) die("Adam: beta2 in [0, 1)");
+  if (!(eps > 0.0)) die("Adam: eps must be positive");
+}
+
+void Adam::step(std::vector<double>& params,
+                const std::vector<double>& grads) {
+  if (params.size() != m_.size() || grads.size() != m_.size()) {
+    die("Adam::step: params/grads size mismatch");
+  }
+  ++t_;
+  const double bc1 = 1.0 - std::pow(beta1_, static_cast<double>(t_));
+  const double bc2 = 1.0 - std::pow(beta2_, static_cast<double>(t_));
+  for (std::size_t i = 0; i < params.size(); ++i) {
+    const double g = grads[i];
+    m_[i] = beta1_ * m_[i] + (1.0 - beta1_) * g;
+    v_[i] = beta2_ * v_[i] + (1.0 - beta2_) * g * g;
+    const double mh = m_[i] / bc1;
+    const double vh = v_[i] / bc2;
+    params[i] -= lr_ * mh / (std::sqrt(vh) + eps_);
+  }
+}
+
+SGD::SGD(std::size_t n_params, double lr, double momentum)
+    : velocity_(n_params, 0.0), lr_(lr), momentum_(momentum) {
+  if (!(lr > 0.0)) die("SGD: lr must be positive");
+  if (!(momentum >= 0.0 && momentum < 1.0)) die("SGD: momentum in [0, 1)");
+}
+
+void SGD::step(std::vector<double>& params,
+               const std::vector<double>& grads) {
+  if (params.size() != velocity_.size() || grads.size() != velocity_.size()) {
+    die("SGD::step: params/grads size mismatch");
+  }
+  for (std::size_t i = 0; i < params.size(); ++i) {
+    velocity_[i] = momentum_ * velocity_[i] - lr_ * grads[i];
+    params[i] += velocity_[i];
+  }
+}
+
 }  // namespace argus::ad

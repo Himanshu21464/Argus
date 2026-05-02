@@ -117,4 +117,57 @@ class Tape {
   std::vector<double>      gradients_;       // populated by backward()
 };
 
+// ─── Optimizers ──────────────────────────────────────────────────────
+//
+// These operate on raw `double` parameter arrays + their gradients.
+// The training loop pattern is:
+//
+//   std::vector<double> params = ...;
+//   Adam opt(params.size(), 1e-2);
+//   for (epoch = ...) {
+//     Tape t;
+//     std::vector<Var> ps;
+//     for (double p : params) ps.push_back(t.input(p));
+//     Var loss = compute_loss(t, ps, batch);
+//     t.backward(loss);
+//     std::vector<double> grads(params.size());
+//     for (i = ...) grads[i] = t.grad(ps[i]);
+//     opt.step(params, grads);
+//   }
+
+class Adam {
+ public:
+  Adam(std::size_t n_params,
+       double lr = 1.0e-3,
+       double beta1 = 0.9,
+       double beta2 = 0.999,
+       double eps = 1.0e-8);
+
+  // Apply one optimizer step: params -= lr * (m_hat / (sqrt(v_hat) + eps))
+  // m and v are the bias-corrected first/second-moment estimates.
+  void step(std::vector<double>& params,
+            const std::vector<double>& grads);
+
+  std::size_t step_count() const noexcept { return t_; }
+
+ private:
+  std::vector<double> m_;       // 1st moment
+  std::vector<double> v_;       // 2nd moment
+  double lr_, beta1_, beta2_, eps_;
+  std::size_t t_ = 0;
+};
+
+// SGD with momentum. Useful baseline; Adam usually outperforms.
+class SGD {
+ public:
+  SGD(std::size_t n_params, double lr = 1.0e-2, double momentum = 0.0);
+
+  void step(std::vector<double>& params,
+            const std::vector<double>& grads);
+
+ private:
+  std::vector<double> velocity_;
+  double lr_, momentum_;
+};
+
 }  // namespace argus::ad

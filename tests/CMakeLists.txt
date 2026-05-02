@@ -133,3 +133,7 @@ add_test(NAME hmc COMMAND test_hmc)
 add_executable(test_ad test_ad.cpp)
 target_link_libraries(test_ad PRIVATE argus_core)
 add_test(NAME ad COMMAND test_ad)
+
+add_executable(test_optimizer test_optimizer.cpp)
+target_link_libraries(test_optimizer PRIVATE argus_core)
+add_test(NAME optimizer COMMAND test_optimizer)

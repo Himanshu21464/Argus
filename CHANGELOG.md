@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.5.1 — 2026-05-02 — Adam + SGD optimizers (training pipeline live)
+
+The reverse-mode autograd from v0.5.0 now drives a full training
+pipeline: Adam (Kingma & Ba 2014) and SGD-with-momentum optimizers
+that update parameters from gradients computed by the tape.
+
+Argus can now do gradient-descent learning end-to-end in C++.
+
+### Added
+- **`argus::ad::Adam`** — bias-corrected first/second-moment estimates
+  (m_hat, v_hat). Defaults: lr=1e-3, β1=0.9, β2=0.999, ε=1e-8.
+  Constructor validates parameter ranges; `step(params, grads)`
+  performs one update.
+- **`argus::ad::SGD`** — vanilla SGD with momentum. lr + momentum ∈ [0,1).
+- **`test_optimizer`** (5 test groups):
+  * Adam on quadratic (x-3)² converges to x≈3 within 1e-3 in 1k steps.
+  * SGD-with-momentum on the same problem also converges.
+  * **End-to-end linear regression**: train (w, b) on 200 noisy
+    samples, recover analytic least-squares solution within 2%.
+    Demonstrates the full pipeline: Tape + Adam + mini-batch loss.
+  * Adam vs SGD on a poorly-conditioned quadratic (cond #100):
+    Adam beats SGD-no-momentum by orders of magnitude.
+  * 6 malformed-input throws (negative lr, β out of range,
+    momentum out of range, params/grads size mismatch).
+
+### Validated
+35/35 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+The next iteration ports `argus::nn::Linear::forward` to use the
+`Tape`/`Var` API so neural networks can be trained end-to-end via
+gradient descent in pure C++.
+
+---
+
 ## 0.5.0 — 2026-05-02 — Reverse-mode autograd (Wengert tape)
 
 The major M3 milestone: reverse-mode automatic differentiation via a
