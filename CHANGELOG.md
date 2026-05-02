@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.5.3 — 2026-05-02 — Flow training via reverse-mode AD
+
+A learnable scale+shift 1-D normalizing flow trained end-to-end via
+maximum-likelihood on samples from N(2.5, 0.7²). Verifies the
+flow training pattern works with the new tape — same loop structure
+that scales to the full `nn::NormalizingFlow` of stacked AffineCoupling
+layers.
+
+### Added
+- **`test_flow_training`** — trains s, t such that y = x·exp(s) + t
+  maximises the log-likelihood under a standard-Gaussian base.
+  Asserts:
+  * Loss drops by ≥ 0.5 (substantial training signal).
+  * Recovered (s, t) match closed-form optimum (s* = -ln σ,
+    t* = -μ/σ) to 5%.
+  * Transformed samples have mean ≈ 0 and var ≈ 1 (within
+    finite-sample tolerance for 500 draws).
+
+### Validated
+37/37 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+This closes the M3 milestone in spirit: every component a real
+amortized-SBI retrieval pipeline needs is shipped — physics forward
+model + multiple MCMC samplers + neural-net primitives + Real NVP +
+NormalizingFlow + reverse-mode autograd + Adam + end-to-end NN
+training + flow training. The remaining M3.5 polish (full ConditionalNF,
+WASP-39b benchmark vs petitRADTRANS) is engineering, not invention.
+
+---
+
 ## 0.5.2 — 2026-05-02 — NN training via reverse-mode AD (end-to-end)
 
 The reverse-mode tape now drives a real neural-network training loop.
