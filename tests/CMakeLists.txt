@@ -113,3 +113,7 @@ add_test(NAME chain_io COMMAND test_chain_io)
 add_executable(test_priors test_priors.cpp)
 target_link_libraries(test_priors PRIVATE argus_core)
 add_test(NAME priors COMMAND test_priors)
+
+add_executable(test_posterior_predictive test_posterior_predictive.cpp)
+target_link_libraries(test_posterior_predictive PRIVATE argus_core)
+add_test(NAME posterior_predictive COMMAND test_posterior_predictive)

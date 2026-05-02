@@ -95,6 +95,28 @@ class Retrieval {
 
   const std::vector<Parameter>& parameters() const noexcept { return params_; }
 
+  // Run the forward model at each (thinned) posterior sample to build
+  // a posterior-predictive spectrum: per-wavelength quantiles (16th,
+  // 50th, 84th percentile by default) of the model values across the
+  // sample set. The standard post-MCMC sanity check — the observed
+  // spectrum should fall inside the 16-84% band at most wavelengths
+  // if the retrieval converged well.
+  //
+  //   thin: keep one sample every `thin` (e.g. thin=10 means 10x
+  //         fewer forward calls). Pass thin=1 for no thinning.
+  //
+  // Returns a [n_wn][n_quantile] matrix in the order requested by
+  // `quantiles` (default {0.16, 0.50, 0.84}).
+  struct PosteriorPredictive {
+    std::vector<double> wavenumber_cm;
+    std::vector<double> quantiles;                 // requested percentiles
+    std::vector<std::vector<double>> bands;        // [n_wn][n_quant]
+  };
+  PosteriorPredictive posterior_predictive(
+      const std::vector<std::vector<double>>& samples,
+      std::size_t thin = 1,
+      std::vector<double> quantiles = {0.16, 0.50, 0.84}) const;
+
  private:
   std::vector<Parameter> params_;
   Forward forward_;

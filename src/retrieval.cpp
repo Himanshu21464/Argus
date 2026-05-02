@@ -150,6 +150,65 @@ double Retrieval::log_posterior(const std::vector<double>& state) const {
   return log_prior - 0.5 * chi2;
 }
 
+Retrieval::PosteriorPredictive Retrieval::posterior_predictive(
+    const std::vector<std::vector<double>>& samples,
+    std::size_t thin,
+    std::vector<double> quantiles) const {
+  if (samples.empty()) {
+    throw std::invalid_argument(
+        "Retrieval::posterior_predictive: empty sample set");
+  }
+  if (thin == 0) thin = 1;
+  for (double q : quantiles) {
+    if (!(q >= 0.0 && q <= 1.0)) {
+      throw std::invalid_argument(
+          "Retrieval::posterior_predictive: quantile must be in [0, 1]");
+    }
+  }
+
+  // 1. Run forward model at each thinned sample, collect per-wavelength
+  //    columns of model values.
+  const std::size_t n_keep = (samples.size() + thin - 1) / thin;
+  std::vector<std::vector<double>> per_wn;     // [n_wn][n_keep]
+  std::vector<double> wn;
+  for (std::size_t s = 0, k = 0; s < samples.size(); s += thin, ++k) {
+    Spectrum m = forward_(samples[s]);
+    if (per_wn.empty()) {
+      per_wn.assign(m.values.size(), std::vector<double>{});
+      for (auto& col : per_wn) col.reserve(n_keep);
+      wn = m.wavenumber_cm;
+    } else if (m.values.size() != per_wn.size()) {
+      throw std::runtime_error(
+          "Retrieval::posterior_predictive: forward model returned "
+          "spectrum of inconsistent length across samples");
+    }
+    for (std::size_t i = 0; i < m.values.size(); ++i) {
+      per_wn[i].push_back(m.values[i]);
+    }
+    (void)k;
+  }
+
+  // 2. For each wavelength, sort the column then read out quantiles.
+  PosteriorPredictive out;
+  out.wavenumber_cm = std::move(wn);
+  out.quantiles     = quantiles;
+  out.bands.assign(per_wn.size(), std::vector<double>(quantiles.size()));
+  for (std::size_t i = 0; i < per_wn.size(); ++i) {
+    std::vector<double>& col = per_wn[i];
+    std::sort(col.begin(), col.end());
+    for (std::size_t q = 0; q < quantiles.size(); ++q) {
+      const double idx = quantiles[q] *
+                          static_cast<double>(col.size() - 1);
+      const std::size_t lo =
+          static_cast<std::size_t>(std::floor(idx));
+      const std::size_t hi = std::min(lo + 1, col.size() - 1);
+      const double frac = idx - static_cast<double>(lo);
+      out.bands[i][q] = col[lo] * (1.0 - frac) + col[hi] * frac;
+    }
+  }
+  return out;
+}
+
 Retrieval::Result Retrieval::run_mcmc(
     std::vector<double> init_state,
     std::size_t burn_in_steps,

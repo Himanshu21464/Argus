@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.4.5 — 2026-05-02 — Posterior predictive + example refresh
+
+The standard post-MCMC convergence check: generate model spectra at
+posterior samples, compute per-wavelength quantile bands, verify the
+observed spectrum lies inside.
+
+### Added
+- **`Retrieval::PosteriorPredictive`** struct + method:
+    `posterior_predictive(samples, thin, quantiles)` runs the forward
+    model at each thinned sample and returns per-wavelength band
+    values at the requested quantiles (default {16%, 50%, 84%}).
+- **`test_posterior_predictive`** (6 test groups):
+  * Default quantiles ordered q16 ≤ q50 ≤ q84
+  * Coverage: ≥85% of observations within (band ± 2σ_noise)
+  * Median band within 1% of truth at every wavelength
+  * Custom quantiles {2.5, 50, 97.5%}
+  * Thin=1 vs thin=5 consistent to <0.5%
+  * Empty samples and out-of-range quantiles throw
+
+### Changed
+- **`examples/04_retrieval.cpp`** rewritten to demonstrate the full
+  M3 retrieval pipeline:
+    1. Single-chain MH baseline (acceptance + posterior summary)
+    2. Ensemble sampler with 16 walkers (acceptance + R̂ + ESS)
+    3. Chain saved to CSV (loadable in numpy/pandas)
+    4. Posterior-predictive coverage report
+  Sample run: 91% coverage, R̂ ≈ 1.05 with 16 walkers × 500 steps,
+  truth recovered within 1σ.
+
+### Validated
+30/30 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free.
+
+---
+
 ## 0.4.4 — 2026-05-02 — Extended priors (Gaussian + LogUniform)
 
 Real exoplanet retrievals need flexible priors beyond uniform — e.g.
