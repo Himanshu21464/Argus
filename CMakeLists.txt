@@ -31,6 +31,7 @@ add_library(argus_core STATIC
   src/hitran.cpp
   src/mcmc.cpp
   src/retrieval.cpp
+  src/diagnostics.cpp
 )
 target_include_directories(argus_core PUBLIC include)
 target_compile_features(argus_core PUBLIC cxx_std_20)

@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.4.2 — 2026-05-02 — MCMC convergence diagnostics (R̂ + ESS)
+
+Adds the standard production-MCMC diagnostics: Gelman-Rubin R̂ for
+between-chain convergence, and effective sample size for autocorrelation-
+adjusted "independent-equivalent" sample count.
+
+### Added
+- **`argus::ChainDiagnostics`** + **`argus::compute_diagnostics()`**
+  (`include/argus/diagnostics.hpp`, `src/diagnostics.cpp`):
+    R̂ via the Gelman-Rubin (1992) variance-ratio formula
+        B = (N/(M-1)) · Σ_m (θ̄_m - θ̄_·)²
+        W = (1/M) · Σ_m s_m²
+        V̂ = ((N-1)/N)·W + (1/N)·B
+        R̂ = √(V̂/W)
+    ESS via Geyer's (1992) initial monotone sequence cutoff:
+        sum lag-t autocorrelations until first ρ_t < 0.05;
+        ESS = N·M / (1 + 2·Σ ρ_t)
+  Two overloads: from a multi-chain `vector<vector<vector<double>>>`,
+  or directly from an `EnsembleSampler::Result` (each walker treated
+  as an independent chain).
+- **`test_diagnostics`** (7 test groups):
+  * 4 converged chains from N(0,1) → R̂ ∈ (0.95, 1.05), ESS ≈ N·M
+  * 3 chains stuck at different means → R̂ > 1.5 (non-convergence)
+  * AR(1) with ρ=0.9 → R̂ ≈ 1, ESS << raw count (autocorrelation kills)
+  * 2-D case validates per-parameter shapes
+  * Malformed inputs throw (empty, < 4 samples, unequal lengths)
+  * Single-chain edge case → R̂ = 1.0
+  * EnsembleSampler::Result overload roundtrip
+
+### Validated
+27/27 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free.
+
+---
+
 ## 0.4.1 — 2026-05-01 — Affine-invariant ensemble sampler (emcee-style)
 
 Adds the de-facto astronomy MCMC algorithm: the Goodman & Weare 2010

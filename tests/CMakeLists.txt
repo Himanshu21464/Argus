@@ -101,3 +101,7 @@ add_test(NAME retrieval COMMAND test_retrieval)
 add_executable(test_ensemble test_ensemble.cpp)
 target_link_libraries(test_ensemble PRIVATE argus_core)
 add_test(NAME ensemble COMMAND test_ensemble)
+
+add_executable(test_diagnostics test_diagnostics.cpp)
+target_link_libraries(test_diagnostics PRIVATE argus_core)
+add_test(NAME diagnostics COMMAND test_diagnostics)
