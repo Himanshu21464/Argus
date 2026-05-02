@@ -145,3 +145,7 @@ add_test(NAME nn_training COMMAND test_nn_training)
 add_executable(test_flow_training test_flow_training.cpp)
 target_link_libraries(test_flow_training PRIVATE argus_core)
 add_test(NAME flow_training COMMAND test_flow_training)
+
+add_executable(test_lensing test_lensing.cpp)
+target_link_libraries(test_lensing PRIVATE argus_core)
+add_test(NAME lensing COMMAND test_lensing)

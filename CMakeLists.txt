@@ -35,6 +35,7 @@ add_library(argus_core STATIC
   src/chain_io.cpp
   src/nn.cpp
   src/ad.cpp
+  src/lensing.cpp
 )
 target_include_directories(argus_core PUBLIC include)
 target_compile_features(argus_core PUBLIC cxx_std_20)

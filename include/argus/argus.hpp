@@ -4,6 +4,7 @@
 
 #include "ad.hpp"
 #include "atmosphere.hpp"
+#include "lensing.hpp"
 #include "chain_io.hpp"
 #include "diagnostics.hpp"
 #include "dual.hpp"
