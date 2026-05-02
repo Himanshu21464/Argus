@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.6.3 — 2026-05-02 — Lensing potential + Fermat + time delays
+
+The H0-from-lensed-quasar pipeline (TDCOSMO/H0LiCOW methodology):
+once the lens potential ψ(θ) is in hand, the Fermat potential
+τ = 0.5|θ-β|² - ψ(θ) and the time-delay difference between images
+follow analytically. Argus now ships all three.
+
+### Added
+- **`Lens::potential(theta)`** — virtual on the base class, default
+  returns 0.
+- **`SIS::potential`** — closed form ψ_SIS = θ_E · |θ - centre|.
+- **`SIE::potential`** — closed form Kormann, Schneider & Bartelmann
+  (1994):
+      ψ = (θ_E√q / √(1-q²)) · [x' arctan(qp x'/ψ_e) + y' arctanh(qp y'/ψ_e)]
+  in the major-axis-aligned body frame; rotation-invariant scalar so
+  no back-rotation. Series fall-back for q→1 reduces to ψ_SIS.
+- **`fermat_potential(lens, θ, β)`** — τ = 0.5|θ-β|² - ψ(θ).
+- **`time_delay_arcsec2(lens, θ_a, θ_b, β)`** — Δτ in arcsec². The
+  cosmological time-delay distance D_Δt is intentionally left to the
+  caller (kernel stays unit-clean).
+- **`test_time_delays`** (8 test groups):
+  * SIS potential matches closed form to 1e-12 (3 sample points)
+  * ∇ψ_SIE = α_SIE via central finite differences (3 points)
+  * SIE q=1 potential reduces to SIS to 1e-12
+  * Fermat potential ∇τ = 0 at SIS image positions to 1e-7 (FD)
+  * SIS on-axis closed form Δτ = 2θ_E·β to 1e-12
+  * Off-axis SIS time delay agrees with direct τ-difference + sign-flip
+  * Translation invariance under common shift of lens, source, images
+  * SIE 4-image cusp config: every pairwise Δτ matches τ-difference
+    exactly + non-degenerate (some delays nonzero)
+
+### Validated
+40/40 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.6.2 — 2026-05-02 — M4 wedge 3: SIE lens + numerical image solver
 
 The realistic-galaxy / cluster-scale lens model and a generic Newton

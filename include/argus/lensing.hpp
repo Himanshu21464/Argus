@@ -37,6 +37,11 @@ class Lens {
   // Deflection angle α(θ) (radians, in the same coordinate convention
   // as θ). For axisymmetric lenses α points radially outward.
   virtual Vec2 deflection(Vec2 theta) const = 0;
+
+  // Lensing (scaled gravitational) potential ψ(θ) such that
+  // α(θ) = ∇ψ(θ). Required for the Fermat potential and time delays.
+  // Default implementation returns 0 — concrete lenses override.
+  virtual double potential(Vec2 theta) const { (void)theta; return 0.0; }
 };
 
 // Singular Isothermal Sphere — analytic; the workhorse first-order
@@ -54,7 +59,8 @@ class SIS final : public Lens {
   SIS(double einstein_radius_arcsec,
       Vec2 centre = {0.0, 0.0});
 
-  Vec2 deflection(Vec2 theta) const override;
+  Vec2   deflection(Vec2 theta) const override;
+  double potential (Vec2 theta) const override;     // ψ_SIS = θ_E · |θ - centre|
 
   double einstein_radius() const noexcept { return theta_E_; }
   Vec2   centre()          const noexcept { return centre_; }
@@ -105,7 +111,8 @@ class SIE final : public Lens {
       double position_angle_rad = 0.0,
       Vec2 centre = {0.0, 0.0});
 
-  Vec2 deflection(Vec2 theta) const override;
+  Vec2   deflection(Vec2 theta) const override;
+  double potential (Vec2 theta) const override;
 
   double einstein_radius() const noexcept { return theta_E_; }
   double axis_ratio()     const noexcept { return q_; }
@@ -142,5 +149,24 @@ std::vector<Image> find_images(const Lens& lens,
                                double tol = 1.0e-9,
                                double dedup_tol = 1.0e-4,
                                std::size_t newton_max_iter = 50);
+
+// Fermat potential (the time-arrival surface, modulo a global
+// constant): τ(θ; β) = 0.5 · |θ - β|² - ψ(θ). Critical points of τ
+// are images of β; the values of τ at images give image arrival times
+// up to a multiplicative cosmological factor.
+double fermat_potential(const Lens& lens, Vec2 theta, Vec2 beta);
+
+// Dimensionless time-delay surface difference Δτ between two images
+// of the same source β. For two SIS images Δτ = 2 · θ_E · β
+// (closed form). To convert to a physical time delay in days:
+//
+//     Δt[days] = (1 + z_l) · D_Δt[Mpc] / c[Mpc/day] · Δτ[arcsec²]
+//                · (4.848e-6)²
+//
+// where D_Δt is the time-delay distance and the (4.848e-6)² factor
+// converts arcsec² to rad². The cosmology is intentionally pushed
+// out to the caller so this kernel is unit-clean.
+double time_delay_arcsec2(const Lens& lens, Vec2 theta_a, Vec2 theta_b,
+                          Vec2 beta);
 
 }  // namespace argus::lensing

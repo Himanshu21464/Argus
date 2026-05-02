@@ -22,6 +22,11 @@ Vec2 SIS::deflection(Vec2 theta) const {
   return {theta_E_ * d.x / r, theta_E_ * d.y / r};
 }
 
+double SIS::potential(Vec2 theta) const {
+  const Vec2 d = theta - centre_;
+  return theta_E_ * std::sqrt(d.x * d.x + d.y * d.y);
+}
+
 // ─── Lens equation ────────────────────────────────────────────────────
 
 Vec2 lens_equation(const Lens& lens, Vec2 theta) {
@@ -133,6 +138,36 @@ Vec2 SIE::deflection(Vec2 theta) const {
   // Rotate back to sky frame.
   return {cphi * ap.x - sphi * ap.y,
           sphi * ap.x + cphi * ap.y};
+}
+
+double SIE::potential(Vec2 theta) const {
+  // Translate + rotate into major-axis-aligned frame (same as
+  // deflection).
+  const double dx = theta.x - centre_.x;
+  const double dy = theta.y - centre_.y;
+  const double cphi = std::cos(phi_);
+  const double sphi = std::sin(phi_);
+  const double xp =  cphi * dx + sphi * dy;
+  const double yp = -sphi * dx + cphi * dy;
+
+  // Kormann, Schneider & Bartelmann 1994 — gradient of the potential
+  // gives the deflection. In the body frame:
+  //     ψ = (θ_E √q / √(1-q²)) · [x' · arctan(qp x'/ψ_e)
+  //                              + y' · arctanh(qp y'/ψ_e)]
+  //   where ψ_e = √(q² x'² + y'²) and qp = √(1 - q²).
+  // The potential is rotation-invariant (same value in body and sky
+  // frames) — a scalar — so no back-rotation needed.
+  if (std::fabs(1.0 - q_) < 1.0e-6) {
+    // SIS limit: ψ = θ_E · r (already rotation-invariant).
+    return theta_E_ * std::sqrt(xp * xp + yp * yp);
+  }
+  const double q2  = q_ * q_;
+  const double psi_e = std::sqrt(q2 * xp * xp + yp * yp);
+  if (psi_e < 1.0e-15) return 0.0;
+  const double qp  = std::sqrt(1.0 - q2);
+  const double pre = theta_E_ * std::sqrt(q_) / qp;
+  return pre * (xp * std::atan( qp * xp / psi_e) +
+                yp * std::atanh(qp * yp / psi_e));
 }
 
 // ─── Generic image finder ─────────────────────────────────────────────
@@ -284,6 +319,20 @@ std::vector<Image> find_images(const Lens& lens,
               return a.theta.y < b.theta.y;
             });
   return roots;
+}
+
+// ─── Fermat potential + time delay ────────────────────────────────────
+
+double fermat_potential(const Lens& lens, Vec2 theta, Vec2 beta) {
+  const double dx = theta.x - beta.x;
+  const double dy = theta.y - beta.y;
+  return 0.5 * (dx * dx + dy * dy) - lens.potential(theta);
+}
+
+double time_delay_arcsec2(const Lens& lens, Vec2 theta_a, Vec2 theta_b,
+                          Vec2 beta) {
+  return fermat_potential(lens, theta_b, beta) -
+         fermat_potential(lens, theta_a, beta);
 }
 
 }  // namespace argus::lensing
