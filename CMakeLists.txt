@@ -29,6 +29,8 @@ add_library(argus_core STATIC
   src/line_list.cpp
   src/partition.cpp
   src/hitran.cpp
+  src/mcmc.cpp
+  src/retrieval.cpp
 )
 target_include_directories(argus_core PUBLIC include)
 target_compile_features(argus_core PUBLIC cxx_std_20)
@@ -55,6 +57,14 @@ add_executable(example_03_real_hitran
 )
 target_link_libraries(example_03_real_hitran PRIVATE argus_core)
 set_target_properties(example_03_real_hitran PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)
+
+add_executable(example_04_retrieval
+  examples/04_retrieval.cpp
+)
+target_link_libraries(example_04_retrieval PRIVATE argus_core)
+set_target_properties(example_04_retrieval PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
 )
 

@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.4.0 — 2026-05-01 — M3 starting wedge: MCMC + retrieval API
+
+The first M3 deliverable: posterior inference. Argus can now ingest
+real (or synthetic) JWST-class spectra and recover atmospheric
+parameters via Metropolis-Hastings MCMC against any forward model
+the kernel can build.
+
+### Added
+- **`argus::MetropolisHastings`** (`include/argus/mcmc.hpp`,
+  `src/mcmc.cpp`) — single-chain Metropolis sampler with isotropic
+  Gaussian proposal. Deterministic given a `uint64_t` seed (verified
+  bit-equal across runs). API: `burn_in()`, `sample()`,
+  `acceptance_rate()`. Validates inputs strictly (null callable, empty
+  / non-positive proposal widths throw).
+
+- **`argus::Parameter`, `argus::PosteriorEntry`,
+  `argus::PosteriorSummary`** — uniform-prior parameter spec, per-
+  parameter median + mean + stddev + 16/84-percentile credible
+  interval. Lookup by name throws on miss.
+
+- **`argus::Retrieval`** (`include/argus/retrieval.hpp`,
+  `src/retrieval.cpp`) — connects a forward-model callable, an
+  observed `Spectrum`, per-wavelength uncertainty, and a parameter
+  list with uniform priors. Exposes `log_posterior()` (-inf outside
+  prior box; chi² log-likelihood inside) and `run_mcmc()` with
+  optional auto-tuned proposal widths (default = box-width / 40).
+
+- **`test_mcmc`** (5 assertions): recovers analytic 1D Gaussian
+  (mean=3, σ=1.5) and 2D Gaussian (μ=[-2,5], σ=[0.5,2]) to <5%/<10%
+  from 20-30k samples; verifies seed-determinism and input validation.
+
+- **`test_posterior`** (4 assertions): summary statistics from 100k
+  Gaussian draws, by-name lookup, throw on unknown name and shape
+  mismatch.
+
+- **`test_retrieval`** (6 assertions): generates a synthetic noisy
+  JWST-PRISM-band spectrum at known T=1500 K and log10(VMR)=-3, runs
+  MCMC with deliberately wrong initial guess, asserts:
+    * acceptance rate within (5%, 85%)
+    * posterior median within 3σ of truth (both T and log10_VMR)
+    * truth inside ±2.5σ of mean
+    * bit-exact reproducibility on identical seed
+
+- **`examples/04_retrieval.cpp`** — runnable end-to-end retrieval demo.
+  Outputs the recovered posterior alongside the injected truth in a
+  publication-style "median +up -down (mean ± stddev)" table.
+
+### Validated
+25/25 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free. Retrieval example recovers
+T = 1489 K (truth 1500 K) and log10(VMR) = -3.01 (truth -3.0) from
+synthetic data with 50 ppm noise.
+
+---
+
 ## 0.3.6 — 2026-05-01 — Rayleigh + CH4 + comprehensive hot-Jupiter test
 
 Adds the last two physics components a real exoplanet retrieval needs

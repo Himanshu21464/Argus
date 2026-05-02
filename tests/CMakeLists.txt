@@ -85,3 +85,15 @@ add_test(NAME rayleigh COMMAND test_rayleigh)
 add_executable(test_hot_jupiter test_hot_jupiter.cpp)
 target_link_libraries(test_hot_jupiter PRIVATE argus_core)
 add_test(NAME hot_jupiter COMMAND test_hot_jupiter)
+
+add_executable(test_mcmc test_mcmc.cpp)
+target_link_libraries(test_mcmc PRIVATE argus_core)
+add_test(NAME mcmc COMMAND test_mcmc)
+
+add_executable(test_posterior test_posterior.cpp)
+target_link_libraries(test_posterior PRIVATE argus_core)
+add_test(NAME posterior COMMAND test_posterior)
+
+add_executable(test_retrieval test_retrieval.cpp)
+target_link_libraries(test_retrieval PRIVATE argus_core)
+add_test(NAME retrieval COMMAND test_retrieval)
