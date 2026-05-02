@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.6.1 — 2026-05-02 — M4 wedge 2: lensing retrieval (substrate proof)
+
+The full M4 substrate-claim test: the same Argus `Retrieval` API used
+for exoplanet atmospheric retrieval now drives strong-lensing parameter
+inference from observed image positions. Different physics, identical
+infrastructure.
+
+### Added
+- **`test_lensing_retrieval`** — 5-parameter affine-invariant ensemble
+  MCMC retrieval over (θ_E, lens_x, lens_y, source_x, source_y) for an
+  SIS lens. Truth is recovered to within 3σ on every parameter from
+  noisy synthetic image positions (σ = 0.02 arcsec). Pipeline reuses
+  the existing `argus::Spectrum` / `Retrieval::log_posterior` /
+  `EnsembleSampler` / `PosteriorSummary` / `Retrieval::posterior_predictive`
+  surface unchanged — the only lensing-specific code is the `Vec2`-style
+  forward closure on top of `argus::lensing::sis_images`.
+- 5 test groups: forward sanity → ensemble run with finite acceptance
+  → 3σ marginal recovery → posterior-predictive 5–95% bracketing of
+  every observation → bit-exact determinism on identical seed.
+
+### Why ensemble over single-chain MH
+SIS image positions are only weakly sensitive to a translation that
+shifts both lens and source by the same vector — single-chain MH with
+isotropic proposals biases the marginal posterior on lens position by
+6–8σ. The Goodman-Weare stretch move is affine-invariant by
+construction and recovers the correct (broader) posterior, dropping
+the bias under 2σ. The test documents this explicitly so the choice
+of sampler reads as physics, not as a tuning workaround.
+
+### Validated
+39/39 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.6.0 — 2026-05-02 — M4 starting wedge: strong-lensing pass
 
 Argus's substrate claim — same Argus IR + Retrieval pattern generalises
