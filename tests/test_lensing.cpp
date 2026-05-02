@@ -146,5 +146,156 @@ int main() {
     assert(threw);
   }
 
+  // ─── 9. SIE with q=1 reduces to SIS bit-exactly (or to 1e-12). ──────
+  {
+    SIS sis(1.5);
+    SIE sie(1.5, /*q=*/1.0);
+    for (Vec2 t : {Vec2{1.0, 0.5}, Vec2{-0.3, 2.0},
+                   Vec2{0.5, -1.2}, Vec2{2.0, 0.0}}) {
+      Vec2 a_sis = sis.deflection(t);
+      Vec2 a_sie = sie.deflection(t);
+      assert(close(a_sis.x, a_sie.x, 1.0e-12, 1.0e-12));
+      assert(close(a_sis.y, a_sie.y, 1.0e-12, 1.0e-12));
+    }
+  }
+
+  // ─── 10. SIE deflection on the major axis (y=0) — closed form. ─────
+  // At (x, 0), ψ = q|x|, so:
+  //   α_x = (θ_E √q / √(1-q²)) · arctan(√(1-q²)·sign(x)/q)
+  //   α_y = 0
+  {
+    const double te = 1.2;
+    const double q  = 0.7;
+    SIE sie(te, q);
+    Vec2 a = sie.deflection({1.0, 0.0});
+    const double qp = std::sqrt(1.0 - q * q);
+    const double exp_ax = te * std::sqrt(q) / qp * std::atan(qp / q);
+    assert(close(a.x, exp_ax, 1.0e-12));
+    assert(std::fabs(a.y) < 1.0e-15);
+  }
+
+  // ─── 11. SIE deflection on the minor axis (x=0) — closed form. ─────
+  //   α_x = 0
+  //   α_y = (θ_E √q / √(1-q²)) · arctanh(√(1-q²)·sign(y))
+  {
+    const double te = 1.2;
+    const double q  = 0.7;
+    SIE sie(te, q);
+    Vec2 a = sie.deflection({0.0, 1.0});
+    const double qp = std::sqrt(1.0 - q * q);
+    const double exp_ay = te * std::sqrt(q) / qp * std::atanh(qp);
+    assert(close(a.y, exp_ay, 1.0e-12));
+    assert(std::fabs(a.x) < 1.0e-15);
+  }
+
+  // ─── 12. SIE point-symmetry: α(-θ) = -α(θ). ─────────────────────────
+  {
+    SIE sie(1.0, 0.6, /*phi=*/0.7);
+    for (Vec2 t : {Vec2{0.7, 0.4}, Vec2{1.5, -0.3}, Vec2{-0.2, 0.9}}) {
+      Vec2 ap = sie.deflection(t);
+      Vec2 an = sie.deflection({-t.x, -t.y});
+      assert(std::fabs(ap.x + an.x) < 1.0e-12);
+      assert(std::fabs(ap.y + an.y) < 1.0e-12);
+    }
+  }
+
+  // ─── 13. SIE rotation covariance: rotating the lens by π/2 and
+  //     rotating θ by π/2 yields the π/2-rotated deflection. ──────────
+  {
+    SIE sie_0 (1.0, 0.7, /*phi=*/0.0);
+    SIE sie_90(1.0, 0.7, /*phi=*/M_PI / 2.0);
+    Vec2 t {1.0, 0.5};
+    Vec2 t90{-0.5, 1.0};                          // 90° CCW rotation
+    Vec2 a0  = sie_0.deflection(t);
+    Vec2 a90 = sie_90.deflection(t90);
+    Vec2 a0_rot{-a0.y, a0.x};                      // 90° CCW rotation
+    assert(close(a0_rot.x, a90.x, 1.0e-12));
+    assert(close(a0_rot.y, a90.y, 1.0e-12));
+  }
+
+  // ─── 14. SIE off-centre lens: deflection translation-invariant. ────
+  {
+    Vec2 c{0.4, -0.3};
+    SIE sie_off(1.2, 0.7, 0.5, c);
+    SIE sie_at0(1.2, 0.7, 0.5, {0.0, 0.0});
+    Vec2 t_rel{0.8, 1.1};
+    Vec2 a_off = sie_off.deflection({t_rel.x + c.x, t_rel.y + c.y});
+    Vec2 a_at0 = sie_at0.deflection(t_rel);
+    assert(close(a_off.x, a_at0.x, 1.0e-12));
+    assert(close(a_off.y, a_at0.y, 1.0e-12));
+  }
+
+  // ─── 15. SIE 4-image config via find_images: source inside the
+  //     tangential caustic produces 4 images, each closing the lens
+  //     equation. ───────────────────────────────────────────────────
+  {
+    SIE sie(/*theta_E=*/1.0, /*q=*/0.7);
+    Vec2 beta{0.05, 0.03};                          // near-cusp source
+    auto imgs = find_images(sie, beta, /*radius=*/2.0, /*grid=*/100);
+    assert(imgs.size() == 4);
+    for (const auto& im : imgs) {
+      Vec2 b = lens_equation(sie, im.theta);
+      assert(close(b.x, beta.x, 1.0e-8, 1.0e-8));
+      assert(close(b.y, beta.y, 1.0e-8, 1.0e-8));
+      // Magnification finite and > 1 near a caustic.
+      assert(std::isfinite(im.magnification));
+      assert(im.magnification > 1.0);
+    }
+  }
+
+  // ─── 16. SIE q=1 (i.e. SIS via SIE) with find_images recovers the
+  //     2-image solution that sis_images returns. ────────────────────
+  {
+    SIE sie(1.0, 1.0);
+    Vec2 beta{0.3, 0.0};
+    auto imgs = find_images(sie, beta, 2.0, 80);
+    assert(imgs.size() == 2);
+    // Sorted by x: inner (-0.7, 0) then outer (1.3, 0).
+    assert(close(imgs[0].theta.x, -0.7, 1.0e-6, 1.0e-6));
+    assert(close(imgs[1].theta.x,  1.3, 1.0e-6, 1.0e-6));
+    assert(std::fabs(imgs[0].theta.y) < 1.0e-6);
+    assert(std::fabs(imgs[1].theta.y) < 1.0e-6);
+    // SIS magnifications: 0.7/0.3, 1.3/0.3.
+    assert(close(imgs[0].magnification, 0.7 / 0.3, 1.0e-3));
+    assert(close(imgs[1].magnification, 1.3 / 0.3, 1.0e-3));
+  }
+
+  // ─── 17. SIE bad inputs throw. ──────────────────────────────────────
+  {
+    bool threw = false;
+    try { SIE(0.0, 0.7); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { SIE(1.0, 0.0); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { SIE(1.0, 1.5); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { SIE(1.0, -0.5); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
+  // ─── 18. find_images bad inputs throw. ──────────────────────────────
+  {
+    SIS sis(1.0);
+    bool threw = false;
+    try { (void)find_images(sis, {0.0, 0.0}, /*radius=*/0.0); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { (void)find_images(sis, {0.0, 0.0}, 1.0, /*grid_n=*/1); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { (void)find_images(sis, {0.0, 0.0}, 1.0, 10, /*tol=*/0.0); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }

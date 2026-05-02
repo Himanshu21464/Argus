@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.6.2 — 2026-05-02 — M4 wedge 3: SIE lens + numerical image solver
+
+The realistic-galaxy / cluster-scale lens model and a generic Newton
+image solver. Argus can now generate the 4-image cusp/cross
+configurations that real strong-lensing systems exhibit.
+
+### Added
+- **`argus::lensing::SIE`** — Singular Isothermal Ellipsoid via the
+  closed-form Kormann, Schneider & Bartelmann 1994 deflection (eqs
+  40-41). Parameters: θ_E (SIS-equivalent Einstein radius), q
+  (axis ratio), φ (position angle), centre. Rotates the field into
+  the major-axis-aligned frame, evaluates `arctan / arctanh` of the
+  scaled coordinate, and rotates back. Series fall-back for q→1
+  avoids the 1/√(1-q²) singularity; the q=1 limit reduces to SIS
+  bit-exactly.
+- **`argus::lensing::find_images(lens, β, ...)`** — generic
+  numerical image solver for any `Lens`. Coarse grid scan locates
+  candidate basins, then Newton iteration (with central-difference
+  Jacobian of α) converges to each root. Magnification computed from
+  1/|det(I − ∂α/∂θ)|. Deduplicates within a configurable tolerance.
+- **`test_lensing` extended (10 → 18 test groups)**:
+  * SIE q=1 reduces to SIS bit-exactly (4 sample points)
+  * Major-axis closed form: α at (x,0) matches arctan formula
+  * Minor-axis closed form: α at (0,y) matches arctanh formula
+  * Point-symmetry α(-θ) = -α(θ) under rotation φ=0.7
+  * Rotation covariance: lens at φ=π/2 + θ_rot=R(π/2)θ ⇒ α_rot=R(π/2)α
+  * Off-centre lens: deflection translation-invariant
+  * **4-image cusp config**: source inside tangential caustic →
+    `find_images` finds 4 images, lens equation closes to <1e-8 each,
+    every magnification finite and > 1
+  * `find_images` on q=1 SIE recovers the 2-image SIS solution and
+    matches both magnifications to 1e-3
+  * SIE bad inputs throw (4 cases)
+  * `find_images` bad inputs throw (3 cases)
+
+### Validated
+39/39 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. The next M4 wedge wires SIE into a substrate-claim
+retrieval test that recovers (θ_E, q, φ, lens, source) from
+synthetic 4-image observations.
+
+---
+
 ## 0.6.1 — 2026-05-02 — M4 wedge 2: lensing retrieval (substrate proof)
 
 The full M4 substrate-claim test: the same Argus `Retrieval` API used

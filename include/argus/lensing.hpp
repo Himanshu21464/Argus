@@ -78,4 +78,69 @@ struct Image {
 // caller's β is in the SAME coordinate frame as the lens centre.
 std::vector<Image> sis_images(const SIS& lens, Vec2 beta);
 
+// Singular Isothermal Ellipsoid — the standard elliptical-galaxy /
+// cluster-scale lens model. Same surface-mass-density profile as SIS
+// (κ ∝ 1/ξ where ξ is the elliptical radius) but with axis ratio
+// q ∈ (0, 1] and a position-angle rotation φ.
+//
+// q = 1 reduces exactly to SIS. For q < 1 the lens produces 2- or
+// 4-image configurations depending on whether the source lies inside
+// the tangential caustic (4 images) or outside (2 images). The
+// closed-form deflection is from Kormann, Schneider & Bartelmann
+// (1994) eqs (40-41), evaluated in the major-axis-aligned frame:
+//
+//     ψ(x, y) = √(q² x² + y²)
+//     α_x =  (θ_E √q / √(1-q²)) · arctan( √(1-q²)·x / ψ )
+//     α_y =  (θ_E √q / √(1-q²)) · arctanh(√(1-q²)·y / ψ )
+//
+// Numerically stable via series expansion as q → 1.
+class SIE final : public Lens {
+ public:
+  // einstein_radius_arcsec: SIS-equivalent θ_E (the q=1 limit).
+  // axis_ratio: q ∈ (0, 1]; 1 ⇒ circular SIS.
+  // position_angle_rad: angle of the major axis from +x, CCW.
+  // centre: lens position on the sky.
+  SIE(double einstein_radius_arcsec,
+      double axis_ratio,
+      double position_angle_rad = 0.0,
+      Vec2 centre = {0.0, 0.0});
+
+  Vec2 deflection(Vec2 theta) const override;
+
+  double einstein_radius() const noexcept { return theta_E_; }
+  double axis_ratio()     const noexcept { return q_; }
+  double position_angle() const noexcept { return phi_; }
+  Vec2   centre()         const noexcept { return centre_; }
+
+ private:
+  double theta_E_;
+  double q_;
+  double phi_;
+  Vec2   centre_;
+};
+
+// Numerical image solver for an arbitrary `Lens` via a coarse grid
+// search followed by Newton refinement. Suitable for SIE and other
+// non-axisymmetric models that have no closed-form image solver.
+//
+// Searches a square box of size 2·search_radius centred on the lens
+// at `grid_n × grid_n` resolution; any cell whose lens-equation
+// residual lies near zero is refined with Newton iteration until
+// |β_model − β_target| < tol. Duplicates within `dedup_tol` are
+// merged.
+//
+// Magnification per image is the inverse of the lens-equation
+// Jacobian determinant at that image position, computed via central
+// differences of the deflection.
+//
+// Typical configuration for an SIE with θ_E ≈ 1: search_radius = 3,
+// grid_n = 60, tol = 1.0e-9, dedup_tol = 1.0e-4.
+std::vector<Image> find_images(const Lens& lens,
+                               Vec2 beta,
+                               double search_radius,
+                               std::size_t grid_n = 60,
+                               double tol = 1.0e-9,
+                               double dedup_tol = 1.0e-4,
+                               std::size_t newton_max_iter = 50);
+
 }  // namespace argus::lensing
