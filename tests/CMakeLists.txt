@@ -157,3 +157,7 @@ add_test(NAME lensing_retrieval COMMAND test_lensing_retrieval)
 add_executable(test_time_delays test_time_delays.cpp)
 target_link_libraries(test_time_delays PRIVATE argus_core)
 add_test(NAME time_delays COMMAND test_time_delays)
+
+add_executable(test_interferometry test_interferometry.cpp)
+target_link_libraries(test_interferometry PRIVATE argus_core)
+add_test(NAME interferometry COMMAND test_interferometry)

@@ -10,6 +10,7 @@
 #include "dual.hpp"
 #include "geometry.hpp"
 #include "hitran.hpp"
+#include "interferometry.hpp"
 #include "ir.hpp"
 #include "line_list.hpp"
 #include "mcmc.hpp"

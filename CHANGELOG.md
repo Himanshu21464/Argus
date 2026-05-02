@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.7.0 — 2026-05-02 — M5 starting wedge: interferometry visibility model
+
+The third physics layer for the substrate claim: radio interferometry.
+Argus can now predict complex visibilities V(u, v) from a sky
+brightness distribution composed of point sources and circular
+Gaussians, the same primitives every real interferometric pipeline
+(CASA, WSClean, AIPS) builds on.
+
+### Added
+- **`argus::interferometry` namespace** (`include/argus/interferometry.hpp`,
+  `src/interferometry.cpp`):
+    `UVPoint`, `Visibility` — basic data types for the (u, v) plane.
+    `PointSource{l, m, flux}` — Dirac δ component.
+    `GaussianSource{l, m, flux, sigma}` — circular Gaussian; FT is
+       another Gaussian in the UV plane × position phase.
+    `predict_visibility(src, uv)` — single-component prediction.
+    `predict_visibilities(srcs, uv_points)` — overloads for both
+       source types; sums over components.
+    `uv_coverage_snapshot(east_m, north_m, λ)` — synthesises N(N-1)/2
+       baseline (u, v) points from antenna positions; the real-array
+       UV coverage primitive.
+- **`test_interferometry`** (11 test groups):
+  * Point at origin → V = F + 0i
+  * Off-origin point: |V|=F, phase = -2π(u·l + v·m)
+  * Visibilities sum across components
+  * Translation theorem: source shift Δ multiplies V by exp(-2πi·Δ·uv)
+  * Conjugate symmetry: V(-u,-v) = conj(V(u,v)) for real sky
+  * Gaussian: V(0)=F, decay exp(-2π² σ² r²) at three UV separations
+  * Gaussian σ=0 reduces to PointSource bit-exact
+  * Mixed Gaussian + point components compose by sum
+  * uv_coverage_snapshot on a 3-antenna triangle: 3 baselines at
+    correct (u, v) values
+  * 4 bad-input throws (size mismatch, < 2 antennas, λ ≤ 0, σ < 0)
+  * Determinism: bit-equal outputs on repeated calls
+
+### Validated
+41/41 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+The next M5 wedge wires this forward into the substrate-claim
+retrieval test that recovers (l, m, F, σ) from noisy visibilities
+via the same `argus::Retrieval` API used for atmospheric and lensing
+inference.
+
+---
+
 ## 0.6.3 — 2026-05-02 — Lensing potential + Fermat + time delays
 
 The H0-from-lensed-quasar pipeline (TDCOSMO/H0LiCOW methodology):
