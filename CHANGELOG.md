@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.4.1 — 2026-05-01 — Affine-invariant ensemble sampler (emcee-style)
+
+Adds the de-facto astronomy MCMC algorithm: the Goodman & Weare 2010
+"stretch move" affine-invariant ensemble sampler, the same algorithm
+emcee implements in Python. Ensemble samplers handle highly-correlated
+posteriors (e.g. T–VMR or molecule-cloud degeneracies) far better than
+single-chain Metropolis-Hastings.
+
+### Added
+- **`argus::EnsembleSampler`** (`include/argus/mcmc.hpp`,
+  `src/mcmc.cpp`) — N-walker ensemble sampler with the
+  Goodman-Weare 2010 stretch-move proposal:
+    z ~ g(z) = 1/(2 √z) on [1/a, a]
+    proposal = walker_partner + z² * (walker_self - walker_partner)
+    α = min(1, z^(d-1) · L_new / L_old)
+  Constructor validates: walker count ≥ 4 and even, all walkers same
+  dim, all walkers finite log-posterior at init, stretch_a > 1.
+  Result shape: [n_steps × n_walkers][n_dim] in step-major order.
+- **`test_ensemble`** (5 hard test groups, 30+ assertions):
+  * 2D uncorrelated Gaussian: marginal means/stds recovered to ~10%
+  * **Highly-correlated 2D Gaussian** (correlation 0.99, condition
+    number ~100) — affine invariance test where the sampler still
+    recovers the marginal means/stds; this is the regime where
+    single-chain MH would mix slowly.
+  * Bit-exact determinism on identical seeds.
+  * 6 malformed-input throws (null callable, < 4 walkers, odd count,
+    dim mismatch, stretch_a ≤ 1, init walker with -inf logp).
+  * Result shape contract.
+
+### Validated
+26/26 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2. 4 examples build warning-free. Performance baseline:
+~2 ms / forward call, ~10-13 ns / Voigt eval.
+
+---
+
 ## 0.4.0 — 2026-05-01 — M3 starting wedge: MCMC + retrieval API
 
 The first M3 deliverable: posterior inference. Argus can now ingest

@@ -97,3 +97,7 @@ add_test(NAME posterior COMMAND test_posterior)
 add_executable(test_retrieval test_retrieval.cpp)
 target_link_libraries(test_retrieval PRIVATE argus_core)
 add_test(NAME retrieval COMMAND test_retrieval)
+
+add_executable(test_ensemble test_ensemble.cpp)
+target_link_libraries(test_ensemble PRIVATE argus_core)
+add_test(NAME ensemble COMMAND test_ensemble)
