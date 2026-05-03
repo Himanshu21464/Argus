@@ -1,10 +1,11 @@
 // Argus example 01 — transmission spectrum of an isothermal H2O atmosphere.
 //
-// This is the M1 smoke test: build an atmosphere, attach a (placeholder)
-// opacity kernel, run the forward model, print the spectrum.
+// This is the smallest end-to-end demo: build an atmosphere, attach a
+// (placeholder) opacity kernel, run the forward model, print the spectrum.
 //
-// M3 swaps GreyOpacity for HITRAN-backed Voigt evaluation; the call site
-// here does not change.
+// Substituting GreyOpacity with the HITRAN-backed `LineListOpacity`
+// (shipped in v0.3.x — see examples/03_real_hitran.cpp) does not change
+// the call site below. The substrate is the surface that stays stable.
 
 #include <iostream>
 

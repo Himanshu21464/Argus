@@ -25,7 +25,8 @@ int main() {
                               /*VMR=*/1.0e-3);
 
   // Toy H2O-like line list (real units, cartoon strengths/positions).
-  // Real M2.5 work loads HITRAN .par files into this same struct.
+  // Loading real HITRAN .par files into this same struct is shown in
+  // examples/03_real_hitran.cpp via `argus::Hitran::load_file`.
   std::vector<Line> lines = {
     Line{2950.0, 8.0e-21, 0.06, 0.0, 0.50, 0.0, 0.0},
     Line{3050.0, 1.2e-20, 0.05, 0.0, 0.45, 0.0, 0.0},
