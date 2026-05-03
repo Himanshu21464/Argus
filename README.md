@@ -109,20 +109,18 @@ No external runtime dependencies for the M1 kernel.
 | **M4** | months 9–12 | ✅ shipped v0.7.5 | Strong-lensing pass: SIS + SIE + NFW + ExternalShear + CompoundLens + numerical image solver + lensing potential + Fermat time delays. Two substrate-claim retrievals: SIS recovers (θ_E, lens, source) to 3σ via `EnsembleSampler`; **SIE capstone** recovers all 7 SIE+source params (including q and φ) to 0.5σ via source-plane chi². |
 | **M5** | months 12–18 | ✅ shipped v0.7.6 | Radio-interferometry pass: PointSource + GaussianSource + visibility predictor + UV-coverage primitive (snapshot + Earth-rotation track). Two substrate-claim retrievals: 4-param Gaussian-source recovery to 3σ via single-chain MH; **2-component capstone** recovers 8 params (compact core + extended jet) over a 5-hour Earth-rotation track to 3σ via `EnsembleSampler`. |
 
-### What v0.3.5 (M2-complete) adds over v0.2.0
-- **Verified Hui-Armstrong-Wray Voigt** (~1e-6 accuracy) replacing pseudo-Voigt (1%).
-  Tested against analytic Gaussian/Lorentzian limits, numerical convolution,
-  Lorentz asymptotic wing, dual-number derivatives vs central finite differences,
-  and an independent closed-form reference (`std::erfc`, 1e-15 accurate).
-- **`argus::Hitran`** — fixed-width 160-char HITRAN .par parser with file I/O.
-- **`argus::Partition`** — TIPS-anchored Q(T) for H2O, CO2, CH4, CO, NH3.
-- **Full HITRAN intensity scaling** — `S(T) = S(296) · Q(296)/Q(T) · exp(-c2 E"·Δ(1/T)) · induced_emission`.
-- **Self-broadening + pressure shift**: γ_total = γ_air·(1-VMR) + γ_self·VMR; nu_eff = nu0 + δ_air·P_atm.
-- **Bundled real HITRAN test fixtures** — 16 H2O lines (2.7 μm + 1.4 μm bands) + 10 CO2 lines (4.3 μm band).
-- **`argus::guillot()`** — Guillot 2010 analytic hot-Jupiter T-P profile.
-- **`argus::CloudDeckOpacity`** — canonical gray cloud-deck retrieval model.
-- **9 new hard tests** since v0.2.0 (4→20 total) — see CHANGELOG.
-- **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
+### Headline performance baseline (single thread, GCC -O2)
+- Voigt evaluation: ~9 ns
+- Atmospheric forward (60 layers · 16 lines · 196 wn): ~1.7 ms
+- SIE deflection: ~40 ns; NFW: ~27 ns; CompoundLens(SIS+γ): ~6 ns
+- find_images on SIE 60×60 grid: ~1.2 ms
+- Visibility prediction (point source): ~13 ns
+- Predict V over 10 530 UV samples × 2 Gaussians: ~0.25 ms (12 ns/eval)
+- uv_coverage_track for 27 antennas × 30 HAs: ~22 µs
+
+Numbers asserted by `test_benchmark`, `test_lensing_benchmark`, and
+`test_interferometry_benchmark`. See the CHANGELOG entries from v0.7.8
+onward for per-feature deltas.
 
 ### Test suite
 49 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
