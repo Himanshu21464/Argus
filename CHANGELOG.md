@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.7.14 — 2026-05-03 — M1-M5 audit rounds 19–26 (webUI consistency + tags)
+
+The post-v0.7.13 audit pass focused on webUI internal consistency and
+release-tagging hygiene. Seven commits' worth of fixes that didn't
+warrant individual releases get bundled here.
+
+### WebUI accuracy fixes
+- **Round 19** (`2f0d079`) — constellation had 11 stars (10 numbered
+  + 1 unlabeled "decorative") and an 8th dashed line going to the
+  unlabeled star, wrongly implying an 11th problem connection. Removed
+  the orphan star + its line. Now exactly 10 stars + 9 lines (Argus
+  #07 in the centre + lines to its 9 sister problems).
+- **Round 20** (`d9885bb`) — constellation figcaption text was
+  internally contradictory after round 19 ("connected to nine sister
+  problems by dashed lines. Each is a potential pass; #03 and #09
+  are now also shipped — green stars"). Rephrased to "lines: seven
+  dashed (potential passes) plus two solid green for the shipped
+  passes". Also verified `pdfinfo Pages = 23` for the linked
+  "23-slide deck" claim.
+- **Round 21** (`ca458d2`) — three different conventions for the
+  same Ensemble chain length across the site (`32×2000` /
+  `32×4000` / `32×4000`). Normalised to the explicit
+  `Ensemble N walkers × M sample` form across 3 perf-table rows +
+  1 proof-card meta + 1 README row.
+- **Round 22** (`746bdd2`) — same problem for MH retrievals: five
+  references used three different conventions (samples-only vs
+  total vs ambiguous). Normalised to `MH (N burn + M sample)`.
+- **Round 23** (`303b273`) — completed chain-length notation in the
+  remaining proof-card meta lines (test_lensing_retrieval,
+  test_interferometry_retrieval, test_multi_component_retrieval).
+  All 7 proof cards now follow consistent patterns.
+- **Round 24** (`5ecea51`) — two stale "five retrieval substrate
+  proofs" claims (Mission timeline lede + og:description meta tag) —
+  the audit added test_atmosphere_retrieval_full + test_hmc_atmosphere
+  bringing the count to seven. Both updated.
+- **Round 25** (`656fbc5`) — site command-bar "last update" date
+  bumped 2026-05-02 → 2026-05-03 + comprehensive count-claim
+  verification across hero, Mission timeline, substrate-proofs
+  section, og: meta, and README.
+
+### Release-tagging hygiene
+- **Round 26** — every version mentioned in CHANGELOG.md
+  (v0.6.0 onwards) now has a corresponding annotated git tag.
+  12 new tags pushed to origin (v0.7.2 through v0.7.13). Users can
+  now `git checkout v0.7.13` to get exactly what shipped at each
+  release.
+
+### Validated
+- 49/49 tests pass under all three build modes
+- Every webUI link resolves; every claim numerically consistent
+- Constellation visual (10 stars + 9 lines) matches the prose text
+  ("ten computational walls" + "nine sister problems")
+- Chain-length notation uniform across the entire site + README
+
+---
+
 ## 0.7.13 — 2026-05-03 — M1-M5 audit rounds 9–17 (production-readiness)
 
 A second audit sweep focused on production-readiness: latent UB,
