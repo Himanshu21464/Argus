@@ -16,18 +16,19 @@ inference across three astrophysics domains:
 
 The substrate claim — *the same `argus::Spectrum` / `Retrieval` API
 recovers parameters across all three physics layers* — is demonstrated
-end-to-end by **five independent retrieval tests**:
+end-to-end by **six independent retrieval tests**:
 
 | Test | Layer | Free params | Recovery | Sampler |
 |---|---|---|---|---|
 | `test_retrieval` | atmospheric (M2/M3) | 2 | 1σ | MH |
+| `test_hmc_atmosphere` | atmospheric — differentiable-physics HMC | 2 | 3σ | HMC + Dual<T> autograd |
 | `test_lensing_retrieval` | SIS lensing (M4) | 5 | 3σ | Ensemble |
 | `test_sie_retrieval` | SIE lensing (M4) | 7 | 0.5σ | Ensemble |
 | `test_interferometry_retrieval` | radio interferometry (M5) | 4 | 3σ | MH |
 | `test_multi_component_retrieval` | 2-component interferometry (M5) | 8 | 3σ | Ensemble |
 
-All five reuse the same `Spectrum` / `Retrieval::log_posterior` /
-`EnsembleSampler` / `MetropolisHastings` / `PosteriorSummary` /
+All six reuse the same `Spectrum` / `Retrieval::log_posterior` /
+`EnsembleSampler` / `MetropolisHastings` / `HMC` / `PosteriorSummary` /
 `posterior_predictive` infrastructure — only the forward model changes.
 
 ## Why this exists
@@ -71,7 +72,7 @@ Argus/
 │   ├── interferometry.hpp           visibility forward (Point + Gaussian sources) + UV coverage
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based hard tests (46 tests, incl. 2 perf benchmarks)
+├── tests/                           assert-based hard tests (48 tests, incl. 2 perf benchmarks)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
@@ -121,7 +122,7 @@ No external runtime dependencies for the M1 kernel.
 - **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-46 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+48 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 
@@ -169,6 +170,8 @@ No external runtime dependencies for the M1 kernel.
 | `test_optimizer` | Adam + SGD: minimise (x-3)²; train (w, b) on noisy linear regression to within 2% |
 | `test_nn_training` | Train a 1-16-1 MLP to fit sin(2x) on 64 points end-to-end via Adam |
 | `test_flow_training` | Train scale+shift normalizing flow on N(2.5, 0.7²) — recovers (s, t) to closed-form optimum |
+| `test_conditional_flow` | **M3.5**: ConditionalAffineCoupling + ConditionalNormalizingFlow — forward/inverse round-trip, log_density consistency, conditional dependence (different y → different density), determinism. The architecture amortized SBI is built on (NPE, SNPE, DINGO). |
+| `test_hmc_atmosphere` | **M3 differentiable-physics proof**: Hamiltonian MC end-to-end through a 3-line H₂O-like isothermal atmospheric forward — Voigt + temperature-scaled widths + chi² — with leapfrog gradients via forward-mode autograd (Dual<T>). Recovers (T_K, log₁₀ VMR) within 3σ at >50% acceptance. |
 
 **Strong-lensing layer (M4):**
 

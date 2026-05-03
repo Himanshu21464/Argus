@@ -26,9 +26,9 @@
       </svg>
     </a>
     <div class="cmd-meta">
-      <span class="meta-pill"><span class="led led-on"></span>M5 · v0.7.8</span>
+      <span class="meta-pill"><span class="led led-on"></span>M5 · v0.7.9</span>
       <span class="meta-sep">·</span>
-      <span class="meta-mono">46 tests · 5 retrieval substrates · perf bench</span>
+      <span class="meta-mono">48 tests · 6 retrieval substrates · perf bench</span>
       <span class="meta-sep">·</span>
       <span class="meta-mono">2026-05-02</span>
     </div>
@@ -511,7 +511,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
         <div class="term-foot">
           <span class="tf-ok">✓</span> compiles clean under <code>-Wpedantic -Wconversion -Wsign-conversion</code>
           &nbsp; · &nbsp;
-          <span class="tf-ok">✓</span> 46 / 46 hard tests pass (5 retrieval substrate proofs)
+          <span class="tf-ok">✓</span> 48 / 48 hard tests pass (6 retrieval substrate proofs incl. autograd HMC)
           &nbsp; · &nbsp;
           <span class="tf-ok">✓</span> zero external runtime deps
         </div>
@@ -565,14 +565,17 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
           <div class="tl-dot"></div>
           <div class="tl-when">T+6mo</div>
           <div class="tl-card">
-            <div class="tl-h"><span class="tl-id">M3</span><span class="tl-name">The inference engine</span><span class="tl-status status-shipped">SHIPPED · v0.5.3</span></div>
+            <div class="tl-h"><span class="tl-id">M3</span><span class="tl-name">The inference engine</span><span class="tl-status status-shipped">SHIPPED · v0.7.9</span></div>
             <p>MCMC + emcee ensemble + autograd HMC + Retrieval API +
               Gelman-Rubin R̂ / ESS + CSV chain I/O + 3 prior types +
               posterior-predictive bands + nn primitives + Real NVP
-              coupling + stacked NormalizingFlow + reverse-mode autograd
-              (Wengert tape) + Adam/SGD + end-to-end MLP and flow training.
-              Atmospheric substrate proof (<code>test_retrieval</code>):
-              recovers (T, log10 VMR) within 1σ.</p>
+              coupling + stacked NormalizingFlow + <strong>ConditionalNF</strong>
+              for amortized SBI + reverse-mode autograd (Wengert tape) +
+              Adam/SGD + end-to-end MLP and flow training. Two atmospheric
+              substrate proofs: <code>test_retrieval</code> (MH, 1σ) and
+              <code>test_hmc_atmosphere</code> (HMC end-to-end through a
+              differentiable Voigt-line forward via <code>Dual&lt;T&gt;</code>
+              autograd, 3σ).</p>
           </div>
         </li>
 
@@ -795,7 +798,7 @@ ctest --test-dir build           # 46 / 46 pass
           <div class="bb-head">WHERE HELP IS WANTED</div>
           <ul class="want">
             <li><span class="want-pill want-m2">M2.5</span> CUDA-resident Voigt opacity kernel</li>
-            <li><span class="want-pill want-m3">M3.5</span> ConditionalNF for amortized SBI &middot; WASP-39b benchmark vs petitRADTRANS / POSEIDON</li>
+            <li><span class="want-pill want-m3">M3.5</span> ConditionalNF training loop &middot; WASP-39b benchmark vs petitRADTRANS / POSEIDON (architecture shipped v0.7.9)</li>
             <li><span class="want-pill want-m2">M4.5</span> Real-data fixtures (HE 0435-1223 quad lens) &middot; AD-templated lens deflection for HMC</li>
             <li><span class="want-pill want-m3">M5.5</span> CLEAN-style image reconstruction &middot; self-cal &middot; UV-FITS / Measurement-Set ingest</li>
             <li><span class="want-pill want-doc">DOC</span> Architecture diagrams &amp; design rationale</li>
@@ -824,18 +827,19 @@ ctest --test-dir build           # 46 / 46 pass
   <div class="container">
     <div class="jf-row">
       <div class="jf-cite">
-        <div class="jf-id">ARGUS · v0.7.8 · M5</div>
+        <div class="jf-id">ARGUS · v0.7.9 · M5</div>
         <div class="jf-cite-text">
           A differentiable astrophysical inference kernel — atmospheres,
-          lensing, interferometry on one substrate. Five retrieval
-          substrate proofs, perf-asserted hot paths, six runnable examples.<br>
+          lensing, interferometry on one substrate. Six retrieval substrate
+          proofs (incl. autograd HMC through the Voigt physics layer),
+          perf-asserted hot paths, six runnable examples.<br>
           <em>Future Project Brief, May 2026.</em>
           &nbsp;Apache 2.0.
         </div>
       </div>
       <div class="jf-meta">
         <div><span class="jf-key">REPO</span> <a href="https://github.com/Himanshu21464/Argus" target="_blank">github.com/Himanshu21464/Argus</a></div>
-        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · 46 tests · all green</div>
+        <div><span class="jf-key">BUILD</span> C++20 · CMake 3.20+ · 48 tests · all green</div>
         <div><span class="jf-key">DEPS</span> none (header + CMake)</div>
         <div><span class="jf-key">TARGETS</span> JWST · Ariel · HWO · HSC · Euclid · VLA · SKA</div>
       </div>
