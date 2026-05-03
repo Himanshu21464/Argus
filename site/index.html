@@ -913,7 +913,7 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
             <h3>Argus</h3>
             <ul>
               <li>Same kernel as the atmospheric pass — <code>argus::lensing</code> namespace</li>
-              <li>SIS + SIE (Kormann 1994) + NFW (Wright-Brainerd 2000) + ExternalShear + CompoundLens, all closed-form and benchmarked at <b>≈ 30–40 ns / deflection</b></li>
+              <li>SIS + SIE (Kormann 1994) + NFW (Wright-Brainerd 2000) + ExternalShear + CompoundLens, all closed-form and benchmarked at <b>≈ 6–40 ns per deflection</b> (CompoundLens-SIS+γ ≈ 6 ns; SIE ≈ 40 ns; NFW ≈ 27 ns)</li>
               <li>Generic Newton image solver (<b>~1.2 ms</b> for a 60² grid) + Fermat potential + pairwise Δτ — the H₀-cosmography observable in the standard library</li>
               <li><code>test_sie_retrieval</code>: 7 SIE+source params recovered to <b>&lt; 0.5σ</b> via the same <code>Retrieval</code> API used for atmospheric inference</li>
             </ul>
@@ -993,8 +993,8 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
               <tr>
                 <td>NFW deflection α(θ)</td>
                 <td><span class="perf-num">~1–10 µs</span><span class="perf-cite">Python lensing libs</span></td>
-                <td class="hi"><span class="perf-num">28 ns</span><span class="perf-cite">test_lensing_benchmark</span></td>
-                <td><span class="speedup">35–350×</span></td>
+                <td class="hi"><span class="perf-num">27 ns</span><span class="perf-cite">test_lensing_benchmark</span></td>
+                <td><span class="speedup">35–370×</span></td>
               </tr>
               <tr>
                 <td>SIE+shear image solver (60² grid)</td>
