@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <stdexcept>
 
 #include "argus/argus.hpp"
 
@@ -73,6 +74,40 @@ int main() {
       std::log(atm.pressure_bar.front() / P_bot);
   const double h_total_actual = g.radius_m.front() - R_p;
   assert(close(h_total_actual, h_total_expected, 1.0e-9, 1.0e-3));
+
+  // 9. build_geometry rejects an atmosphere with non-monotonic
+  //    pressures (interior misordering, not just front-vs-back).
+  //    A boundary-only sort check would let this through and produce
+  //    negative scale-height contributions in the integration loop.
+  {
+    Atmosphere bad;
+    bad.species = {{"H2O", 18.015}};
+    bad.pressure_bar = {1.0e-3, 1.0e-1, 1.0e-2, 1.0};   // out of order
+    bad.temperature_k.assign(4, 1500.0);
+    bad.mixing_ratios = Tensor({4, 1});
+    for (std::size_t i = 0; i < 4; ++i) bad.mixing_ratios.at(i, 0) = 1.0e-3;
+
+    bool threw = false;
+    try { (void)build_geometry(bad); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
+  // 10. build_geometry rejects an atmosphere with a non-positive
+  //     pressure (would NaN the log() in the scale-height integral).
+  {
+    Atmosphere bad;
+    bad.species = {{"H2O", 18.015}};
+    bad.pressure_bar = {0.0, 1.0e-2, 1.0};               // zero at top
+    bad.temperature_k.assign(3, 1500.0);
+    bad.mixing_ratios = Tensor({3, 1});
+    for (std::size_t i = 0; i < 3; ++i) bad.mixing_ratios.at(i, 0) = 1.0e-3;
+
+    bool threw = false;
+    try { (void)build_geometry(bad); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
 
   return 0;
 }

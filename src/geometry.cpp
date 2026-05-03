@@ -22,12 +22,22 @@ Geometry build_geometry(const Atmosphere& atm) {
   // Convention used throughout the kernel:
   //   layer 0 is the TOP of the atmosphere (lowest pressure)
   //   layer n-1 is the BOTTOM (highest pressure, sits at planet_radius_m)
-  // Pressures must be sorted so this invariant holds.
-  const bool top_first = atm.pressure_bar.front() < atm.pressure_bar.back();
-  if (!top_first) {
+  // Pressures must be strictly increasing along the layer index. A
+  // boundary-only check (front < back) would let unsorted interior
+  // layers through and produce negative scale-height contributions
+  // downstream — better to catch the misordering up front.
+  for (std::size_t i = 0; i + 1 < n; ++i) {
+    if (!(atm.pressure_bar[i + 1] > atm.pressure_bar[i])) {
+      throw std::invalid_argument(
+          "build_geometry: pressure_bar must be strictly increasing "
+          "(layer 0 = top of atmosphere, layer n-1 = bottom)");
+    }
+  }
+  // Pressures positive (log() requires this; the per-pair check above
+  // guarantees layer 0 is the smallest, so a single check suffices).
+  if (!(atm.pressure_bar.front() > 0.0)) {
     throw std::invalid_argument(
-        "build_geometry: atmosphere layers must be ordered with the lowest "
-        "pressure first (top of atmosphere = layer 0)");
+        "build_geometry: all pressures must be positive");
   }
 
   // Walk from the bottom (z = 0) upward, accumulating altitude using the
