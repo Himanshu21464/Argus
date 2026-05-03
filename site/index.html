@@ -644,7 +644,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
             <div class="proof-name">test_retrieval</div>
           </div>
           <div class="proof-body">
-            <div class="proof-meta">isothermal H₂O · 22 wn · MH 5000 steps</div>
+            <div class="proof-meta">isothermal H₂O · 22 wn · MH (3000 burn + 5000 sample)</div>
             <table class="proof-tab">
               <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
               <tbody>
@@ -661,7 +661,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
             <div class="proof-name">test_atmosphere_retrieval_full</div>
           </div>
           <div class="proof-body">
-            <div class="proof-meta">Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh · 28 wn · MH 5000 · 1.8&nbsp;s</div>
+            <div class="proof-meta">Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh · 28 wn · MH (2000 burn + 3000 sample) · 1.8&nbsp;s</div>
             <table class="proof-tab">
               <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
               <tbody>
@@ -1038,13 +1038,13 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
             </thead>
             <tbody>
               <tr>
-                <td>2-param atmospheric (isothermal H₂O, JWST-PRISM)<br><span class="perf-cite">test_retrieval · 8000 MH steps</span></td>
+                <td>2-param atmospheric (isothermal H₂O, JWST-PRISM)<br><span class="perf-cite">test_retrieval · MH (3000 burn + 5000 sample)</span></td>
                 <td><span class="perf-num">10 min – 1 h</span><span class="perf-cite">TauREx / POSEIDON @ ~100 ms / forward</span></td>
                 <td class="hi"><span class="perf-num">1.8 s</span></td>
                 <td><span class="speedup">300–2000×</span></td>
               </tr>
               <tr class="row-flag">
-                <td>4-param multi-physics (Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh)<br><span class="perf-cite">test_atmosphere_retrieval_full · 5000 MH steps</span></td>
+                <td>4-param multi-physics (Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh)<br><span class="perf-cite">test_atmosphere_retrieval_full · MH (2000 burn + 3000 sample)</span></td>
                 <td><span class="perf-num">30 min – 5 h</span><span class="perf-cite">CHIMERA / petitRADTRANS, with binning</span></td>
                 <td class="hi"><span class="perf-num">1.8 s</span></td>
                 <td><span class="speedup">1000–10 000×</span></td>
@@ -1068,7 +1068,7 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
                 <td><span class="speedup">370–22 000×</span></td>
               </tr>
               <tr>
-                <td>4-param Gaussian source from 21-baseline visibilities<br><span class="perf-cite">test_interferometry_retrieval · MH 8000</span></td>
+                <td>4-param Gaussian source from 21-baseline visibilities<br><span class="perf-cite">test_interferometry_retrieval · MH (3000 burn + 8000 sample)</span></td>
                 <td><span class="perf-num">~1 – 30 min</span><span class="perf-cite">CASA + dynesty</span></td>
                 <td class="hi"><span class="perf-num">0.02 s</span></td>
                 <td><span class="speedup">3000–90 000×</span></td>
