@@ -85,7 +85,7 @@ class Retrieval {
   struct Result {
     std::vector<std::vector<double>> samples;
     std::vector<double> log_posteriors;
-    double acceptance_rate;
+    double acceptance_rate = 0.0;
   };
 
   Result run_mcmc(std::vector<double> init_state,
