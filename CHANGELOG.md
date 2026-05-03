@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.7.10 — 2026-05-02 — M2 capstone: full multi-physics atmospheric retrieval
+
+End-to-end retrieval that exercises every M2 ingredient simultaneously
+through the substrate Retrieval API: Guillot 2010 T-P + real-HITRAN
+H₂O + CO₂ + CH₄ Voigt opacity + gray cloud deck + Rayleigh scattering.
+Four atmospheric parameters recovered from a noisy synthetic JWST-PRISM-
+shaped spectrum to <3σ in 1.8 seconds.
+
+### Added
+- **`test_atmosphere_retrieval_full`** — 4-parameter MH retrieval over
+  `(T_irr, log₁₀VMR_H₂O, log₁₀VMR_CO₂, log₁₀P_cloud)` with CH₄ fixed
+  as a background. Forward: rebuild Guillot 40-layer atmosphere +
+  re-anchor the cloud deck per call, stack Rayleigh + 3 line-list +
+  cloud opacities, run TransmissionModel. 28 wavelength bins covering
+  the H₂O 1.4 µm + CO₂ 4.3 µm bands. 5000 MCMC steps in 1.8 s.
+  Posterior recovers every parameter to <3σ; bit-exact determinism.
+
+### Substrate-claim status (final, with M2 capstone)
+| Test | Layer | Free params | Recovery | Sampler |
+|---|---|---|---|---|
+| `test_retrieval`                    | atmospheric isothermal      | 2 | 1σ MH       |
+| **`test_atmosphere_retrieval_full`**| **atmospheric multi-physics** | **4** | **3σ MH** |
+| `test_hmc_atmosphere`               | atmospheric — HMC + autograd| 2 | 3σ HMC      |
+| `test_lensing_retrieval`            | SIS lensing                 | 5 | 3σ Ensemble |
+| `test_sie_retrieval`                | SIE lensing                 | 7 | 0.5σ Ensemble |
+| `test_interferometry_retrieval`     | radio interferometry        | 4 | 3σ MH       |
+| `test_multi_component_retrieval`    | 2-component interferometry  | 8 | 3σ Ensemble |
+
+Seven independent retrieval substrate proofs, all reusing the same
+`Spectrum` / `Retrieval` / `EnsembleSampler` / `MetropolisHastings` /
+`HMC` / `PosteriorSummary` / `posterior_predictive` infrastructure.
+
+### Validated
+49/49 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.9 — 2026-05-02 — M3 closeout: ConditionalNF + atmospheric HMC
 
 The two outstanding M3 deliverables flagged at v0.5.3:

@@ -189,3 +189,7 @@ add_test(NAME conditional_flow COMMAND test_conditional_flow)
 add_executable(test_hmc_atmosphere test_hmc_atmosphere.cpp)
 target_link_libraries(test_hmc_atmosphere PRIVATE argus_core)
 add_test(NAME hmc_atmosphere COMMAND test_hmc_atmosphere)
+
+add_executable(test_atmosphere_retrieval_full test_atmosphere_retrieval_full.cpp)
+target_link_libraries(test_atmosphere_retrieval_full PRIVATE argus_core)
+add_test(NAME atmosphere_retrieval_full COMMAND test_atmosphere_retrieval_full)

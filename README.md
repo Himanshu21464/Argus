@@ -20,14 +20,15 @@ end-to-end by **six independent retrieval tests**:
 
 | Test | Layer | Free params | Recovery | Sampler |
 |---|---|---|---|---|
-| `test_retrieval` | atmospheric (M2/M3) | 2 | 1σ | MH |
+| `test_retrieval` | atmospheric isothermal (M2/M3) | 2 | 1σ | MH |
+| `test_atmosphere_retrieval_full` | **atmospheric multi-physics** (Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh) | 4 | 3σ | MH |
 | `test_hmc_atmosphere` | atmospheric — differentiable-physics HMC | 2 | 3σ | HMC + Dual<T> autograd |
 | `test_lensing_retrieval` | SIS lensing (M4) | 5 | 3σ | Ensemble |
 | `test_sie_retrieval` | SIE lensing (M4) | 7 | 0.5σ | Ensemble |
 | `test_interferometry_retrieval` | radio interferometry (M5) | 4 | 3σ | MH |
 | `test_multi_component_retrieval` | 2-component interferometry (M5) | 8 | 3σ | Ensemble |
 
-All six reuse the same `Spectrum` / `Retrieval::log_posterior` /
+All seven reuse the same `Spectrum` / `Retrieval::log_posterior` /
 `EnsembleSampler` / `MetropolisHastings` / `HMC` / `PosteriorSummary` /
 `posterior_predictive` infrastructure — only the forward model changes.
 
@@ -72,7 +73,7 @@ Argus/
 │   ├── interferometry.hpp           visibility forward (Point + Gaussian sources) + UV coverage
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based hard tests (48 tests, incl. 2 perf benchmarks)
+├── tests/                           assert-based hard tests (49 tests, incl. 2 perf benchmarks)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
@@ -122,7 +123,7 @@ No external runtime dependencies for the M1 kernel.
 - **Performance baseline**: ~1.7 ms / forward call, ~9 ns / Voigt evaluation.
 
 ### Test suite
-48 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+49 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 
@@ -150,6 +151,7 @@ No external runtime dependencies for the M1 kernel.
 | `test_clouds` | gray cloud deck: zero above P_cloud, opaque below, transit-depth ordering |
 | `test_rayleigh` | λ⁻⁴ scaling exact, T,P-independence, end-to-end Rayleigh slope |
 | `test_hot_jupiter` | comprehensive: Guillot + H2O+CO2+CH4 + cloud + Rayleigh — all bands detected |
+| `test_atmosphere_retrieval_full` | **M2 capstone**: 4-param MH retrieval through the full multi-physics forward (Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh); recovers (T_irr, log₁₀VMR_H₂O, log₁₀VMR_CO₂, log₁₀P_cloud) within 3σ in 1.8 s |
 
 **Inference layer (M3):**
 
