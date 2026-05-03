@@ -21,8 +21,10 @@ namespace argus {
 // so MCMC retrieval results are bit-reproducible across runs (tested
 // in tests/test_mcmc.cpp).
 //
-// M3.5 will add ensemble samplers (emcee-style) and Hamiltonian MC
-// (NUTS); M3 ships the Gaussian-proposal baseline.
+// M3 also ships the Goodman-Weare ensemble sampler (`EnsembleSampler`,
+// below) and a Hamiltonian-MC implementation (`HMC`, below); the
+// MetropolisHastings class is the Gaussian-proposal baseline that the
+// other two are compared against in tests.
 class MetropolisHastings {
  public:
   using LogPosterior = std::function<double(const std::vector<double>&)>;
@@ -72,8 +74,9 @@ class MetropolisHastings {
 // with the seed derivative on that coordinate set to 1.
 //
 // Cost: D evaluations of f. Suitable for retrieval problems with
-// O(10) parameters. M3.5 will add reverse-mode autograd for larger
-// parameter spaces (one evaluation, one backward pass).
+// O(10) parameters. For larger parameter spaces (e.g. NN training)
+// use the Wengert-tape reverse-mode autograd in `argus/ad.hpp`
+// (one forward + one backward pass; shipped in v0.5.0).
 template <typename F>
 inline std::vector<double> grad(F&& f, const std::vector<double>& x) {
   const std::size_t D = x.size();

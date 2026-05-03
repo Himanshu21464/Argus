@@ -32,8 +32,10 @@ struct Line {
 // LineListOpacity — sum a list of Voigt-shaped lines into a cross-section
 // over a (T, P) grid.
 //
-// M2 ships a hand-rolled list (used by the example and tests). M3 will add
-// HITRAN .par loaders and ExoMol bundle support behind the same interface.
+// Hand-rolled lists work for tests and small examples. Real HITRAN .par
+// records are loaded via `argus::Hitran::load_file` (shipped v0.3.x —
+// see examples/03_real_hitran.cpp). ExoMol bundle support is still
+// pending behind the same interface.
 class LineListOpacity final : public OpacityKernel {
  public:
   LineListOpacity(std::string species_key, std::vector<Line> lines,
