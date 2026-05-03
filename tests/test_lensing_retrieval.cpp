@@ -143,6 +143,13 @@ int main() {
     // degeneracy inflates the marginal stddevs of (lens_x, lens_y) —
     // that is the *correct* posterior shape, not a sampler defect.
     assert(std::fabs(e.median - truth_v) < 3.0 * e.stddev);
+    // Convergence sanity: a chain that merely sampled the prior would
+    // have σ ≈ box/√12 ≈ 29% of box and could trivially pass the 3σ
+    // check. Require the marginal stddev to be a strict fraction of
+    // the prior box. Loose for SIS — the (lens, source) translation
+    // degeneracy genuinely inflates two of the marginals.
+    const double box = params[i].prior_max - params[i].prior_min;
+    assert(e.stddev < 0.5 * box);
   }
 
   // ─── 4. Posterior-predictive sanity check ───────────────────────────

@@ -103,6 +103,9 @@ int main() {
     const auto& e = post[params[i].name];
     const double truth_v = truth[i];
     assert(std::fabs(e.median - truth_v) < 3.0 * e.stddev);
+    // Convergence sanity: chain mustn't merely sample the prior.
+    const double box = params[i].prior_max - params[i].prior_min;
+    assert(e.stddev < 0.5 * box);
   }
 
   // ─── 7. Posterior-predictive coverage: ≥85% of observations within
