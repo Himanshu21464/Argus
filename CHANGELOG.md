@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.7.12 — 2026-05-02 — M1-M5 audit rounds 3–7
+
+Continues the audit pass started in 0.7.11. Five additional defensive-
+validation gaps closed plus one MCMC clarity refactor. All rounds are
+backed by regression tests in the existing test_*.cpp files.
+
+### Round 3 (`2157f6e`) — clarity
+- **`src/mcmc.cpp` `EnsembleSampler::half_step`**: rename `z` → `sqrt_stretch`
+  and `zz` → `stretch` to match Goodman-Weare (2010) convention; remove
+  dead `inv_a` local + the `(void)inv_a;` warning silencer. Numerics
+  bit-identical — verified by every Ensemble determinism assertion still
+  passing.
+
+### Round 4 (`da6a66e`) — input validation
+- **`GreyOpacity` constructor**: now rejects `sigma_cm2 < 0` (sibling
+  classes `RayleighOpacity` and `CloudDeckOpacity` already did). Negative
+  cross-section → negative optical depth → unphysical transit depth > 1.
+- **`test_stress` group 16** (NEW): exercises the full validation
+  surface for all three opacity components.
+
+### Round 5 (`693fdad`) — defensive geometry validation
+- **`build_geometry`**: replace the front-vs-back boundary check with a
+  strict per-pair monotonicity check on `pressure_bar`. Earlier code let
+  unsorted-interior atmospheres like `{1e-3, 1e-1, 1e-2, 1.0}` through,
+  silently producing negative scale-height contributions. Also added a
+  positivity check on the smallest pressure (the per-pair check
+  guarantees the rest are positive once the smallest is).
+- **`test_geometry` groups 9 + 10** (NEW): interior-misordering and
+  zero-at-top atmospheres both throw.
+
+### Round 6 (`59346f1`) — dead-code cleanup
+- **`Retrieval::posterior_predictive`**: removed an unused for-loop
+  counter `k` that was incremented but never read, plus the trailing
+  `(void)k;` warning silencer. Bit-identical numerics.
+
+### Round 7 (`4791c55`) — API consistency
+- **`predict_visibility(GaussianSource, UVPoint)`**: the single-source
+  overload now validates `sigma >= 0`, matching the multi-source
+  overload. Earlier, single-source silently accepted negative sigma
+  (numerically defined since `exp` is even, but unphysical).
+- **`include/argus/interferometry.hpp`** doc: clarified `GaussianSource`
+  comment — "1-σ half-width" (ambiguous, half-width usually means HWHM)
+  → "image-plane standard deviation" with the `I(l,m)` profile spelt out
+  and the `sigma >= 0` constraint listed explicitly.
+- **`test_interferometry` group 10**: extended to cover both the
+  multi-source and single-source negative-sigma throws.
+
+### Round 8 (this commit) — doc clarity
+- **`include/argus/lensing.hpp` `Image::magnification` comment**:
+  clarified the formula. "|β / dβ| — total magnification factor"
+  was informal; now explicitly notes
+  `magnification = |1 / det(∂β/∂θ)|`, plus the SIS analytic form and
+  the find_images Jacobian-via-FD computation.
+- Version bump to capture rounds 3–8 in a single release tag.
+
+### Validated
+- 49/49 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+- 49/49 tests pass clean under `-O1 -fsanitize=address,undefined`
+
+---
+
 ## 0.7.11 — 2026-05-02 — M1-M5 audit: bug-fix sweep across core + webUI
 
 A systematic audit pass across every milestone with two outcomes:
