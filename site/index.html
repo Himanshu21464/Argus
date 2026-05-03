@@ -28,7 +28,7 @@
     <div class="cmd-meta">
       <span class="meta-pill"><span class="led led-on"></span>M5 · v0.7.10</span>
       <span class="meta-sep">·</span>
-      <span class="meta-mono">49 tests · 7 retrieval substrates · perf bench</span>
+      <span class="meta-mono">49 tests · 7 retrieval proofs · live demos</span>
       <span class="meta-sep">·</span>
       <span class="meta-mono">2026-05-02</span>
     </div>
@@ -37,6 +37,8 @@
       <a href="#kernel">Kernel</a>
       <a href="#api">API</a>
       <a href="#mission">Mission</a>
+      <a href="#proofs">Proofs</a>
+      <a href="#vs">vs</a>
       <a href="#sky">Sky</a>
       <a href="https://github.com/Himanshu21464/Argus" class="nav-gh" target="_blank" rel="noopener">github ↗</a>
     </nav>
@@ -613,6 +615,333 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
           </div>
         </li>
       </ol>
+    </div>
+  </section>
+
+  <!-- ─────────────  SUBSTRATE PROOFS — THE 7 RETRIEVALS  ───────────── -->
+  <section id="proofs" class="band band-deep reveal">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">∫ &nbsp; <span class="band-mol">posterior</span> &nbsp; the proof</div>
+        <h2>Seven retrievals. One substrate.</h2>
+        <p class="band-lede">
+          Each row below is an independent end-to-end retrieval that
+          runs on every commit. All seven reuse the same
+          <code>Spectrum</code> / <code>Retrieval</code> /
+          <code>EnsembleSampler</code> / <code>HMC</code> /
+          <code>PosteriorSummary</code> infrastructure — only the
+          forward model changes. Numbers are real medians ± stddev
+          from the test runs at v0.7.10.
+        </p>
+      </div>
+
+      <div class="proofs-grid">
+
+        <article class="proof">
+          <div class="proof-head">
+            <div class="proof-tag">M2/M3 · ATMOSPHERE</div>
+            <div class="proof-name">test_retrieval</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">isothermal H₂O · 22 wn · MH 5000 steps</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>T_K</td><td class="num">+1500</td><td class="num">≈ +1500 ± 25</td><td class="ok">&lt; 1σ</td></tr>
+                <tr><td>log₁₀ VMR</td><td class="num">−3.00</td><td class="num">≈ −3.00 ± 0.04</td><td class="ok">&lt; 1σ</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="proof proof-flag">
+          <div class="proof-head">
+            <div class="proof-tag">M2 CAPSTONE · ATMOSPHERE</div>
+            <div class="proof-name">test_atmosphere_retrieval_full</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh · 28 wn · MH 5000 · 1.8&nbsp;s</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>T_irr</td><td class="num">+1500</td><td class="num">+1583 ± 194</td><td class="ok">+0.43σ</td></tr>
+                <tr><td>log₁₀ VMR_H₂O</td><td class="num">−3.00</td><td class="num">−3.20 ± 0.92</td><td class="ok">−0.21σ</td></tr>
+                <tr><td>log₁₀ VMR_CO₂</td><td class="num">−3.30</td><td class="num">−1.87 ± 0.49</td><td class="warn">+2.89σ</td></tr>
+                <tr><td>log₁₀ P_cloud</td><td class="num">−2.00</td><td class="num">−1.55 ± 0.50</td><td class="ok">+0.91σ</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="proof">
+          <div class="proof-head">
+            <div class="proof-tag">M3 · DIFFERENTIABLE PHYSICS</div>
+            <div class="proof-name">test_hmc_atmosphere</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">3-line Voigt forward · HMC + Dual&lt;T&gt; autograd · 1500 samples</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>T_K (standardised)</td><td class="num">0.000</td><td class="num">≈ 0.018 ± 0.4</td><td class="ok">&lt; 1σ</td></tr>
+                <tr><td>log₁₀ VMR (std)</td><td class="num">0.000</td><td class="num">≈ −0.001 ± 0.4</td><td class="ok">&lt; 1σ</td></tr>
+              </tbody>
+            </table>
+            <div class="proof-note">acceptance &gt; 99% · gradient via forward-mode autograd through the Voigt physics layer</div>
+          </div>
+        </article>
+
+        <article class="proof">
+          <div class="proof-head">
+            <div class="proof-tag">M4 · STRONG LENSING</div>
+            <div class="proof-name">test_lensing_retrieval</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">SIS · Ensemble 32 walkers · σ_pos = 0.02&Prime;</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>θ_E</td><td class="num">+1.20</td><td class="num">+1.21 ± 0.014</td><td class="ok">+0.88σ</td></tr>
+                <tr><td>(lens_x, lens_y)</td><td class="num">(+0.10, −0.05)</td><td class="num">±&nbsp;0.16, &nbsp;0.19</td><td class="ok">&lt; 2σ</td></tr>
+                <tr><td>(source_x, source_y)</td><td class="num">(+0.40, +0.20)</td><td class="num">±&nbsp;0.014</td><td class="ok">&lt; 2σ</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="proof proof-flag">
+          <div class="proof-head">
+            <div class="proof-tag">M4 CAPSTONE · STRONG LENSING</div>
+            <div class="proof-name">test_sie_retrieval</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">SIE quad-image · 4 obs images · source-plane chi² · Ensemble 32×4000</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>θ_E</td><td class="num">+1.000</td><td class="num">+1.0017 ± 0.0106</td><td class="ok">+0.16σ</td></tr>
+                <tr><td>q (axis ratio)</td><td class="num">+0.700</td><td class="num">+0.6979 ± 0.046</td><td class="ok">−0.05σ</td></tr>
+                <tr><td>φ (PA, rad)</td><td class="num">+0.300</td><td class="num">+0.3038 ± 0.048</td><td class="ok">+0.08σ</td></tr>
+                <tr><td>(lens, source)</td><td class="num">4 scalars</td><td class="num">recovered</td><td class="ok">&lt; 0.5σ each</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="proof">
+          <div class="proof-head">
+            <div class="proof-tag">M5 · INTERFEROMETRY</div>
+            <div class="proof-name">test_interferometry_retrieval</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">7-antenna VLA-like · 21 baselines · 42 (Re, Im) obs · MH</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>(l, m) rad</td><td class="num">(+1.5e−5, −8e−6)</td><td class="num">±&nbsp;5e−7, 3e−7</td><td class="ok">&lt; 1σ</td></tr>
+                <tr><td>flux Jy</td><td class="num">+1.000</td><td class="num">+1.006 ± 0.010</td><td class="ok">+0.59σ</td></tr>
+                <tr><td>σ rad</td><td class="num">+3.0e−5</td><td class="num">+3.04e−5 ± 4e−7</td><td class="ok">+1.08σ</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="proof proof-flag">
+          <div class="proof-head">
+            <div class="proof-tag">M5 CAPSTONE · INTERFEROMETRY</div>
+            <div class="proof-name">test_multi_component_retrieval</div>
+          </div>
+          <div class="proof-body">
+            <div class="proof-meta">core + extended jet · 5-h Earth-rotation track · 105 baselines · 210 obs · Ensemble</div>
+            <table class="proof-tab">
+              <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
+              <tbody>
+                <tr><td>core (l, m, F, σ)</td><td class="num">4 scalars</td><td class="num">recovered</td><td class="ok">&lt; 1σ each</td></tr>
+                <tr><td>jet l</td><td class="num">+1.5e−5</td><td class="num">+2.27e−5 ± 4.7e−6</td><td class="ok">+1.64σ</td></tr>
+                <tr><td>jet (m, F, σ)</td><td class="num">3 scalars</td><td class="num">recovered</td><td class="ok">&lt; 1σ each</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="quiet quiet-center">All seven retrievals are bit-exact deterministic on a fixed seed — frozen graph + frozen sampler + frozen RNG = bit-reproducible across hardware and years.</p>
+    </div>
+  </section>
+
+  <!-- ─────────────  FROM THE TERMINAL — LIVE DEMO OUTPUT  ───────────── -->
+  <section id="demo" class="band reveal">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">$ &nbsp; <span class="band-mol">stdout</span> &nbsp; live</div>
+        <h2>From the terminal.</h2>
+        <p class="band-lede">
+          Actual output from <code>examples/05_lensing.cpp</code> and
+          <code>examples/06_interferometry.cpp</code>, both runnable
+          after <code>cmake --build build</code>. The same kernel
+          surface that the substrate-proof retrievals invert is
+          forward-callable in &lt; 30 lines.
+        </p>
+      </div>
+
+      <div class="terminal">
+        <div class="term-bar">
+          <span class="term-led led-on"></span>
+          <span class="term-led led-warn"></span>
+          <span class="term-led led-amber"></span>
+          <span class="term-name">argus@build:~/examples$ ./example_05_lensing</span>
+          <span class="term-meta">SIE + ExternalShear · find_images · Fermat τ</span>
+        </div>
+<pre class="term-body"><code>=== M4 lensing demo ===
+
+Lens: SIE (θ_E=1.0", q=0.7, φ=0.3 rad, centre=(0.05, -0.02)")
+    + ExternalShear (γ₁=0.05, γ₂=-0.02)
+Source: (+0.040, +0.030) arcsec
+
+found 4 images:
+  ID         θ_x         θ_y   magnification        fermat τ
+   1      -0.6484      -0.6101          4.329        -0.421506
+   2      -0.4586      +0.9336          4.830        -0.589338
+   3      +0.7024      -0.7803          7.317        -0.494476
+   4      +0.9859      +0.2359          5.164        -0.453974
+
+pairwise time-delay differences Δτ (arcsec²):
+      img 1      img 2      img 3      img 4
+  img 1   +0.000000   -0.167832   -0.072970   -0.032468
+  img 2   +0.167832   +0.000000   +0.094862   +0.135364
+  img 3   +0.072970   -0.094862   +0.000000   +0.040502
+  img 4   +0.032468   -0.135364   -0.040502   +0.000000
+
+Δτ × (1+z_l)·D_Δt/c gives the physical time delay in days.
+This is the observable measured by COSMOGRAIL / TDCOSMO and
+inverted to constrain H_0.</code></pre>
+      </div>
+
+      <div class="terminal" style="margin-top: 24px;">
+        <div class="term-bar">
+          <span class="term-led led-on"></span>
+          <span class="term-led led-warn"></span>
+          <span class="term-led led-amber"></span>
+          <span class="term-name">argus@build:~/examples$ ./example_06_interferometry</span>
+          <span class="term-meta">7-ant VLA-like · 5-h Earth-rotation · core + jet</span>
+        </div>
+<pre class="term-body"><code>=== M5 interferometry demo ===
+
+Array: 7-antenna VLA-like Y configuration
+Track: 5 HAs spanning ±2.5 h, source dec=30°, station lat=34°
+λ:     0.210 m (HI 21 cm)
+UV coverage: 105 samples (21 baselines × 5 HAs)
+
+max |uv| = 9191 wavelengths → angular resolution ≈ 22.44 arcsec
+
+Sky model:
+  core  : (l, m) = (+0.00e+00, +0.00e+00), F=1.00 Jy, σ=1.00e-05 rad
+  jet   : (l, m) = (+1.50e-05, +5.00e-06), F=0.30 Jy, σ=3.00e-05 rad
+
+Visibility |V| vs baseline length (bin = 1149 wavelengths):
+  bin  |uv| range (λ)           N    &lt;|V|&gt;   bar
+   1     1149 .. 2298       8   1.269   ██████████████████████████████████████████████████
+   2     2298 .. 3447      33   1.253   ██████████████████████████████████████████████████
+   3     3447 .. 4596      18   1.174   ██████████████████████████████████████████████
+   4     4596 .. 5745      16   1.156   ██████████████████████████████████████████████
+   5     5745 .. 6894      10   1.042   █████████████████████████████████████████
+   6     6894 .. 8043      10   1.034   █████████████████████████████████████████
+   7     8043 .. 9191      10   0.914   ████████████████████████████████████
+
+The core (compact) contributes a flat-amplitude visibility ≈ 1 Jy
+everywhere; the jet (extended) contributes only at short baselines
+(&lt; 1/(2π σ_jet) ≈ 5305 λ). The decay of |V| with baseline length
+encodes the extended structure — exactly what the substrate-proof
+retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────  VS THE INCUMBENTS  ───────────── -->
+  <section id="vs" class="band band-deep reveal">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">⊕ &nbsp; <span class="band-mol">delta</span> &nbsp; vs incumbents</div>
+        <h2>What the field uses today. What Argus changes.</h2>
+        <p class="band-lede">
+          Three subfields. Three independent toolchains. Each is a
+          Python wrapper around per-domain Fortran or C/C++ code with
+          its own data plane, its own MCMC, its own posteriors. Argus
+          replaces the kernel under all three.
+        </p>
+      </div>
+
+      <div class="vs-grid">
+
+        <article class="vs-col">
+          <div class="vs-tag">ATMOSPHERIC RETRIEVAL</div>
+          <div class="vs-today">
+            <h3>Today</h3>
+            <ul>
+              <li><b>TauREx · POSEIDON · CHIMERA · petitRADTRANS</b> — Python wrappers, per-component opacity loaders</li>
+              <li><b>10–100×</b> Python overhead in the hot path → bin the spectrum to keep MCMC tractable</li>
+              <li>None expose <b>gradients through the full forward</b> (ExoJAX2 is the JAX exception, validating the approach)</li>
+              <li>One retrieval = days–weeks of cluster wall time</li>
+            </ul>
+          </div>
+          <div class="vs-argus">
+            <h3>Argus</h3>
+            <ul>
+              <li>One C++20 kernel · pluggable <code>OpacityKernel</code> for HITRAN/HITEMP/ExoMol/neural emulators</li>
+              <li><b>~12 ns per Voigt eval</b> · 1.8 s for a 4-param Guillot + 3-molecule + cloud + Rayleigh retrieval at JWST-PRISM scale</li>
+              <li><b>Full forward is autograd-aware</b> via <code>Dual&lt;T&gt;</code> &middot; <code>test_hmc_atmosphere</code> proves end-to-end HMC through the Voigt physics layer</li>
+              <li><b>Bit-exact reproducible</b> — content-addressed runs, hex-float chain CSV, zero wall-clock seeds in the kernel</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="vs-col">
+          <div class="vs-tag">STRONG LENSING</div>
+          <div class="vs-today">
+            <h3>Today</h3>
+            <ul>
+              <li><b>lenstool · GLAFIC · PyAutoLens · gravlens</b> — Python or Fortran, separate codebases per institution</li>
+              <li>SIE + γ + NFW are the standard ingredients but each toolchain re-implements them</li>
+              <li>H₀ inference (TDCOSMO / H0LiCOW) requires hand-coded Fermat-potential time-delay glue per system</li>
+              <li>No common IR with the spectroscopic side of the analysis pipeline</li>
+            </ul>
+          </div>
+          <div class="vs-argus">
+            <h3>Argus</h3>
+            <ul>
+              <li>Same kernel as the atmospheric pass — <code>argus::lensing</code> namespace</li>
+              <li>SIS + SIE (Kormann 1994) + NFW (Wright-Brainerd 2000) + ExternalShear + CompoundLens, all closed-form and benchmarked at <b>≈ 30–40 ns / deflection</b></li>
+              <li>Generic Newton image solver (<b>~1.2 ms</b> for a 60² grid) + Fermat potential + pairwise Δτ — the H₀-cosmography observable in the standard library</li>
+              <li><code>test_sie_retrieval</code>: 7 SIE+source params recovered to <b>&lt; 0.5σ</b> via the same <code>Retrieval</code> API used for atmospheric inference</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="vs-col">
+          <div class="vs-tag">RADIO INTERFEROMETRY</div>
+          <div class="vs-today">
+            <h3>Today</h3>
+            <ul>
+              <li><b>CASA · WSClean · AIPS</b> — large mature stacks, Python or shell wrappers around C/C++/Fortran</li>
+              <li>Imaging is dominant; model-fitting (uvfit, uvmodel) is decades-old code with separate ABIs</li>
+              <li>Posteriors on multi-component sky models require external MCMC plumbing or per-instrument tools (eht-imaging, dynesty wrappers)</li>
+            </ul>
+          </div>
+          <div class="vs-argus">
+            <h3>Argus</h3>
+            <ul>
+              <li>Same kernel — <code>argus::interferometry</code> namespace</li>
+              <li>Point + Gaussian source primitives · <b>~13 ns per visibility</b> · UV-coverage snapshot + Earth-rotation track from antenna ENU positions in one call</li>
+              <li><code>test_multi_component_retrieval</code>: 8 params (compact core + extended jet) recovered to <b>3σ</b> from 210 noisy visibility components on a 5-h VLA-like track</li>
+              <li>Identical inference machinery as the atmospheric and lensing layers — one set of MCMC bugs to fix instead of three</li>
+            </ul>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="quiet quiet-center">The substrate is the win, not any single feature. One bug-fixed sampler, one autograd path, one PosteriorSummary — across three subfields the community currently maintains in parallel.</p>
     </div>
   </section>
 

@@ -1226,3 +1226,156 @@ section.band-deep {
   color: var(--accent);
   opacity: 1;
 }
+
+/* ──────────────  SUBSTRATE PROOFS — the 7-retrieval panel  ────────── */
+.proofs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 22px;
+  margin-top: 32px;
+}
+.proof {
+  background: var(--void-1);
+  border: 1px solid var(--rule-2);
+  border-radius: 14px;
+  padding: 20px 22px 22px;
+  transition: border-color .25s ease;
+}
+.proof:hover { border-color: var(--rule-3); }
+.proof-flag {
+  border-color: rgba(176, 149, 255, 0.32);
+  background: rgba(176, 149, 255, 0.04);
+}
+.proof-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--rule-2);
+}
+.proof-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.10em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.proof-flag .proof-tag { color: #b095ff; }
+.proof-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.0rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+.proof-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.proof-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.proof-tab thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  padding: 4px 8px 6px 0;
+  border-bottom: 1px solid var(--rule-2);
+}
+.proof-tab tbody td {
+  padding: 6px 8px 6px 0;
+  color: var(--ink-2);
+  border-bottom: 1px dotted rgba(38, 53, 77, 0.4);
+  vertical-align: top;
+}
+.proof-tab tbody tr:last-child td { border-bottom: none; }
+.proof-tab td.num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink);
+  font-size: 0.76rem;
+}
+.proof-tab td.ok   { color: #10f2a8; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; }
+.proof-tab td.warn { color: #ffb347; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; }
+.proof-note {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  line-height: 1.5;
+  border-left: 2px solid rgba(0, 212, 255, 0.25);
+  padding-left: 10px;
+}
+
+/* ──────────────  VS THE INCUMBENTS — comparison grid  ────────────── */
+.vs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+.vs-col {
+  background: var(--void-1);
+  border: 1px solid var(--rule-2);
+  border-radius: 14px;
+  padding: 22px 22px 24px;
+  transition: border-color .25s ease;
+}
+.vs-col:hover { border-color: var(--rule-3); }
+.vs-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--rule-2);
+}
+.vs-today, .vs-argus {
+  margin-bottom: 18px;
+}
+.vs-argus { margin-bottom: 0; }
+.vs-today h3, .vs-argus h3 {
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+.vs-today h3 { color: var(--ink-3); }
+.vs-argus h3 { color: #10f2a8; }
+.vs-today ul, .vs-argus ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.vs-today li, .vs-argus li {
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  padding-left: 14px;
+  position: relative;
+}
+.vs-today li::before {
+  content: '─';
+  position: absolute;
+  left: 0;
+  color: var(--ink-3);
+}
+.vs-argus li::before {
+  content: '+';
+  position: absolute;
+  left: 0;
+  color: #10f2a8;
+}
+.vs-today li b, .vs-argus li b { color: var(--ink); font-weight: 600; }
