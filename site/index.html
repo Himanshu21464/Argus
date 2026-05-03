@@ -716,7 +716,7 @@ std::cout &lt;&lt; g.content_address();      <span class="c-cmt">// → 845f876e
             <div class="proof-name">test_sie_retrieval</div>
           </div>
           <div class="proof-body">
-            <div class="proof-meta">SIE quad-image · 4 obs images · source-plane chi² · Ensemble 32×4000</div>
+            <div class="proof-meta">SIE quad-image · 4 obs images · source-plane chi² · Ensemble 32 walkers × 2000 sample</div>
             <table class="proof-tab">
               <thead><tr><th>param</th><th>truth</th><th>median ± σ</th><th>dev</th></tr></thead>
               <tbody>
@@ -1056,13 +1056,13 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
                 <td><span class="speedup">∞</span></td>
               </tr>
               <tr>
-                <td>5-param SIS lens (image positions)<br><span class="perf-cite">test_lensing_retrieval · Ensemble 32×2000</span></td>
+                <td>5-param SIS lens (image positions)<br><span class="perf-cite">test_lensing_retrieval · Ensemble 32 walkers × (2000 burn + 2000 sample)</span></td>
                 <td><span class="perf-num">~10 s – 5 min</span><span class="perf-cite">PyAutoLens / lenstool</span></td>
                 <td class="hi"><span class="perf-num">0.09 s</span></td>
                 <td><span class="speedup">100–3300×</span></td>
               </tr>
               <tr class="row-flag">
-                <td>7-param SIE quad-image lens (source-plane chi²)<br><span class="perf-cite">test_sie_retrieval · Ensemble 32×4000</span></td>
+                <td>7-param SIE quad-image lens (source-plane chi²)<br><span class="perf-cite">test_sie_retrieval · Ensemble 32 walkers × (2000 burn + 2000 sample)</span></td>
                 <td><span class="perf-num">~1 min – 1 h</span><span class="perf-cite">PyAutoLens / lenstool</span></td>
                 <td class="hi"><span class="perf-num">0.16 s</span></td>
                 <td><span class="speedup">370–22 000×</span></td>
@@ -1074,7 +1074,7 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
                 <td><span class="speedup">3000–90 000×</span></td>
               </tr>
               <tr class="row-flag">
-                <td>8-param 2-component (core + jet) over 5-h Earth-rotation track<br><span class="perf-cite">test_multi_component_retrieval · Ensemble 32×4000 · 210 obs</span></td>
+                <td>8-param 2-component (core + jet) over 5-h Earth-rotation track<br><span class="perf-cite">test_multi_component_retrieval · Ensemble 32 walkers × (2000 burn + 2000 sample) · 210 obs</span></td>
                 <td><span class="perf-num">~10 min – 5 h</span><span class="perf-cite">CASA / eht-imaging + sampler</span></td>
                 <td class="hi"><span class="perf-num">0.86 s</span></td>
                 <td><span class="speedup">700–20 000×</span></td>
