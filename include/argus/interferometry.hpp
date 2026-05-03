@@ -39,16 +39,22 @@ struct PointSource {
   double flux = 1.0;   // in flux units consistent with the visibilities
 };
 
-// A 2-D circular Gaussian source. The 1-σ half-width is `sigma` in
-// radians (FWHM = 2·√(2 ln 2)·σ ≈ 2.355 σ). Visibility:
-//   V(u,v) = F · exp(-2π² σ² (u²+v²)) · exp(-2πi (u·l + v·m))
-// — the FT of a 2D Gaussian is another Gaussian (in UV) times the
-// position phase.
+// A 2-D circular Gaussian source. `sigma` is the image-plane standard
+// deviation in radians (FWHM = 2·√(2·ln 2)·σ ≈ 2.355 σ). The
+// underlying brightness profile is
+//     I(l,m) = (F / (2π σ²)) · exp(−((l−l₀)² + (m−m₀)²) / (2σ²))
+// whose Fourier transform gives the visibility
+//     V(u,v) = F · exp(−2π² σ² (u² + v²)) · exp(−2πi (u·l + v·m))
+// (a Gaussian in the UV plane × the source-position phase).
+//
+// Constraints (enforced by `predict_visibilities`):
+//   * sigma ≥ 0 — `sigma == 0` is the analytic limit and reduces to
+//     PointSource bit-for-bit (no envelope; constant amplitude F).
 struct GaussianSource {
   double l     = 0.0;
   double m     = 0.0;
   double flux  = 1.0;
-  double sigma = 0.0;     // radians; sigma=0 reduces to PointSource
+  double sigma = 0.0;     // radians; sigma=0 is a point (no envelope)
 };
 
 // Predict the visibility of one component at one UV point.

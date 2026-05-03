@@ -189,6 +189,14 @@ int main() {
       (void)predict_visibilities(bad, std::vector<UVPoint>{{0.0, 0.0}});
     } catch (const std::invalid_argument&) { threw = true; }
     assert(threw);
+    // The single-source overload must validate too — earlier it accepted
+    // negative sigma silently while the multi-source overload threw.
+    threw = false;
+    try {
+      (void)predict_visibility(GaussianSource{0, 0, 1, /*sigma=*/-1.0},
+                               UVPoint{0.0, 0.0});
+    } catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
   }
 
   // ─── 11. Determinism: same inputs → bit-equal outputs. ────────────

@@ -21,6 +21,10 @@ Visibility predict_visibility(const GaussianSource& src, UVPoint uv) {
   // FT of a normalised 2-D Gaussian (∫I = F, σ in image plane) is a
   // Gaussian in the UV plane with width 1/(2π σ):
   //   V_g(u,v) = F · exp(-2π² σ² (u² + v²)) · exp(-2πi (u·l + v·m))
+  if (src.sigma < 0.0) {
+    throw std::invalid_argument(
+        "predict_visibility: GaussianSource sigma must be >= 0");
+  }
   constexpr double kHalfTwoPiSq = 0.5 * kTwoPi * kTwoPi;     // 2π²
   const double r2 = uv.u * uv.u + uv.v * uv.v;
   const double envelope = src.flux *
