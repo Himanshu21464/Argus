@@ -145,7 +145,13 @@ ChainDiagnostics compute_diagnostics(
   // Reshape ensemble result [n_steps * n_walkers] into chains[walker][step].
   const std::size_t W = result.n_walkers;
   const std::size_t S = result.n_steps;
-  const std::size_t D = result.n_dim;
+  // Validate the reshape is well-defined: a corrupt Result with
+  // samples.size() != S*W would cause OOB reads in the inner loop.
+  if (result.samples.size() != S * W) {
+    throw std::invalid_argument(
+        "compute_diagnostics(EnsembleSampler::Result): "
+        "samples.size() must equal n_steps * n_walkers");
+  }
   std::vector<std::vector<std::vector<double>>> chains(W);
   for (std::size_t w = 0; w < W; ++w) {
     chains[w].reserve(S);
@@ -153,7 +159,6 @@ ChainDiagnostics compute_diagnostics(
       chains[w].push_back(result.samples[s * W + w]);
     }
   }
-  (void)D;
   return compute_diagnostics(chains);
 }
 

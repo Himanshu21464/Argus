@@ -150,5 +150,21 @@ int main() {
     assert(diag.ess[1] > 0.0);
   }
 
+  // ─── Corrupt EnsembleSampler::Result (samples.size() inconsistent
+  //     with n_steps · n_walkers) — earlier code would OOB inside the
+  //     reshape loop; now it throws cleanly. ─────────────────────────
+  {
+    EnsembleSampler::Result r;
+    r.n_walkers = 4;
+    r.n_steps   = 10;
+    r.n_dim     = 2;
+    // Forge inconsistent samples: 10 entries instead of 4 · 10 = 40.
+    for (std::size_t i = 0; i < 10; ++i) r.samples.push_back({0.0, 0.0});
+    bool threw = false;
+    try { (void)compute_diagnostics(r); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }
