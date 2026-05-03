@@ -78,7 +78,9 @@ Argus/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
 │   ├── 03_real_hitran.cpp           16 real HITRAN H2O lines, JWST-PRISM-shaped spectrum
-│   └── 04_retrieval.cpp             full M3 pipeline: ensemble MCMC + R̂/ESS + CSV + posterior predictive
+│   ├── 04_retrieval.cpp             full M3 pipeline: ensemble MCMC + R̂/ESS + CSV + posterior predictive
+│   ├── 05_lensing.cpp               M4: SIE+shear lens — 4 quad images + 16 pairwise Fermat τ
+│   └── 06_interferometry.cpp        M5: 7-antenna Earth-rotation track + multi-Gaussian visibility forward
 ├── site/                            astronomy-themed project site (port 8767)
 └── docs/
     ├── Astronomy-Compute-Crisis.tex landscape research deck (top-10 problems)
