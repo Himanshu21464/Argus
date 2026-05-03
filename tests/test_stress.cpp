@@ -192,5 +192,33 @@ int main() {
     assert(!Hitran::parse_line("    ").has_value());
   }
 
+  // 16. Opacity-component constructors reject negative cross-sections —
+  //     all three (Grey / Rayleigh / CloudDeck) should behave the same
+  //     way. Negative σ would give negative optical depth (transit
+  //     depth > 1, unphysical).
+  {
+    bool threw = false;
+    try { GreyOpacity("X", -1.0e-22); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { RayleighOpacity("X", -1.0e-29); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { CloudDeckOpacity("X", 1.0e-2, -1.0e-18); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    // CloudDeck also rejects non-positive P_cloud_bar.
+    threw = false;
+    try { CloudDeckOpacity("X", 0.0, 1.0e-18); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { CloudDeckOpacity("X", -1.0, 1.0e-18); }
+    catch (const std::invalid_argument&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }

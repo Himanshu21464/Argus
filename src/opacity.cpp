@@ -5,7 +5,15 @@
 namespace argus {
 
 GreyOpacity::GreyOpacity(std::string species_key, double sigma_cm2)
-    : key_(std::move(species_key)), sigma_cm2_(sigma_cm2) {}
+    : key_(std::move(species_key)), sigma_cm2_(sigma_cm2) {
+  // Match RayleighOpacity / CloudDeckOpacity: per-component cross-sections
+  // are non-negative by physics. Negative σ would give negative optical
+  // depth and transit depth > 1 (unphysical).
+  if (sigma_cm2_ < 0.0) {
+    throw std::invalid_argument(
+        "GreyOpacity: sigma_cm2 must be >= 0");
+  }
+}
 
 Tensor GreyOpacity::cross_section(const std::vector<double>& wavenumber_cm,
                                   const std::vector<double>& T_k,
