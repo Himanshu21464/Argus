@@ -181,7 +181,7 @@ No external runtime dependencies for the M1 kernel.
 
 | test | what it asserts |
 |---|---|
-| `test_lensing` | SIS / SIE / NFW / ExternalShear / CompoundLens — 29 test groups: deflection / potential closed forms, lens-equation closure, 4-image cusp config via numerical solver, NFW Wright-Brainerd h(1) limit, find_images on shear-broken configurations |
+| `test_lensing` | SIS / SIE / NFW / ExternalShear / CompoundLens — 30 test groups: deflection / potential closed forms, lens-equation closure, 4-image cusp config via numerical solver, NFW Wright-Brainerd h(1) limit + Taylor patch at small x, find_images on shear-broken configurations |
 | `test_lensing_retrieval` | **Substrate proof (SIS)**: same `Retrieval` API recovers (θ_E, lens_x, lens_y, source_x, source_y) via `EnsembleSampler` to 3σ; posterior-predictive 5–95% band brackets every observation; bit-exact determinism |
 | `test_sie_retrieval` | **Substrate proof (SIE capstone)**: 7 free params (θ_E, q, φ, lens, source) recovered to **< 0.5σ** from 4 observed quad-image positions via source-plane chi²; ensemble (32 walkers × 2000 sample after 2000 burn); bit-exact determinism |
 | `test_time_delays` | SIS potential closed form; ∇ψ_SIE = α via FD; SIE q=1 potential reduces to SIS; Fermat ∇τ=0 at lens-equation roots; SIS on-axis Δτ = 2θ_E·β; off-axis numerical agreement; translation invariance; SIE 4-image cusp pairwise τ-diffs |
