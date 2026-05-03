@@ -179,5 +179,28 @@ int main() {
     assert(close(t.grad(x), 1.0 - th * th, 1.0e-12));
   }
 
+  // ─── 11. Mixing Vars from two different tapes throws on every binary
+  //     operator. Earlier code silently produced wrong gradients
+  //     because the second Var's index was resolved against the
+  //     first's tape storage. ────────────────────────────────────────
+  {
+    Tape t1, t2;
+    Var a = t1.input(2.0);
+    Var b = t2.input(3.0);
+    bool threw;
+    threw = false;
+    try { (void)(a + b); } catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { (void)(a - b); } catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { (void)(a * b); } catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+    threw = false;
+    try { (void)(a / b); } catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+  }
+
   return 0;
 }

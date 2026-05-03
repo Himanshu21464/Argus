@@ -91,16 +91,33 @@ double Tape::grad(std::size_t idx) const {
 
 // ─── Var operators ────────────────────────────────────────────────────
 
+namespace {
+// Validate that two Vars share the same tape. Mixing tapes silently
+// would give wrong gradients (the second Var's index is interpreted
+// against `this`'s tape's storage, not its own).
+inline void same_tape(const Var& a, const Var& b, const char* op) {
+  if (a.tape != b.tape) {
+    throw std::runtime_error(
+        std::string("argus::ad::") + op +
+        ": Var operands belong to different tapes");
+  }
+}
+}  // namespace
+
 Var Var::operator+(const Var& o) const {
+  same_tape(*this, o, "operator+");
   return tape->record_binary(val + o.val, idx, o.idx, 1.0, 1.0);
 }
 Var Var::operator-(const Var& o) const {
+  same_tape(*this, o, "operator-");
   return tape->record_binary(val - o.val, idx, o.idx, 1.0, -1.0);
 }
 Var Var::operator*(const Var& o) const {
+  same_tape(*this, o, "operator*");
   return tape->record_binary(val * o.val, idx, o.idx, o.val, val);
 }
 Var Var::operator/(const Var& o) const {
+  same_tape(*this, o, "operator/");
   const double inv = 1.0 / o.val;
   return tape->record_binary(val * inv, idx, o.idx,
                              inv, -val * inv * inv);
