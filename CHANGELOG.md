@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.7.13 — 2026-05-03 — M1-M5 audit rounds 9–17 (production-readiness)
+
+A second audit sweep focused on production-readiness: latent UB,
+silent partial-load on truncated files, OOB on corrupt structs, and a
+comprehensive verification that nothing in the webUI is a dead link
+or a fake reference.
+
+### Core bugs fixed (rounds 9-15)
+- **Round 9** (`e9d2e1f`) — `NormalizingFlow::load` silently accepted
+  truncated files; added end-of-stream completeness check.
+- **Round 10** (`f3c2d25`) — `compute_diagnostics(EnsembleSampler::Result)`
+  could OOB-read on corrupt Result; added size validation.
+- **Round 11** (`fc352e6`) — 4 substrate-proof retrievals could pass
+  with a chain that just sampled the prior; added
+  `e.stddev < 0.5·prior_box` convergence-sanity check.
+- **Round 12** (`a0333df`) — AD `Var` binary operators silently produced
+  wrong gradients on cross-tape mixing; added `same_tape()` validation.
+- **Rounds 13-15** (`cd87837`, `9fb4af3`, `56bdfcb`) — UB sweep across
+  all public structs: every POD member now has a default initializer.
+  Reachable code was always seeding these via official factory paths,
+  but a user who default-constructed and read got UB.
+
+### Documentation cleanup (round 16-17)
+- **Round 16** (`1bcdc70`) — Stale "future work" comments in two
+  example file headers promised features already shipped (HITRAN-Voigt,
+  HITRAN .par parsing — both shipped in v0.3.0); rephrased.
+- **Round 17 (this commit)** — Comprehensive webUI link audit: every
+  href, every `argus::*` namespace, every `<code>`-tagged class, every
+  `test_*` reference, every academic / tool / paper / planet /
+  telescope reference verified real. Site-embedded example output
+  byte-for-byte matches actual binary output (no drift). Perf-table
+  numbers cross-checked against fresh benchmark runs (all in range).
+
+### Validated
+- 49/49 tests pass under standard build
+  `-O2 -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion`
+- 49/49 tests pass under fresh `-O1 -fsanitize=address,undefined` build
+- 0 warnings on 17 source files under 16 stricter flags
+  (`-Wnull-dereference -Wmaybe-uninitialized -Wlogical-op
+  -Wzero-as-null-pointer-constant -Wuseless-cast -Wduplicated-cond
+  -Wmissing-field-initializers -Wcast-qual -Wsuggest-override
+  -Wsuggest-final-types -Wsuggest-final-methods`)
+- All 22 public headers verified self-contained
+- All 6 examples build clean and run to completion (rc=0)
+- Every site link resolves; every site reference is verifiable
+
+---
+
 ## 0.7.12 — 2026-05-02 — M1-M5 audit rounds 3–7
 
 Continues the audit pass started in 0.7.11. Five additional defensive-
