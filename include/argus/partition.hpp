@@ -16,8 +16,11 @@ namespace argus {
 // The third factor (induced-emission correction) is small for nu >> kT/h
 // and is collapsed into the simple Boltzmann form for M2.
 //
-// M2 ships analytic polynomial fits for the three workhorses (H2O, CO2,
-// CH4) of exoplanet atmospheres. M3 will load the full TIPS-2017 tables.
+// Ships with analytic power-law fits anchored at TIPS values for the
+// five most common molecules (H2O, CO2, CH4, CO, NH3) — accuracy
+// 1-7% across 100-3000 K. Full TIPS-2017 cubic-polynomial tables
+// (better than 0.5% accuracy) are still pending; the public surface
+// `Partition::Q(...)` will not change when those land.
 class Partition {
  public:
   // Return Q(T) for (molecule, isotope). Throws std::invalid_argument if

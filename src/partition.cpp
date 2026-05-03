@@ -10,8 +10,9 @@ namespace {
 // Power-law fit Q(T) = Q_ref * (T / T_ref)^exponent.
 //
 // Anchor-exact at T_ref = 296 K by construction; accuracy ~1-7% over
-// 100-3000 K. M3 will swap to full TIPS-2017 cubic polynomials loaded
-// from a tabulated grid (better than 0.5% accuracy across the range).
+// 100-3000 K. Future replacement: full TIPS-2017 cubic polynomials
+// loaded from a tabulated grid (better than 0.5% accuracy across the
+// range); the public `Partition::Q(...)` surface stays stable.
 //
 // Exponents derived from anchor pairs (Q at 1000 K vs Q at 296 K) using
 // published TIPS-2017 values for the most abundant isotopologue:
