@@ -456,5 +456,39 @@ int main() {
     assert(threw);
   }
 
+  // ─── 30. NFW small-x precision: the explicit Wright-Brainerd
+  //     formula has catastrophic cancellation at x ≪ 1
+  //     (ln(x/2) + arccosh(1/x)/√(1-x²) is the difference of two
+  //     ~ln(2/x) terms). The Taylor expansion h(x) ≈ ½ x²(ln(2/x) - ½)
+  //     should agree with the kernel at small x to ~ 1e-3 relative. ──
+  {
+    NFW nfw(/*alpha_s=*/1.0, /*theta_s=*/1.0);
+    auto h_via_alpha = [&](double r) {
+      // |α| = α_s · h(x) / x  ⇒  h(x) = |α| · x / α_s = |α| · r / θ_s.
+      Vec2 a = nfw.deflection({r, 0.0});
+      return std::sqrt(a.x * a.x + a.y * a.y) * r;
+    };
+    auto h_ref = [](double x) {
+      return 0.5 * x * x * (std::log(2.0 / x) - 0.5);
+    };
+    for (double r : {1.0e-4, 5.0e-4, 1.0e-5, 1.0e-7, 1.0e-10}) {
+      const double got      = h_via_alpha(r);
+      const double expected = h_ref(r);
+      assert(close(got, expected, 1.0e-3, 1.0e-15));
+      // Direction sanity: α purely along r̂.
+      Vec2 a = nfw.deflection({r, 0.0});
+      assert(std::fabs(a.y) < 1.0e-15);
+    }
+    // Continuity around the patch boundary x = 1e-3 (no jump). Use
+    // a tiny Δx so the natural derivative-driven shift is negligible
+    // — what we're really checking is that the two branches agree
+    // at the seam, not that h is constant across a finite window.
+    Vec2 a_in  = nfw.deflection({1.0e-3 - 1.0e-9, 0.0});  // taylor branch
+    Vec2 a_out = nfw.deflection({1.0e-3 + 1.0e-9, 0.0});  // full branch
+    const double m_in  = std::sqrt(a_in.x  * a_in.x  + a_in.y  * a_in.y);
+    const double m_out = std::sqrt(a_out.x * a_out.x + a_out.y * a_out.y);
+    assert(close(m_in, m_out, 1.0e-5, 1.0e-12));
+  }
+
   return 0;
 }

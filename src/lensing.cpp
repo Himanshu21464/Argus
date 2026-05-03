@@ -234,15 +234,14 @@ std::vector<Image> find_images(const Lens& lens,
   const double dx = 2.0 * search_radius / static_cast<double>(grid_n);
   const double h_jac = std::max(1.0e-7, 1.0e-4 * search_radius);
 
-  // 1. Coarse grid — record |F|² and per-cell-corner sign of (F_x, F_y).
+  // 1. Coarse grid — record |F|² at every cell centre. We only need
+  //    grid_n × grid_n cell centres, not corners; Newton refinement
+  //    catches the actual basin from any seed nearby.
   std::vector<double> Fx(grid_n * grid_n);
   std::vector<double> Fy(grid_n * grid_n);
   std::vector<Vec2>   theta_grid(grid_n * grid_n);
-  for (std::size_t j = 0; j <= grid_n; ++j) {
-    for (std::size_t i = 0; i <= grid_n; ++i) {
-      // Note: (grid_n+1)² corner mesh would be cleaner; use (grid_n)²
-      // node-centred plus cell-centred seeds for simplicity.
-      if (i >= grid_n || j >= grid_n) continue;
+  for (std::size_t j = 0; j < grid_n; ++j) {
+    for (std::size_t i = 0; i < grid_n; ++i) {
       const Vec2 t{
         -search_radius + dx * (static_cast<double>(i) + 0.5),
         -search_radius + dx * (static_cast<double>(j) + 0.5)
@@ -312,10 +311,11 @@ std::vector<Image> find_images(const Lens& lens,
     }
   }
 
-  // Sort by image x for stable identification by callers.
+  // Sort by image x then y for stable identification by callers.
   std::sort(roots.begin(), roots.end(),
             [](const Image& a, const Image& b) {
-              if (a.theta.x != b.theta.x) return a.theta.x < b.theta.x;
+              if (a.theta.x < b.theta.x) return true;
+              if (b.theta.x < a.theta.x) return false;
               return a.theta.y < b.theta.y;
             });
   return roots;
@@ -328,8 +328,28 @@ namespace {
 // Wright & Brainerd (2000) NFW deflection-magnitude helper:
 //     h(x) = ln(x/2) + F(x)/√|1-x²|
 // continuous through x = 1 with h(1) = 1 + ln(1/2) (analytic limit).
+//
+// At small x, the explicit formula
+//     ln(x/2) + arccosh(1/x)/√(1-x²)
+// suffers catastrophic cancellation: arccosh(1/x) ≈ ln(2/x) - x²/4
+// and ln(x/2) = -ln(2/x) so the leading -ln(2/x) terms cancel, leaving
+// only the O(x²) correction. We use the Taylor expansion below x_thr
+// to keep relative precision near the lens centre.
+//
+// Series (valid for x ≪ 1):
+//     arccosh(1/x) = ln(2/x) - x²/4 - 3 x⁴/32 - ...
+//     1/√(1-x²)    = 1 + x²/2 + 3 x⁴/8 + ...
+//   ⇒ arccosh(1/x)/√(1-x²) = ln(2/x) (1 + x²/2 + ...) - x²/4 - ...
+//                          = ln(2/x) + (x²/2) ln(2/x) - x²/4 + O(x⁴)
+//   h(x) = -ln(2/x) + ln(2/x) + (x²/2) ln(2/x) - x²/4 + ...
+//        = (x²/2)(ln(2/x) - 1/2) + O(x⁴ ln x)
 double nfw_h(double x) {
   if (x < 1.0e-15) return 0.0;          // analytic limit at origin
+  if (x < 1.0e-3) {
+    // Taylor at x → 0+ (good to ~1e-12 in this range).
+    const double half_x2 = 0.5 * x * x;
+    return half_x2 * (std::log(2.0 / x) - 0.5);
+  }
   if (std::fabs(x - 1.0) < 1.0e-6) {
     return 1.0 + std::log(0.5);
   }
