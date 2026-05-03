@@ -84,16 +84,16 @@ Tensor LineListOpacity::cross_section(
 
   Tensor out({nT, nP, nW});
   // Lines outside this many HWHMs of any wavenumber sample are skipped.
-  // Conservative: 50 HWHMs ~ 1e-4 of the line peak, more than adequate
-  // for M2 prototyping.
+  // Conservative: 50 HWHMs gives a Voigt residual of ~1e-4 of the line
+  // peak, well below the noise floor of any real spectrum we care about.
   constexpr double kCutoffHWHMs = 50.0;
 
   for (std::size_t iT = 0; iT < nT; ++iT) {
     const double T = T_k[iT];
-    // Q-ratio is shared across all lines at this temperature when the
-    // line list belongs to one species (the M2 case). If the species key
-    // is not in the partition table, fall back to q_ratio = 1 — the
-    // intensity scaling becomes Boltzmann-only.
+    // Q-ratio is shared across all lines at this temperature because
+    // every LineListOpacity instance belongs to exactly one species.
+    // If the species key is not in the partition table, fall back to
+    // q_ratio = 1 — the intensity scaling becomes Boltzmann-only.
     double q_ratio = 1.0;
     try {
       q_ratio = Partition::Q_ref(key_) / Partition::Q(key_, T);

@@ -14,7 +14,9 @@ namespace argus {
 //          * (1 - exp(-c2 * nu / T)) / (1 - exp(-c2 * nu / Tref))
 //
 // The third factor (induced-emission correction) is small for nu >> kT/h
-// and is collapsed into the simple Boltzmann form for M2.
+// and is collapsed into the simple Boltzmann form here. The full
+// `LineListOpacity::cross_section` includes the explicit
+// (1 - exp(-c2 nu / T)) / (1 - exp(-c2 nu / T_ref)) factor.
 //
 // Ships with analytic power-law fits anchored at TIPS values for the
 // five most common molecules (H2O, CO2, CH4, CO, NH3) — accuracy
