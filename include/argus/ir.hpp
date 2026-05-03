@@ -27,7 +27,13 @@ enum class NodeKind {
 };
 
 struct Node {
-  NodeKind kind;
+  // First enum value (kAtmosphere) as a defensive default — Graph::add
+  // always overwrites this immediately, but a default-constructed Node
+  // would otherwise have an indeterminate kind (UB on read). Adding a
+  // sentinel kNone would shift the underlying integer values of the
+  // others and change every Graph's content_address(), so we keep the
+  // existing values stable and just pick the lowest as default.
+  NodeKind kind = NodeKind::kAtmosphere;
   std::string name;
   std::vector<std::shared_ptr<Node>> inputs;
 };

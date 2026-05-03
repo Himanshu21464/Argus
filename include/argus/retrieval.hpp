@@ -22,8 +22,9 @@ enum class PriorType {
 // [prior_min, prior_max] for backward compatibility.
 struct Parameter {
   std::string name;
-  double prior_min;
-  double prior_max;
+  double prior_min = 0.0;       // Retrieval ctor validates max > min;
+  double prior_max = 0.0;       // defaults make a default-constructed
+                                // Parameter detect-ably "empty".
   // Prior shape inside the box. Defaults to Uniform.
   PriorType prior_type = PriorType::Uniform;
   // Used only when prior_type == Gaussian.
@@ -35,11 +36,11 @@ struct Parameter {
 // interval (16th and 84th percentiles).
 struct PosteriorEntry {
   std::string name;
-  double median;
-  double q16;       // 16th percentile (lower 1-sigma bound)
-  double q84;       // 84th percentile (upper 1-sigma bound)
-  double mean;
-  double stddev;
+  double median = 0.0;
+  double q16    = 0.0;       // 16th percentile (lower 1-sigma bound)
+  double q84    = 0.0;       // 84th percentile (upper 1-sigma bound)
+  double mean   = 0.0;
+  double stddev = 0.0;
 };
 
 class PosteriorSummary {

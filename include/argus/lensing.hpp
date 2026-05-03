@@ -75,12 +75,12 @@ Vec2 lens_equation(const Lens& lens, Vec2 theta);
 
 // One image of a point source.
 struct Image {
-  Vec2   theta;          // image position on the lens plane
+  Vec2   theta;                 // image position on the lens plane (Vec2 defaults to {0,0})
   // Absolute magnification factor: |1 / det(∂β/∂θ)|. For the SIS image
   // solver this evaluates analytically to |r / |β||, where r is the
   // image radius from the lens centre. For find_images it is computed
   // from the central-difference Jacobian of α at the converged image.
-  double magnification;
+  double magnification = 0.0;
 };
 
 // Closed-form image solver for an SIS. Returns 1 image if β > θ_E

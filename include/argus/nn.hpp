@@ -180,8 +180,8 @@ class AffineCoupling {
 // layers can transform the previously-passive dimensions. Trivial
 // log-det = 0 since permutations preserve volume.
 struct HalfSwap {
-  std::size_t dim;
-  std::size_t split;
+  std::size_t dim   = 0;
+  std::size_t split = 0;
   std::vector<double> apply(const std::vector<double>& x) const;
 };
 
