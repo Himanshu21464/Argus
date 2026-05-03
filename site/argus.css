@@ -985,6 +985,8 @@ section.band-deep {
 }
 .want-m2  { color: var(--co2-2); background: rgba(255, 179, 71, 0.10); border: 1px solid rgba(255, 179, 71, 0.3); }
 .want-m3  { color: var(--ch4-2); background: rgba(16, 242, 168, 0.10);  border: 1px solid rgba(16, 242, 168, 0.3); }
+.want-m4  { color: var(--nh3);    background: rgba(255, 112, 166, 0.10); border: 1px solid rgba(255, 112, 166, 0.3); }
+.want-m5  { color: var(--h2o-2);  background: rgba(0, 212, 255, 0.10);  border: 1px solid rgba(0, 212, 255, 0.3); }
 .want-doc { color: var(--ink-2); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--rule-2); }
 .want-py  { color: var(--cont-2); background: rgba(176, 149, 255, 0.10); border: 1px solid rgba(176, 149, 255, 0.3); }
 
