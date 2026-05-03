@@ -171,7 +171,7 @@ Retrieval::PosteriorPredictive Retrieval::posterior_predictive(
   const std::size_t n_keep = (samples.size() + thin - 1) / thin;
   std::vector<std::vector<double>> per_wn;     // [n_wn][n_keep]
   std::vector<double> wn;
-  for (std::size_t s = 0, k = 0; s < samples.size(); s += thin, ++k) {
+  for (std::size_t s = 0; s < samples.size(); s += thin) {
     Spectrum m = forward_(samples[s]);
     if (per_wn.empty()) {
       per_wn.assign(m.values.size(), std::vector<double>{});
@@ -185,7 +185,6 @@ Retrieval::PosteriorPredictive Retrieval::posterior_predictive(
     for (std::size_t i = 0; i < m.values.size(); ++i) {
       per_wn[i].push_back(m.values[i]);
     }
-    (void)k;
   }
 
   // 2. For each wavelength, sort the column then read out quantiles.
