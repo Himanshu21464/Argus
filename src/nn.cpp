@@ -365,11 +365,14 @@ void NormalizingFlow::load(const std::string& path) {
 
     if (line.rfind("layer ", 0) == 0) {
       if (have_layer_header) commit_layer();
-      // Parse "layer L in=N out=M"
+      // Parse "layer L in=N out=M". The L index is discarded — layer
+      // ordering is implicit in the file.
       std::stringstream ss(line);
       std::string token;
       ss >> token;       // "layer"
-      std::size_t L; ss >> L;
+      std::size_t layer_index_unused;
+      ss >> layer_index_unused;
+      (void)layer_index_unused;
       std::string in_kv, out_kv;
       ss >> in_kv >> out_kv;
       if (in_kv.rfind("in=", 0) != 0 || out_kv.rfind("out=", 0) != 0) {
@@ -399,6 +402,17 @@ void NormalizingFlow::load(const std::string& path) {
     }
   }
   if (have_layer_header) commit_layer();
+
+  // Completeness check: a truncated file (fewer layers than the flow
+  // expects) was previously silently accepted, leaving the remaining
+  // couplings in their pre-load state. Catch that as an error.
+  if (k != couplings_.size() || l != 0) {
+    throw std::runtime_error(
+        "NormalizingFlow::load: file ended before all flow layers were "
+        "filled (loaded " + std::to_string(k) + "/" +
+        std::to_string(couplings_.size()) + " complete couplings, " +
+        "partial layer " + std::to_string(l) + ")");
+  }
 }
 
 // ─── Sequential ───────────────────────────────────────────────────────

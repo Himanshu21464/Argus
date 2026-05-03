@@ -8,8 +8,10 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "argus/argus.hpp"
@@ -147,6 +149,40 @@ int main() {
     try { flow.load("/tmp/argus_nonexistent_flow_12345.txt"); }
     catch (const std::runtime_error&) { threw = true; }
     assert(threw);
+  }
+
+  // ─── 7b. Truncated file: file has fewer layers than the flow expects.
+  //     Earlier code silently left the remaining couplings in their
+  //     pre-load state — now caught at end-of-stream. ──────────────
+  {
+    NormalizingFlow flow_full(4, /*n_couplings=*/2, 2, {8});
+    flow_full.init_xavier(123);
+    const std::string path = "/tmp/argus_flow_truncated.txt";
+    flow_full.save(path);
+
+    // Truncate after the first coupling's first layer's bias block.
+    // Read full file, find a safe truncation point, write back.
+    std::ifstream src(path);
+    std::string line, kept;
+    int layer_count = 0;
+    while (std::getline(src, line)) {
+      if (line.rfind("layer ", 0) == 0) {
+        ++layer_count;
+        if (layer_count > 1) break;        // stop before second layer
+      }
+      kept += line + "\n";
+    }
+    src.close();
+    std::ofstream dst(path, std::ios::trunc);
+    dst << kept;
+    dst.close();
+
+    NormalizingFlow flow_target(4, 2, 2, {8});
+    bool threw = false;
+    try { flow_target.load(path); }
+    catch (const std::runtime_error&) { threw = true; }
+    assert(threw);
+    std::remove(path.c_str());
   }
 
   // ─── 8. Bad inputs throw. ───────────────────────────────────────────
