@@ -147,42 +147,45 @@ EnsembleSampler::EnsembleSampler(LogPosterior log_posterior,
 void EnsembleSampler::half_step(std::size_t start, std::size_t end,
                                  std::size_t other_start,
                                  std::size_t other_end) {
+  // Goodman-Weare 2010 stretch move. Sample stretch factor `s ∈ [1/a, a]`
+  // from g(s) ∝ 1/√s; in the inverse-CDF parameterisation we sample
+  // u ∈ [0, 1] and compute u_to_sqrt_s, then the actual stretch is
+  // `s = (u_to_sqrt_s)²`. This naming is verbose but unambiguous —
+  // earlier code used `z` for the sqrt and `zz` for the stretch,
+  // which collided with the convention in the reference paper.
   const std::size_t n_dim = walkers_.front().size();
-  const double inv_a = 1.0 / a_;
-  const double sqrt_a = std::sqrt(a_);
+  const double sqrt_a     = std::sqrt(a_);
+  const double inv_sqrt_a = 1.0 / sqrt_a;
   std::uniform_real_distribution<double> u01(0.0, 1.0);
-  // Index distribution into the complementary half.
   const std::size_t n_other = other_end - other_start;
   std::uniform_int_distribution<std::size_t> partner_dist(0, n_other - 1);
 
   for (std::size_t i = start; i < end; ++i) {
-    // Sample stretch z ~ g(z) = 1/(2 sqrt(z)) on [1/a, a]
-    // CDF inverse: z = ((sqrt(a) - 1/sqrt(a)) * u + 1/sqrt(a))^2
-    const double u = u01(rng_);
-    const double z = (sqrt_a - 1.0 / sqrt_a) * u + 1.0 / sqrt_a;
-    const double zz = z * z;
+    const double u            = u01(rng_);
+    const double sqrt_stretch = (sqrt_a - inv_sqrt_a) * u + inv_sqrt_a;
+    const double stretch      = sqrt_stretch * sqrt_stretch;
 
     const std::size_t j = other_start + partner_dist(rng_);
     std::vector<double> proposal(n_dim);
     for (std::size_t d = 0; d < n_dim; ++d) {
       proposal[d] = walkers_[j][d] +
-                    zz * (walkers_[i][d] - walkers_[j][d]);
+                    stretch * (walkers_[i][d] - walkers_[j][d]);
     }
 
     const double new_logp = log_p_(proposal);
     ++n_proposed_;
     if (!std::isfinite(new_logp)) continue;
 
-    // Acceptance: log_alpha = (n_dim - 1) * log(z) + new - old
-    const double log_alpha = (static_cast<double>(n_dim) - 1.0) * std::log(zz)
-                           + new_logp - walker_logp_[i];
+    // Acceptance: log α = (n_dim - 1) · log(stretch) + new - old.
+    const double log_alpha =
+        (static_cast<double>(n_dim) - 1.0) * std::log(stretch)
+        + new_logp - walker_logp_[i];
     const double r = u01(rng_);
     if (std::log(r) < log_alpha) {
       walkers_[i] = std::move(proposal);
       walker_logp_[i] = new_logp;
       ++n_accepted_;
     }
-    (void)inv_a;
   }
 }
 
