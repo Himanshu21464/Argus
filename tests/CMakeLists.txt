@@ -181,3 +181,11 @@ add_test(NAME lensing_benchmark COMMAND test_lensing_benchmark)
 add_executable(test_interferometry_benchmark test_interferometry_benchmark.cpp)
 target_link_libraries(test_interferometry_benchmark PRIVATE argus_core)
 add_test(NAME interferometry_benchmark COMMAND test_interferometry_benchmark)
+
+add_executable(test_conditional_flow test_conditional_flow.cpp)
+target_link_libraries(test_conditional_flow PRIVATE argus_core)
+add_test(NAME conditional_flow COMMAND test_conditional_flow)
+
+add_executable(test_hmc_atmosphere test_hmc_atmosphere.cpp)
+target_link_libraries(test_hmc_atmosphere PRIVATE argus_core)
+add_test(NAME hmc_atmosphere COMMAND test_hmc_atmosphere)

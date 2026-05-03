@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.7.9 — 2026-05-02 — M3 closeout: ConditionalNF + atmospheric HMC
+
+The two outstanding M3 deliverables flagged at v0.5.3:
+* **M3.5 wedge**: ConditionalNF — the architecture amortized SBI is
+  built on (NPE, SNPE, DINGO).
+* **M3 differentiable-physics proof**: HMC end-to-end through a real
+  atmospheric forward (Voigt + temperature-scaled widths + chi²),
+  exercising the Wengert-tape autograd path on the physics layer
+  rather than just an analytic Gaussian.
+
+### Added
+- **`argus::nn::ConditionalAffineCoupling`** — Real NVP coupling with
+  the conditioner MLP additionally taking a context vector y; the
+  bijection is f(x; y) so density depends on y.
+- **`argus::nn::ConditionalNormalizingFlow`** — stack of conditional
+  couplings + half-swap permutations + log_density(x | y) +
+  sample(y, rng) backed by the existing Sequential/Linear primitives.
+- **`test_conditional_flow`** (9 test groups):
+  * Bad-input construction throws (5 cases)
+  * Wrong-shape forward/inverse throws
+  * Forward → inverse round-trip on coupling: bit-equality + log-det signs
+  * Forward → inverse round-trip on flow: bit-equality + log-det signs
+  * `log_density` matches change-of-variables formula
+  * Conditional dependence: same x, different y → different density / output
+  * `init_xavier` reproducibility (same seed → identical flow)
+  * Sampling: shape correct + identical RNG → identical sample
+  * Different y → different sample at identical RNG state
+- **`test_hmc_atmosphere`** — 2-parameter HMC retrieval through a
+  3-line H₂O-like isothermal layer with temperature-dependent Doppler
+  + Lorentz broadening. Templated `transit_depth<T>` runs on both
+  `double` and `Dual<double>`, so HMC's leapfrog integrator gets
+  exact gradients via forward-mode autograd. Standardised parameters
+  (T = 1500 + 200 s₀; log10VMR = -3 + 2 s₁) keep step size uniform.
+  Recovers truth within 3σ on both parameters at >50% acceptance;
+  bit-exact determinism on identical seed.
+
+### Substrate-claim status (final)
+* Atmospheric (M2/M3): 1σ recovery via MH; **HMC via differentiable physics**
+* SIS lensing (M4): 3σ via Ensemble
+* SIE lensing (M4): 0.5σ via Ensemble + source-plane chi²
+* Interferometry (M5): 3σ via single-chain MH
+* Multi-component interferometry (M5): 3σ via Ensemble
+* **Conditional NF architecture (M3.5)**: ready for amortized SBI training
+
+### Validated
+48/48 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+on GCC 15.2.
+
+---
+
 ## 0.7.8 — 2026-05-02 — Performance benchmarks for M4 + M5 kernels
 
 The "production-perfect" hygiene completion: every hot-path kernel now

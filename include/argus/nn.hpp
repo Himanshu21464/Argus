@@ -269,4 +269,97 @@ class NormalizingFlow {
   std::vector<HalfSwap> swaps_;
 };
 
+// Conditional affine coupling layer — Real NVP with the conditioner
+// MLP additionally taking a context vector y (the observation in
+// amortized SBI). Architecturally identical to AffineCoupling except
+// the conditioner has input dimensionality `split + cond_dim` instead
+// of `split`:
+//
+//     [s, t] = MLP([x_a; y])
+//     z_a = x_a
+//     z_b = x_b · exp(s) + t
+//
+// Stacking these gives a CONDITIONAL normalizing flow whose density
+// p(x | y) shifts with y — the standard simulation-based-inference
+// architecture (NPE, SNPE, DINGO).
+class ConditionalAffineCoupling {
+ public:
+  ConditionalAffineCoupling(std::size_t dim,
+                            std::size_t cond_dim,
+                            std::size_t split,
+                            std::vector<std::size_t> hidden_dims,
+                            Activation act = Activation::Tanh);
+
+  std::size_t dim()      const noexcept { return dim_; }
+  std::size_t cond_dim() const noexcept { return cond_dim_; }
+  std::size_t split()    const noexcept { return split_; }
+
+  void init_xavier(std::uint64_t seed = 0);
+
+  Sequential&       conditioner()       noexcept { return conditioner_; }
+  const Sequential& conditioner() const noexcept { return conditioner_; }
+
+  // Forward: z = f(x; y). Returns z and log|det df/dx| (the y-dependence
+  // does not affect the Jacobian wrt x because y is a fixed conditioning
+  // input, not part of the bijection).
+  AffineCoupling::Output forward(const std::vector<double>& x,
+                                 const std::vector<double>& cond) const;
+
+  // Inverse: x = f^{-1}(z; y).
+  AffineCoupling::Output inverse(const std::vector<double>& z,
+                                 const std::vector<double>& cond) const;
+
+ private:
+  std::size_t dim_;
+  std::size_t cond_dim_;
+  std::size_t split_;
+  Sequential conditioner_;     // (split + cond_dim) -> 2 * (dim - split)
+};
+
+// Stack of ConditionalAffineCoupling layers separated by half-swap
+// permutations, trained against a standard-Gaussian base distribution.
+// The conditioning vector y is supplied per-call and threaded into
+// every coupling layer so the entire flow is a function of (x, y).
+//
+// log_density(x | y) = log p_z(z) + log|det df_x(x; y)/dx|
+//                    = -0.5 |z|² - 0.5 D ln(2π) + Σ log_det_i
+//
+// Sampling from p(x | y_obs): z ~ N(0, I), then x = inverse(z, y_obs).
+class ConditionalNormalizingFlow {
+ public:
+  ConditionalNormalizingFlow(std::size_t dim,
+                             std::size_t cond_dim,
+                             std::size_t n_couplings,
+                             std::size_t split,
+                             std::vector<std::size_t> hidden_dims,
+                             Activation act = Activation::Tanh);
+
+  std::size_t dim()         const noexcept { return dim_; }
+  std::size_t cond_dim()    const noexcept { return cond_dim_; }
+  std::size_t n_couplings() const noexcept { return couplings_.size(); }
+
+  void init_xavier(std::uint64_t seed = 0);
+
+  ConditionalAffineCoupling&       coupling(std::size_t i);
+  const ConditionalAffineCoupling& coupling(std::size_t i) const;
+
+  AffineCoupling::Output forward(const std::vector<double>& x,
+                                 const std::vector<double>& cond) const;
+  AffineCoupling::Output inverse(const std::vector<double>& z,
+                                 const std::vector<double>& cond) const;
+
+  double log_density(const std::vector<double>& x,
+                     const std::vector<double>& cond) const;
+
+  std::vector<double> sample(const std::vector<double>& cond,
+                             std::mt19937_64& rng) const;
+
+ private:
+  std::size_t dim_;
+  std::size_t cond_dim_;
+  std::size_t init_split_;
+  std::vector<ConditionalAffineCoupling> couplings_;
+  std::vector<HalfSwap> swaps_;
+};
+
 }  // namespace argus::nn

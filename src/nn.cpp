@@ -460,4 +460,214 @@ const Linear& Sequential::layer(std::size_t i) const {
   return layers_[i];
 }
 
+// ─── ConditionalAffineCoupling ───────────────────────────────────────
+
+ConditionalAffineCoupling::ConditionalAffineCoupling(
+    std::size_t dim, std::size_t cond_dim, std::size_t split,
+    std::vector<std::size_t> hidden_dims, Activation act)
+    : dim_(dim),
+      cond_dim_(cond_dim),
+      split_(split),
+      conditioner_(split + cond_dim, 2 * (dim - split),
+                   std::move(hidden_dims), act) {
+  if (dim_ < 2) {
+    throw std::invalid_argument("ConditionalAffineCoupling: dim must be >= 2");
+  }
+  if (split_ < 1 || split_ >= dim_) {
+    throw std::invalid_argument(
+        "ConditionalAffineCoupling: split must be in [1, dim - 1]");
+  }
+}
+
+void ConditionalAffineCoupling::init_xavier(std::uint64_t seed) {
+  conditioner_.init_xavier(seed);
+}
+
+namespace {
+
+std::vector<double> concat(const std::vector<double>& a,
+                           const std::vector<double>& b) {
+  std::vector<double> out;
+  out.reserve(a.size() + b.size());
+  out.insert(out.end(), a.begin(), a.end());
+  out.insert(out.end(), b.begin(), b.end());
+  return out;
+}
+
+}  // namespace
+
+AffineCoupling::Output ConditionalAffineCoupling::forward(
+    const std::vector<double>& x, const std::vector<double>& cond) const {
+  if (x.size() != dim_) {
+    throw std::invalid_argument(
+        "ConditionalAffineCoupling::forward: input size must equal dim");
+  }
+  if (cond.size() != cond_dim_) {
+    throw std::invalid_argument(
+        "ConditionalAffineCoupling::forward: cond size must equal cond_dim");
+  }
+  const std::size_t n_b = dim_ - split_;
+  const auto split_off = static_cast<std::ptrdiff_t>(split_);
+  std::vector<double> x_a(x.begin(), x.begin() + split_off);
+  std::vector<double> x_b(x.begin() + split_off, x.end());
+
+  // Conditioner input: [x_a; cond].
+  std::vector<double> input = concat(x_a, cond);
+  std::vector<double> st = conditioner_.forward(input);
+
+  AffineCoupling::Output out;
+  out.y.resize(dim_);
+  for (std::size_t i = 0; i < split_; ++i) out.y[i] = x_a[i];
+
+  double log_det = 0.0;
+  for (std::size_t i = 0; i < n_b; ++i) {
+    const double s = st[i];
+    const double t = st[n_b + i];
+    out.y[split_ + i] = x_b[i] * std::exp(s) + t;
+    log_det += s;
+  }
+  out.log_det_jacobian = log_det;
+  return out;
+}
+
+AffineCoupling::Output ConditionalAffineCoupling::inverse(
+    const std::vector<double>& y, const std::vector<double>& cond) const {
+  if (y.size() != dim_) {
+    throw std::invalid_argument(
+        "ConditionalAffineCoupling::inverse: input size must equal dim");
+  }
+  if (cond.size() != cond_dim_) {
+    throw std::invalid_argument(
+        "ConditionalAffineCoupling::inverse: cond size must equal cond_dim");
+  }
+  const std::size_t n_b = dim_ - split_;
+  const auto split_off = static_cast<std::ptrdiff_t>(split_);
+  std::vector<double> x_a(y.begin(), y.begin() + split_off);
+  std::vector<double> input = concat(x_a, cond);
+  std::vector<double> st = conditioner_.forward(input);
+
+  AffineCoupling::Output out;
+  out.y.resize(dim_);
+  for (std::size_t i = 0; i < split_; ++i) out.y[i] = x_a[i];
+
+  double log_det = 0.0;
+  for (std::size_t i = 0; i < n_b; ++i) {
+    const double s = st[i];
+    const double t = st[n_b + i];
+    out.y[split_ + i] = (y[split_ + i] - t) * std::exp(-s);
+    log_det += -s;
+  }
+  out.log_det_jacobian = log_det;
+  return out;
+}
+
+// ─── ConditionalNormalizingFlow ──────────────────────────────────────
+
+ConditionalNormalizingFlow::ConditionalNormalizingFlow(
+    std::size_t dim, std::size_t cond_dim, std::size_t n_couplings,
+    std::size_t split, std::vector<std::size_t> hidden_dims, Activation act)
+    : dim_(dim), cond_dim_(cond_dim), init_split_(split) {
+  if (dim_ < 2) {
+    throw std::invalid_argument(
+        "ConditionalNormalizingFlow: dim must be >= 2");
+  }
+  if (n_couplings == 0) {
+    throw std::invalid_argument(
+        "ConditionalNormalizingFlow: n_couplings must be >= 1");
+  }
+  if (split < 1 || split >= dim_) {
+    throw std::invalid_argument(
+        "ConditionalNormalizingFlow: split must be in [1, dim - 1]");
+  }
+  couplings_.reserve(n_couplings);
+  swaps_.reserve(n_couplings);
+  for (std::size_t i = 0; i < n_couplings; ++i) {
+    couplings_.emplace_back(dim_, cond_dim_, split, hidden_dims, act);
+    swaps_.push_back({dim_, split});
+  }
+}
+
+void ConditionalNormalizingFlow::init_xavier(std::uint64_t seed) {
+  std::mt19937_64 rng(seed);
+  for (auto& c : couplings_) c.init_xavier(rng());
+}
+
+ConditionalAffineCoupling& ConditionalNormalizingFlow::coupling(std::size_t i) {
+  if (i >= couplings_.size()) {
+    throw std::out_of_range(
+        "ConditionalNormalizingFlow::coupling: index out of range");
+  }
+  return couplings_[i];
+}
+
+const ConditionalAffineCoupling&
+ConditionalNormalizingFlow::coupling(std::size_t i) const {
+  if (i >= couplings_.size()) {
+    throw std::out_of_range(
+        "ConditionalNormalizingFlow::coupling: index out of range");
+  }
+  return couplings_[i];
+}
+
+AffineCoupling::Output ConditionalNormalizingFlow::forward(
+    const std::vector<double>& x, const std::vector<double>& cond) const {
+  if (x.size() != dim_) {
+    throw std::invalid_argument(
+        "ConditionalNormalizingFlow::forward: input size must equal dim");
+  }
+  AffineCoupling::Output state;
+  state.y = x;
+  state.log_det_jacobian = 0.0;
+  for (std::size_t i = 0; i < couplings_.size(); ++i) {
+    auto step = couplings_[i].forward(state.y, cond);
+    state.y = std::move(step.y);
+    state.log_det_jacobian += step.log_det_jacobian;
+    if (i + 1 < couplings_.size()) {
+      state.y = swaps_[i].apply(state.y);
+    }
+  }
+  return state;
+}
+
+AffineCoupling::Output ConditionalNormalizingFlow::inverse(
+    const std::vector<double>& z, const std::vector<double>& cond) const {
+  if (z.size() != dim_) {
+    throw std::invalid_argument(
+        "ConditionalNormalizingFlow::inverse: input size must equal dim");
+  }
+  AffineCoupling::Output state;
+  state.y = z;
+  state.log_det_jacobian = 0.0;
+  for (std::size_t r = 0; r < couplings_.size(); ++r) {
+    const std::size_t i = couplings_.size() - 1 - r;
+    if (i + 1 < couplings_.size()) {
+      HalfSwap inv_swap{dim_, dim_ - swaps_[i].split};
+      state.y = inv_swap.apply(state.y);
+    }
+    auto step = couplings_[i].inverse(state.y, cond);
+    state.y = std::move(step.y);
+    state.log_det_jacobian += step.log_det_jacobian;
+  }
+  return state;
+}
+
+double ConditionalNormalizingFlow::log_density(
+    const std::vector<double>& x, const std::vector<double>& cond) const {
+  auto fw = forward(x, cond);
+  double zz = 0.0;
+  for (double v : fw.y) zz += v * v;
+  constexpr double kLog2Pi = 1.8378770664093453;
+  return -0.5 * zz
+         - 0.5 * static_cast<double>(dim_) * kLog2Pi
+         + fw.log_det_jacobian;
+}
+
+std::vector<double> ConditionalNormalizingFlow::sample(
+    const std::vector<double>& cond, std::mt19937_64& rng) const {
+  std::normal_distribution<double> nd(0.0, 1.0);
+  std::vector<double> z(dim_);
+  for (auto& v : z) v = nd(rng);
+  return inverse(z, cond).y;
+}
+
 }  // namespace argus::nn
