@@ -142,6 +142,12 @@ int main() {
     const auto& e = post[params[i].name];
     const double truth_v = truth_vec[i];
     assert(std::fabs(e.median - truth_v) < 3.0 * e.stddev);
+    // Convergence sanity: posterior stddev must be a meaningful
+    // fraction of the prior box, not the full width — a bad chain
+    // that just samples the prior would have stddev ≈ box/√12 and
+    // could pass the 3σ check by accident.
+    const double box = params[i].prior_max - params[i].prior_min;
+    assert(e.stddev < 0.5 * box);
   }
 
   // ─── 8. Determinism: same seed → bit-equal samples. ───────────────

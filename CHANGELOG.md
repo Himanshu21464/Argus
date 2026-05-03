@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.7.11 — 2026-05-02 — M1-M5 audit: bug-fix sweep across core + webUI
+
+A systematic audit pass across every milestone with two outcomes:
+production-perfect should not regress on quality, and the substrate
+claim should not be undermined by silent precision loss or stale docs.
+
+### Core bugs fixed
+- **`src/lensing.cpp` NFW small-x precision** — the explicit
+  Wright-Brainerd formula `ln(x/2) + arccosh(1/x)/√(1-x²)` is the
+  difference of two `~ln(2/x)` terms and loses ~12 digits of double
+  precision below x ≈ 10⁻³. Added a Taylor-expansion branch
+  `h(x) ≈ ½ x²(ln(2/x) − ½)` for x < 10⁻³ that keeps relative
+  precision down to x = 10⁻¹⁵.
+- **`src/lensing.cpp:318`** — float-equality (`!=`) in the
+  `find_images` sort comparator replaced with two ordered `<`
+  comparisons. Same lexicographic semantics, no `-Wfloat-equal`
+  warning.
+- **`src/lensing.cpp` `find_images` grid loop** — removed redundant
+  `j <= grid_n` upper bound with immediate `continue`; now `j < grid_n`
+  directly. No behaviour change, one fewer source of confusion.
+
+### Test additions
+- **`test_lensing` group 30**: NFW small-x precision regression. Five
+  sample radii in [10⁻¹⁰, 10⁻⁴]; cross-check the kernel against the
+  closed-form Taylor expansion; verify radial direction and continuity
+  across the patch boundary at x = 10⁻³.
+- **`test_atmosphere_retrieval_full` stricter convergence check** —
+  added `e.stddev < 0.5 · prior_box` per parameter so a chain that
+  merely sampled the prior cannot accidentally pass the 3σ recovery
+  check (a chain that just samples a uniform prior has σ ≈ box/√12,
+  which would always satisfy `|median − truth| < 3σ`).
+
+### WebUI bugs fixed
+- **Mobile overflow in `.proofs-grid` and `.vs-grid`** — the
+  `repeat(auto-fit, minmax(360px, 1fr))` pattern overflows on
+  viewports narrower than 360 px. Replaced with
+  `minmax(min(360px, 100%), 1fr)` so a narrow viewport falls back to
+  a single column instead of horizontal scroll.
+- **Stale "v0.7.8" version pin** in the API-section lede (line 472)
+  — replaced with version-agnostic phrasing.
+- **Hero lede pinned to v0.7.5 / v0.7.6** for M4 / M5 — now
+  version-agnostic and updated count to seven retrieval substrate
+  proofs.
+- **Constellation graphic** — the dashed line from Argus #07 to #03
+  (radio imaging) and #09 (strong lensing) is now SOLID GREEN to
+  match those stars' SHIPPED status, in a separate `.const-shipped`
+  group.
+
+### README fixes
+- "**six independent retrieval tests**" → "**seven**" (the table had
+  7 entries; the count was the lag).
+- M2 row: ✅ shipped v0.3.0 → ✅ shipped v0.7.10 with the multi-physics
+  capstone callout.
+- M3 row: ✅ shipped v0.5.3 → ✅ shipped v0.7.9 with ConditionalNF +
+  atmospheric-HMC callouts.
+
+### Validated
+- 49/49 tests pass clean under
+  `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
+- 49/49 tests pass clean under `-O1 -fsanitize=address,undefined`
+- No new warnings under stricter flags
+  (`-Wnull-dereference -Wmaybe-uninitialized -Wlogical-op
+  -Wzero-as-null-pointer-constant -Wuseless-cast -Wduplicated-cond`)
+- HTML structure balanced (13 sections, 13 articles, 9 tables, 199 divs);
+  every `href="#X"` resolves to an element with `id="X"`.
+
+---
+
 ## 0.7.10 — 2026-05-02 — M2 capstone: full multi-physics atmospheric retrieval
 
 End-to-end retrieval that exercises every M2 ingredient simultaneously
