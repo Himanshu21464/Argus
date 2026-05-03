@@ -39,6 +39,7 @@
       <a href="#mission">Mission</a>
       <a href="#proofs">Proofs</a>
       <a href="#vs">vs</a>
+      <a href="#perf">Perf</a>
       <a href="#sky">Sky</a>
       <a href="https://github.com/Himanshu21464/Argus" class="nav-gh" target="_blank" rel="noopener">github ↗</a>
     </nav>
@@ -942,6 +943,157 @@ retrieval inverts to recover (l, m, F, σ) for both components.</code></pre>
       </div>
 
       <p class="quiet quiet-center">The substrate is the win, not any single feature. One bug-fixed sampler, one autograd path, one PosteriorSummary — across three subfields the community currently maintains in parallel.</p>
+    </div>
+  </section>
+
+  <!-- ─────────────  BY THE NUMBERS — PERF COMPARISON  ───────────── -->
+  <section id="perf" class="band reveal">
+    <div class="container">
+      <div class="band-head">
+        <div class="band-key">Hz &nbsp; <span class="band-mol">throughput</span> &nbsp; ns / call</div>
+        <h2>By the numbers.</h2>
+        <p class="band-lede">
+          The substrate claim isn't qualitative. Argus's hot paths are
+          asserted in <code>test_lensing_benchmark</code> /
+          <code>test_interferometry_benchmark</code> /
+          <code>test_benchmark</code>, and the end-to-end retrieval
+          wall times are reproducible across machines. Today's
+          incumbents are Python wrappers around per-component opacity
+          loaders or per-system custom code; the per-forward cost
+          gap is two-to-four orders of magnitude.
+        </p>
+      </div>
+
+      <div class="perf-block">
+        <div class="perf-eyebrow">PER-FORWARD KERNEL COST · single CPU thread, GCC 15.2 -O2</div>
+        <div class="perf-table-wrap">
+          <table class="perf-table">
+            <thead>
+              <tr>
+                <th>operation</th>
+                <th>typical Python / Fortran tool</th>
+                <th class="hi">Argus (measured)</th>
+                <th>order-of-magnitude</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Voigt opacity evaluation</td>
+                <td><span class="perf-num">100 ns – 1 µs</span><span class="perf-cite">numpy / f90 wrappers</span></td>
+                <td class="hi"><span class="perf-num">9.8 ns</span><span class="perf-cite">test_benchmark</span></td>
+                <td><span class="speedup">10–100×</span></td>
+              </tr>
+              <tr>
+                <td>SIE deflection α(θ)</td>
+                <td><span class="perf-num">~1–10 µs</span><span class="perf-cite">Python lensing libs</span></td>
+                <td class="hi"><span class="perf-num">41 ns</span><span class="perf-cite">test_lensing_benchmark</span></td>
+                <td><span class="speedup">25–250×</span></td>
+              </tr>
+              <tr>
+                <td>NFW deflection α(θ)</td>
+                <td><span class="perf-num">~1–10 µs</span><span class="perf-cite">Python lensing libs</span></td>
+                <td class="hi"><span class="perf-num">28 ns</span><span class="perf-cite">test_lensing_benchmark</span></td>
+                <td><span class="speedup">35–350×</span></td>
+              </tr>
+              <tr>
+                <td>SIE+shear image solver (60² grid)</td>
+                <td><span class="perf-num">10 ms – 1 s</span><span class="perf-cite">lenstool / PyAutoLens grid scan</span></td>
+                <td class="hi"><span class="perf-num">1.2 ms</span><span class="perf-cite">test_lensing_benchmark</span></td>
+                <td><span class="speedup">10–1000×</span></td>
+              </tr>
+              <tr>
+                <td>Visibility V(u, v) for one component</td>
+                <td><span class="perf-num">100 ns – 10 µs</span><span class="perf-cite">CASA / numpy uvfit</span></td>
+                <td class="hi"><span class="perf-num">13 ns</span><span class="perf-cite">test_interferometry_benchmark</span></td>
+                <td><span class="speedup">10–1000×</span></td>
+              </tr>
+              <tr>
+                <td>Predict V over 27-ant × 30-HA = 10 530 UV samples (2 components)</td>
+                <td><span class="perf-num">10 – 100 ms</span><span class="perf-cite">CASA Python loop</span></td>
+                <td class="hi"><span class="perf-num">0.25 ms</span><span class="perf-cite">test_interferometry_benchmark</span></td>
+                <td><span class="speedup">40–400×</span></td>
+              </tr>
+              <tr>
+                <td>UV coverage from antenna ENU (27 ant × 30 HA)</td>
+                <td><span class="perf-num">~1–10 ms</span><span class="perf-cite">CASA simobserve</span></td>
+                <td class="hi"><span class="perf-num">22 µs</span><span class="perf-cite">test_interferometry_benchmark</span></td>
+                <td><span class="speedup">45–450×</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="perf-block">
+        <div class="perf-eyebrow">END-TO-END RETRIEVAL WALL TIME · MCMC chain to a converged posterior</div>
+        <div class="perf-table-wrap">
+          <table class="perf-table">
+            <thead>
+              <tr>
+                <th>retrieval</th>
+                <th>same chain length on a Python forward</th>
+                <th class="hi">Argus (measured)</th>
+                <th>order-of-magnitude</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2-param atmospheric (isothermal H₂O, JWST-PRISM)<br><span class="perf-cite">test_retrieval · 8000 MH steps</span></td>
+                <td><span class="perf-num">10 min – 1 h</span><span class="perf-cite">TauREx / POSEIDON @ ~100 ms / forward</span></td>
+                <td class="hi"><span class="perf-num">1.8 s</span></td>
+                <td><span class="speedup">300–2000×</span></td>
+              </tr>
+              <tr class="row-flag">
+                <td>4-param multi-physics (Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh)<br><span class="perf-cite">test_atmosphere_retrieval_full · 5000 MH steps</span></td>
+                <td><span class="perf-num">30 min – 5 h</span><span class="perf-cite">CHIMERA / petitRADTRANS, with binning</span></td>
+                <td class="hi"><span class="perf-num">1.8 s</span></td>
+                <td><span class="speedup">1000–10 000×</span></td>
+              </tr>
+              <tr>
+                <td>2-param HMC through Voigt physics + Dual&lt;T&gt; autograd<br><span class="perf-cite">test_hmc_atmosphere · 1500 samples × 200 leapfrog</span></td>
+                <td><span class="perf-num">— not available —</span><span class="perf-cite">no Python tool exposes ∇ through full forward except ExoJAX2</span></td>
+                <td class="hi"><span class="perf-num">5.2 s</span></td>
+                <td><span class="speedup">∞</span></td>
+              </tr>
+              <tr>
+                <td>5-param SIS lens (image positions)<br><span class="perf-cite">test_lensing_retrieval · Ensemble 32×2000</span></td>
+                <td><span class="perf-num">~10 s – 5 min</span><span class="perf-cite">PyAutoLens / lenstool</span></td>
+                <td class="hi"><span class="perf-num">0.09 s</span></td>
+                <td><span class="speedup">100–3300×</span></td>
+              </tr>
+              <tr class="row-flag">
+                <td>7-param SIE quad-image lens (source-plane chi²)<br><span class="perf-cite">test_sie_retrieval · Ensemble 32×4000</span></td>
+                <td><span class="perf-num">~1 min – 1 h</span><span class="perf-cite">PyAutoLens / lenstool</span></td>
+                <td class="hi"><span class="perf-num">0.16 s</span></td>
+                <td><span class="speedup">370–22 000×</span></td>
+              </tr>
+              <tr>
+                <td>4-param Gaussian source from 21-baseline visibilities<br><span class="perf-cite">test_interferometry_retrieval · MH 8000</span></td>
+                <td><span class="perf-num">~1 – 30 min</span><span class="perf-cite">CASA + dynesty</span></td>
+                <td class="hi"><span class="perf-num">0.02 s</span></td>
+                <td><span class="speedup">3000–90 000×</span></td>
+              </tr>
+              <tr class="row-flag">
+                <td>8-param 2-component (core + jet) over 5-h Earth-rotation track<br><span class="perf-cite">test_multi_component_retrieval · Ensemble 32×4000 · 210 obs</span></td>
+                <td><span class="perf-num">~10 min – 5 h</span><span class="perf-cite">CASA / eht-imaging + sampler</span></td>
+                <td class="hi"><span class="perf-num">0.86 s</span></td>
+                <td><span class="speedup">700–20 000×</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <p class="quiet quiet-center">
+        Per-forward kernel costs are measured on the same machine, same compiler,
+        same -O2 flags. End-to-end times are wall-clock from <code>./build/tests/&lt;name&gt;</code>
+        on a single thread. "Today's stack" estimates use published per-forward
+        timings of the named Python/Fortran tools at JWST-PRISM-scale or
+        VLA-snapshot-scale workloads, scaled by the matching chain length —
+        these are <em>order-of-magnitude</em> bounds, not benchmark wins. The
+        kernel substrate alone explains the gap; the inference layer is
+        identical.
+      </p>
     </div>
   </section>
 

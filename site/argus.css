@@ -1379,3 +1379,89 @@ section.band-deep {
   color: #10f2a8;
 }
 .vs-today li b, .vs-argus li b { color: var(--ink); font-weight: 600; }
+
+/* ──────────────  BY THE NUMBERS — perf-comparison tables  ────────── */
+.perf-block {
+  margin-top: 36px;
+}
+.perf-block:first-of-type { margin-top: 28px; }
+.perf-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.10em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.perf-table-wrap {
+  background: var(--void-1);
+  border: 1px solid var(--rule-2);
+  border-radius: 14px;
+  overflow-x: auto;
+}
+.perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  min-width: 720px;
+}
+.perf-table thead th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rule-2);
+  background: var(--void-2);
+  white-space: nowrap;
+}
+.perf-table thead th.hi { color: #10f2a8; }
+.perf-table tbody td {
+  padding: 13px 16px;
+  color: var(--ink-2);
+  border-bottom: 1px dotted rgba(38, 53, 77, 0.4);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.perf-table tbody tr:last-child td { border-bottom: none; }
+.perf-table tbody td.hi {
+  background: rgba(16, 242, 168, 0.04);
+}
+.perf-table tbody tr.row-flag td {
+  background: rgba(176, 149, 255, 0.05);
+}
+.perf-table tbody tr.row-flag td.hi {
+  background: rgba(16, 242, 168, 0.07);
+}
+.perf-num {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+.perf-table td.hi .perf-num { color: #10f2a8; }
+.perf-cite {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  font-style: italic;
+}
+.speedup {
+  font-family: 'JetBrains Mono', monospace;
+  color: #ffb347;
+  font-weight: 600;
+  font-size: 0.92rem;
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(255, 179, 71, 0.08);
+  border: 1px solid rgba(255, 179, 71, 0.18);
+  border-radius: 4px;
+  white-space: nowrap;
+}
