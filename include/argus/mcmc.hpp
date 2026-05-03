@@ -266,9 +266,9 @@ class EnsembleSampler {
   struct Result {
     std::vector<std::vector<double>> samples;
     std::vector<double> log_posteriors;
-    std::size_t n_steps;
-    std::size_t n_walkers;
-    std::size_t n_dim;
+    std::size_t n_steps   = 0;
+    std::size_t n_walkers = 0;
+    std::size_t n_dim     = 0;
   };
   Result sample(std::size_t n_steps);
 

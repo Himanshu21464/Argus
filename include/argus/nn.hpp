@@ -162,7 +162,7 @@ class AffineCoupling {
   // computation: log p_z(z) = log p_x(x) - log|det J|.
   struct Output {
     std::vector<double> y;
-    double log_det_jacobian;
+    double log_det_jacobian = 0.0;
   };
   Output forward(const std::vector<double>& x) const;
 
