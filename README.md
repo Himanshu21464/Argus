@@ -81,7 +81,7 @@ Argus/
 │   ├── 04_retrieval.cpp             full M3 pipeline: ensemble MCMC + R̂/ESS + CSV + posterior predictive
 │   ├── 05_lensing.cpp               M4: SIE+shear lens — 4 quad images + 16 pairwise Fermat τ
 │   └── 06_interferometry.cpp        M5: 7-antenna Earth-rotation track + multi-Gaussian visibility forward
-├── site/                            astronomy-themed project site (port 8767)
+├── site/                            astronomy-themed project site (static HTML/CSS/JS)
 └── docs/
     ├── Astronomy-Compute-Crisis.tex landscape research deck (top-10 problems)
     └── Astronomy-Compute-Crisis.pdf compiled PPT-style PDF
@@ -97,7 +97,7 @@ ctest --test-dir build
 ```
 
 Requires a C++20 compiler (GCC 11+, Clang 14+) and CMake 3.20+.
-No external runtime dependencies for the M1 kernel.
+No external runtime dependencies — the kernel is header + CMake.
 
 ## Roadmap (18-month MVP)
 
