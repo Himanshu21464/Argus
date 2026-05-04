@@ -28,8 +28,6 @@
   /* spectroscopy palette — molecular bands */
   --h2o:     #00d4ff;     /* primary brand — water absorption blue */
   --h2o-2:   #67e8f9;
-  --h2o-d:   #0891b2;
-  --h2o-glow: rgba(0, 212, 255, 0.35);
 
   --co2:     #ffb347;     /* warm amber */
   --co2-2:   #ffd380;
@@ -42,12 +40,12 @@
   --cont:    #b095ff;     /* spectral-continuum violet — used for the wedge */
   --cont-2:  #c9b3ff;
 
-  --shadow-strong: 0 30px 80px -32px rgba(0, 212, 255, 0.32);
-  --shadow-card:   0 1px 0 rgba(255,255,255,0.02), 0 12px 36px -18px rgba(0,0,0,0.55);
-  --shadow-deep:   0 1px 0 rgba(255,255,255,0.04), 0 32px 60px -24px rgba(0,0,0,0.8);
+  /* Semantic alias: --accent is the primary brand colour. Used by the
+     wordmark hover and the eyebrow-style section labels. */
+  --accent:  var(--h2o);
 
-  --radius:  3px;
-  --radius-2: 6px;
+  --shadow-strong: 0 30px 80px -32px rgba(0, 212, 255, 0.32);
+  --shadow-deep:   0 1px 0 rgba(255,255,255,0.04), 0 32px 60px -24px rgba(0,0,0,0.8);
 
   --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-body:    'Inter', system-ui, -apple-system, sans-serif;
