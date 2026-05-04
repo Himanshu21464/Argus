@@ -145,6 +145,16 @@ a {
 }
 a:hover { color: var(--h2o-2); border-color: var(--h2o); }
 
+/* Branded keyboard-focus rings — visible against the deep-void background
+   and matching the cyan accent. :focus-visible scopes to keyboard focus
+   so mouse-clicks don't trigger an outline. */
+:focus-visible {
+  outline: 2px solid var(--h2o);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
 code {
   font-family: var(--font-mono);
   font-size: 0.88em;
