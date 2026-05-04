@@ -1118,7 +1118,6 @@ section.band-deep {
   color: var(--ink-3);
   letter-spacing: 0.04em;
 }
-.jf-tagid { color: var(--ink-4); }
 @media (max-width: 560px) { .jf-bottom { flex-direction: column; gap: 6px; } }
 
 /* ─────────────  3D TRANSIT SCENE  ───────────── */

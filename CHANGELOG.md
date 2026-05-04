@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.7.16 — 2026-05-04 — M1-M5 audit rounds 40-49 (production-ready webUI)
+
+The post-v0.7.15 pass focused on the public-facing webUI and cross-doc
+accuracy. Two real new public-API additions plus a long list of UX,
+accessibility, and performance fixes.
+
+### New public API
+- `argus::make_grid(low_cm, high_cm, n)` (radiative_transfer.hpp) —
+  linearly-spaced inclusive wavenumber grid. Throws on `n < 2` or
+  `high <= low`. Pinned end-point to avoid float drift on the last
+  sample. Three new asserts in `test_radiative_transfer` cover values,
+  spacing, and both throw paths. Reason: the site's API code snippet
+  was citing `make_grid(...)` as if it shipped — now it actually does.
+- `argus::Tensor::at(i, j)` is now bounds-checked (throws
+  `std::out_of_range`). Was named per `std::vector::at` convention but
+  silently read uninitialised memory on OOB. Defensive — current
+  callers all go through `Atmosphere::validate()` first.
+
+### WebUI fixes (round 40-46)
+- **Page lag** (r42): canvas was 109 Mpx (sized to scrollHeight on a
+  17 000 px page). Sized to viewport instead — 1 FPS → 56 FPS.
+- **Mobile viewport fits** (r43): grids now use `minmax(0, 1fr)`,
+  inline `<code>` wraps, build-grid and instrument-panel collapse
+  cleanly at phone widths. New <480 px breakpoint.
+- **Navbar** (r44): "github ↗" pill no longer wraps to two lines;
+  meta column no longer renders three lines tall on desktop. Phone
+  nav is now a horizontally-scrollable strip with the github pill
+  pinned absolutely to the brand row (was hidden entirely before).
+- **Anchor-link UX** (r45): added `scroll-padding-top: 64px` so the
+  sticky header doesn't cover the section heading after click.
+- **Focus rings** (r46): branded cyan `:focus-visible` outline
+  instead of browser-default Chrome blue.
+- **Social meta tags** (r46): added og:type, twitter:card and the
+  twitter:title/description fallback tags.
+- **#build added to nav** (r40): site had 10 sections but nav listed 9.
+
+### Fake-reference cleanup (rounds 40, 41, 45, 47)
+- Site `make_grid()` snippet (r41) — see "New public API".
+- "Python and Julia bindings live above" was wrong in 4 places
+  (site, README, Argus.tex, docs/Astronomy-Compute-Crisis.tex).
+  No bindings are shipped; only Python is on the wishlist; Julia
+  isn't planned. All four now read "Planned Python bindings
+  (pybind11) will live above" — both PDFs rebuilt.
+- README "OpacityKernel + GreyOpacity stub" (r47) — GreyOpacity is
+  a permanent baseline, not a stub. Same for "tensor.hpp ... GPU next"
+  (GPU is wishlist).
+- examples/01_transmission_spectrum.cpp "(placeholder)" framings of
+  GreyOpacity + "real version is HITRAN+CUDA" promise. Repointed to
+  example_03 as the HITRAN variant.
+- Eight inline milestone-attribution comments in opacity.hpp /
+  geometry.hpp / hitran.hpp / dual.hpp / line_list.hpp /
+  radiative_transfer.hpp / hitran.cpp / examples/02 (r44).
+- Site build-snippet (r40) `# 46 / 46 pass` → `49 / 49 pass`.
+- Removed every "aeoru" reference (r49, footer tag).
+
+### Dead-code cleanup
+- 3 dead CSS selectors removed (r43): `.atmo-svg .ep-to`,
+  `.status-next`, `.perf-block:first-of-type` — all matched zero
+  elements in the live DOM.
+- `build_san/` added to .gitignore (r44) — the AddressSanitizer
+  build directory was leaking binaries into commits.
+
+### Validated
+- 49/49 tests pass under -O2 strict warnings + ASan/UBSan
+- All 6 examples build and run to completion
+- WebUI: 0 console errors, 0 warnings, 56 FPS sustained, 0 horizontal
+  overflow at 320/375/768/1024/1280/1600 px, all 10 nav anchors map
+  to real sections, 0 broken internal links
+- All 14 perf-table speedup ranges arithmetically verified against
+  fresh benchmark runs
+- Demo-section terminal output matches actual `./example_05_lensing`
+  + `./example_06_interferometry` stdout bit-exact
+
+---
+
 ## 0.7.15 — 2026-05-03 — M1-M5 audit rounds 28–38 (docs sync to current state)
 
 The post-v0.7.14 audit pass focused on internal-docs accuracy: every
