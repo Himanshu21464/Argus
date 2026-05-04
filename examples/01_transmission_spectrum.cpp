@@ -1,11 +1,9 @@
 // Argus example 01 — transmission spectrum of an isothermal H2O atmosphere.
 //
 // This is the smallest end-to-end demo: build an atmosphere, attach a
-// (placeholder) opacity kernel, run the forward model, print the spectrum.
-//
-// Substituting GreyOpacity with the HITRAN-backed `LineListOpacity`
-// (shipped in v0.3.x — see examples/03_real_hitran.cpp) does not change
-// the call site below. The substrate is the surface that stays stable.
+// baseline (wavelength-flat) opacity kernel, run the forward model,
+// print the spectrum. For the HITRAN-backed Voigt-line variant see
+// examples/03_real_hitran.cpp — same call site, different OpacityKernel.
 
 #include <iostream>
 
@@ -25,7 +23,7 @@ int main() {
                               h2o,
                               /*mixing_ratio=*/1.0e-3);
 
-  // 2. Opacity kernel (placeholder — real version is HITRAN+CUDA Voigt).
+  // 2. Opacity kernel — wavelength-flat baseline (see example 03 for HITRAN).
   auto opacity = std::make_shared<GreyOpacity>("H2O", /*sigma_cm2=*/1.0e-22);
 
   // 3. Forward model.

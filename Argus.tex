@@ -120,7 +120,7 @@ Atmospheric retrieval is a true HPC workload. It is not orchestration; it is flo
   \item \textbf{Vendor longevity.} A 2026 telescope takes data until 2050+. The kernel that processes its photons must compile in 2050.
 \end{enumerate}
 
-Python and Julia bindings live \emph{above} the kernel --- for retrieval scripts, agent reasoning, plotting, UI. The hot path is C++.
+Planned Python bindings (pybind11) will live \emph{above} the kernel --- for retrieval scripts, agent reasoning, plotting, UI. The hot path stays C++.
 
 \section{Why AI Is Core, Not Bolted On}
 

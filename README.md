@@ -52,9 +52,9 @@ Argus/
 ├── include/argus/                   public kernel headers
 │   ├── argus.hpp                    umbrella include
 │   ├── version.hpp
-│   ├── tensor.hpp                   dense tensor (CPU now, GPU next)
+│   ├── tensor.hpp                   dense tensor (CPU; GPU residency on wishlist)
 │   ├── atmosphere.hpp               layered T-P-VMR atmosphere
-│   ├── opacity.hpp                  OpacityKernel interface + GreyOpacity stub
+│   ├── opacity.hpp                  OpacityKernel interface + GreyOpacity baseline
 │   ├── line_list.hpp                Line + LineListOpacity (HITRAN-subset)
 │   ├── hitran.hpp                   fixed-width .par parser
 │   ├── partition.hpp                TIPS-anchored Q(T)
