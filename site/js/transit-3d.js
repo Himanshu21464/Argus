@@ -37,15 +37,18 @@
   const starColor   = new THREE.Color(0xffd380);
   const dimmedColor = new THREE.Color(0xffb04e);
 
+  // Sphere segments tuned for visual fidelity vs perf: 32×32 looks
+  // identical to 64×64 at this camera distance and cuts the per-frame
+  // triangle budget by ~4×.
   const star = new THREE.Mesh(
-    new THREE.SphereGeometry(4.0, 64, 64),
+    new THREE.SphereGeometry(4.0, 32, 32),
     new THREE.MeshBasicMaterial({ color: starColor.clone() })
   );
   scene.add(star);
 
   // soft halo (back-side sphere) for that "stellar limb" feel
   const halo = new THREE.Mesh(
-    new THREE.SphereGeometry(5.4, 32, 32),
+    new THREE.SphereGeometry(5.4, 24, 24),
     new THREE.MeshBasicMaterial({
       color: 0xffd380, transparent: true, opacity: 0.12, side: THREE.BackSide
     })
@@ -54,7 +57,7 @@
 
   // outer corona (very faint, larger)
   const corona = new THREE.Mesh(
-    new THREE.SphereGeometry(7.2, 32, 32),
+    new THREE.SphereGeometry(7.2, 24, 24),
     new THREE.MeshBasicMaterial({
       color: 0xffe080, transparent: true, opacity: 0.04, side: THREE.BackSide
     })
@@ -63,7 +66,7 @@
 
   // ─── planet (hot Jupiter) ──────────────────────────────────────────
   const planet = new THREE.Mesh(
-    new THREE.SphereGeometry(0.95, 64, 64),
+    new THREE.SphereGeometry(0.95, 32, 32),
     new THREE.MeshStandardMaterial({
       color: 0x1a3a52, roughness: 0.55, metalness: 0.08, emissive: 0x080820,
     })
@@ -72,7 +75,7 @@
 
   // planet atmosphere — back-side cyan sphere = limb glow
   const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.15, 64, 64),
+    new THREE.SphereGeometry(1.15, 32, 32),
     new THREE.MeshBasicMaterial({
       color: 0x00d4ff, transparent: true, opacity: 0.18, side: THREE.BackSide
     })
@@ -86,9 +89,11 @@
   scene.add(new THREE.AmbientLight(0x303048, 0.30));
 
   // ─── starfield background (pure points) ────────────────────────────
+  // 300 points is plenty for the look; the 2D starfield canvas already
+  // carries the dense field, this is just depth context behind the star.
   const bgStarsGeom = new THREE.BufferGeometry();
   const bgStarPositions = [];
-  for (let i = 0; i < 800; ++i) {
+  for (let i = 0; i < 300; ++i) {
     const r = 80 + Math.random() * 140;
     const theta = Math.random() * Math.PI * 2;
     const phi = (Math.random() - 0.5) * Math.PI;
@@ -113,8 +118,18 @@
   let t = 0;
   const ORBIT_R = 11;
   const ORBIT_SPEED = 0.0035;
+  // Visible-when-onscreen flag toggled by IntersectionObserver below;
+  // when the canvas scrolls out of view there's no point burning frames
+  // on it. Cuts WebGL work to zero for the ~95% of the long page where
+  // the transit scene is offscreen.
+  let visible = true;
+  let paused  = document.hidden;
 
   function frame() {
+    if (paused || !visible) {
+      if (!reduce) requestAnimationFrame(frame);
+      return;
+    }
     t += ORBIT_SPEED;
 
     // planet on a slightly inclined orbit
@@ -141,6 +156,16 @@
     renderer.render(scene, camera);
     if (!reduce) requestAnimationFrame(frame);
   }
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      visible = entries.some((e) => e.isIntersecting);
+    }, { threshold: 0.01 });
+    io.observe(container);
+  }
+  document.addEventListener('visibilitychange', () => {
+    paused = document.hidden;
+  });
 
   // ─── resize handling ───────────────────────────────────────────────
   function resize() {

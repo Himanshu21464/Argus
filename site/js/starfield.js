@@ -39,9 +39,13 @@
   let stars = [];
 
   function resize() {
+    // Canvas is position:fixed; sizing it to the viewport keeps the
+    // pixel buffer to a few megapixels rather than ~100 Mpx on a tall
+    // document. (Earlier revisions sized to scrollHeight, so a 17000-px
+    // page was clearing+redrawing 4000+ stars per frame even though
+    // only the viewport-height slice was ever visible.)
     const w = window.innerWidth;
-    // height = full document height so the field doesn't end at fold
-    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
+    const h = window.innerHeight;
     width = w; height = h;
     canvas.width = Math.floor(w * DPR);
     canvas.height = Math.floor(h * DPR);
@@ -87,7 +91,16 @@
   }
 
   let last = 0;
+  let paused = document.hidden;
+  document.addEventListener('visibilitychange', () => {
+    paused = document.hidden;
+    if (!paused) last = performance.now();  // skip the dt jump after wake
+  });
   function frame(t) {
+    if (paused) {
+      if (!reduce) requestAnimationFrame(frame);
+      return;
+    }
     const dt = Math.min(40, t - last) || 16;
     last = t;
     ctx.clearRect(0, 0, width, height);
