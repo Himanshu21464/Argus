@@ -61,6 +61,11 @@
 html {
   font-size: 16.5px;
   scroll-behavior: smooth;
+  /* Sticky .cmd-bar is ~57 px tall — without scroll-padding the
+     anchor links jump the section's heading underneath the header
+     and the user lands on body text instead of the title they
+     clicked. */
+  scroll-padding-top: 64px;
   -webkit-text-size-adjust: 100%;
 }
 

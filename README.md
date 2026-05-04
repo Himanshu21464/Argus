@@ -196,7 +196,7 @@ onward for per-feature deltas.
 
 ## Design principles
 
-1. **C++ kernel, Python edges.** Production hot path is C++20/CUDA. Python bindings (pybind11) live above the kernel for retrieval scripts, agent reasoning, plotting, UI.
+1. **C++ kernel, Python edges.** Production hot path is C++20 (CUDA-residency on the wishlist). Python bindings (pybind11) are wishlist too — both will live above the kernel for retrieval scripts, agent reasoning, plotting, UI.
 2. **Differentiable end-to-end.** Every forward model on the kernel side is autograd-aware. SBI, normalizing-flow posteriors, and gradient-based MAP all hang off the same tape.
 3. **Pluggable opacity sources.** `OpacityKernel` is an interface; HITRAN, HITEMP, ExoMol, neural emulators all implement it without leaking into the IR.
 4. **Content-addressed runs.** Every retrieval is a frozen graph + frozen opacity + frozen sampler. Bit-reproducible across hardware and years.
