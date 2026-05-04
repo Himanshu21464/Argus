@@ -37,10 +37,14 @@ class Tensor {
   const double* data() const noexcept { return data_.data(); }
 
   // 2-D index helper for the common (layer, species) case.
+  // Bounds-checked to match std::vector::at semantics — throws on OOB
+  // rather than reading uninitialised memory if a caller drifts.
   double& at(std::size_t i, std::size_t j) {
+    check_2d(i, j);
     return data_[i * shape_[1] + j];
   }
   double at(std::size_t i, std::size_t j) const {
+    check_2d(i, j);
     return data_[i * shape_[1] + j];
   }
 
@@ -48,6 +52,12 @@ class Tensor {
   static std::size_t num_elements(const std::vector<std::size_t>& s) {
     return std::accumulate(s.begin(), s.end(), std::size_t{1},
                            std::multiplies<>{});
+  }
+
+  void check_2d(std::size_t i, std::size_t j) const {
+    if (shape_.size() < 2 || i >= shape_[0] || j >= shape_[1]) {
+      throw std::out_of_range("Tensor::at: index out of bounds");
+    }
   }
 
   std::vector<std::size_t> shape_;
