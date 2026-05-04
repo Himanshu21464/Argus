@@ -115,4 +115,20 @@ Spectrum TransmissionModel::forward(
   return out;
 }
 
+std::vector<double> make_grid(double low_cm, double high_cm, std::size_t n) {
+  if (n < 2) {
+    throw std::invalid_argument("make_grid: n must be >= 2");
+  }
+  if (!(high_cm > low_cm)) {
+    throw std::invalid_argument("make_grid: high_cm must be > low_cm");
+  }
+  std::vector<double> grid(n);
+  const double step = (high_cm - low_cm) / static_cast<double>(n - 1);
+  for (std::size_t i = 0; i < n; ++i) {
+    grid[i] = low_cm + static_cast<double>(i) * step;
+  }
+  grid.back() = high_cm;  // avoid floating-point drift on the last sample
+  return grid;
+}
+
 }  // namespace argus

@@ -15,6 +15,12 @@ struct Spectrum {
   std::vector<double> values;         // [n_wave] — transit depth or flux
 };
 
+// Linearly-spaced wavenumber grid, low and high inclusive. Keeps the
+// public-API code samples (and the per-band convenience tests) one line
+// shorter than open-coding the loop, and makes the integration contract
+// explicit: spectra in argus are sampled at equispaced wavenumbers.
+std::vector<double> make_grid(double low_cm, double high_cm, std::size_t n);
+
 // Differentiable transmission-spectrum forward model.
 // Computes (R_lambda / R_star)^2 from the layered atmosphere, integrating the
 // chord opacity through each impact parameter.

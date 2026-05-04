@@ -33,12 +33,7 @@ int main() {
   model.add_opacity(opacity);
 
   // 4. Wavenumber grid (cm^-1) — coarse JWST-NIRSpec-like band.
-  std::vector<double> wavenumber_cm;
-  for (int i = 0; i < 21; ++i) {
-    wavenumber_cm.push_back(2000.0 + 100.0 * i);
-  }
-
-  Spectrum s = model.forward(atm, wavenumber_cm);
+  Spectrum s = model.forward(atm, make_grid(2000.0, 4000.0, 21));
 
   // 5. Print.
   std::cout << "wavenumber[cm-1]  transit_depth\n";
