@@ -16,7 +16,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="argus.css?v=15">
+  <link rel="stylesheet" href="argus.css?v=16">
+  <noscript>
+    <!-- Without JS, the IntersectionObserver in reveal.js never adds .in,
+         so .reveal sections would stay at opacity:0 and the page would
+         look blank. Force everything visible. -->
+    <style>
+      .reveal { opacity: 1 !important; transform: none !important; }
+      #starfield, #transit-3d { display: none !important; }
+    </style>
+  </noscript>
 </head>
 <body>
 
@@ -1338,7 +1347,7 @@ ctest --test-dir build           # 49 / 49 pass
   </div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
 <script src="js/starfield.js?v=2"></script>
 <script src="js/transit-3d.js?v=2"></script>
 <script src="js/reveal.js?v=1"></script>
