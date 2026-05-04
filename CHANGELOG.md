@@ -1,5 +1,76 @@
 # Changelog
 
+## 0.7.15 — 2026-05-03 — M1-M5 audit rounds 28–38 (docs sync to current state)
+
+The post-v0.7.14 audit pass focused on internal-docs accuracy: every
+file that describes Argus to a future reader (CLAUDE.md, README,
+inline source comments, header preambles) now reflects the v0.7.15
+shipped state, not a stale M1-or-M2 baseline.
+
+### WebUI accuracy
+- **Round 28** (`13595d9`) — added missing "Demo" link to top nav so
+  every site section is reachable from the nav (`#demo` was an
+  anchor target without a nav entry). Nav order now exactly mirrors
+  page section order.
+- **Round 30** (`07fb0bf`) — WANT list M4.5 + M5.5 items used
+  `want-m2` / `want-m3` colour classes because no `want-m4` /
+  `want-m5` existed. Added the missing CSS classes (NH₃ rose for M4,
+  H₂O cyan for M5) and updated the HTML.
+- **Round 31** (`734b2ec`) — dropped orphan `data-name="01"`
+  attribute on the first constellation star (other 9 had none, no
+  JS or CSS read it).
+- **Round 32** (`db2074c`) — NFW perf number drift: site said 28 ns,
+  README said 26 ns, actual measurement is 27 ns. Normalised to 27.
+  Also corrected the VS-INCUMBENTS lensing-zoo claim from
+  "≈ 30–40 ns / deflection" to "≈ 6–40 ns per deflection" (the
+  CompoundLens-SIS+γ benchmark at 6 ns is the real lower bound).
+- **Round 33** (`e99aac6`) — README test_lensing test-group count
+  29 → 30 (caught up with audit-round-1's added group 30 for the NFW
+  small-x precision regression).
+- **Round 34** (`d49e770`) — proofs-section lede reframed to make
+  the "numbers from v0.7.10" reference explicit as a historical
+  timestamp rather than a freshness flag (numbers stay bit-equal
+  through v0.7.15 because of deterministic-seed retrievals).
+
+### Internal-docs accuracy
+- **Round 29** (`1ca28bf`) — three header preambles in `mcmc.hpp` and
+  `line_list.hpp` claimed "M3.5 will add" or "M3 will add" features
+  that have already shipped (EnsembleSampler, HMC, Wengert-tape
+  reverse-mode autograd, HITRAN .par loaders). Rephrased as forward-
+  pointers to the existing implementations.
+- **Round 35** (`281ffec`) — `partition.hpp` and `partition.cpp` had
+  the same "M3 will load TIPS-2017 tables" stale milestone label.
+  Rephrased as "Future replacement … the public surface stays
+  stable." Also corrected "three workhorses" → "five most common
+  molecules" (the kFits table actually has H2O, CO2, CH4, CO, NH3).
+- **Round 36** (`d167d51`) — three more inline "for M2 prototyping"
+  / "the M2 case" labels in `line_list.cpp` and `partition.hpp` that
+  suggested shipped code is provisional. All rephrased to state the
+  permanent invariant directly.
+- **Round 37** (`9894fea`) — comprehensive CLAUDE.md refresh. The
+  file my future Code instances read first to understand the repo
+  said "Current phase: M1 (months 1–3) — IR + scaffold. Next
+  milestone: HITRAN-backed CUDA Voigt opacity kernel". Both
+  completely false. Replaced with current state ("M1–M5 all shipped
+  v0.7.14") + open wishlist + new "One substrate, three physics
+  layers" architectural commitment.
+- **Round 38** (`4c7a170`) — replaced the README's stale "What v0.3.5
+  (M2-complete) adds over v0.2.0" section with a current "Headline
+  performance baseline" block summarising measured perf numbers
+  across all three physics layers, each citing the benchmark test
+  that asserts it.
+
+### Validated
+- 49/49 tests pass under all three build modes
+- Every webUI link real
+- Every webUI numerical claim arithmetically consistent + matches
+  fresh benchmark runs (cross-checked 14 perf-table speedup ranges)
+- Every internal docs claim (CLAUDE.md / README / source comments)
+  reflects current shipped state — no false-future-tense promises
+  for shipped features
+
+---
+
 ## 0.7.14 — 2026-05-03 — M1-M5 audit rounds 19–26 (webUI consistency + tags)
 
 The post-v0.7.13 audit pass focused on webUI internal consistency and
