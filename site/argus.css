@@ -148,6 +148,15 @@ code {
   border: 1px solid rgba(0, 212, 255, 0.16);
   padding: 1px 5px;
   border-radius: 2px;
+  /* Long file paths in inline <code> need to wrap on phones, otherwise
+     they push the page wider than the viewport. Scoped to inline only —
+     <pre> code blocks override this back to nowrap so columns of code
+     stay aligned. */
+  overflow-wrap: anywhere;
+}
+pre code {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 sub, sup { font-size: 0.7em; }
@@ -303,7 +312,11 @@ section.band-deep {
 }
 
 @media (max-width: 1080px) { .cmd-meta { display: none; } }
-@media (max-width: 760px)  { .cmd-nav  { gap: 14px; font-size: 0.78rem; } }
+/* The nav has 10 anchor items + a github pill — needs progressive
+   shrinking to keep the row inside narrow viewports without wrapping
+   into the brand mark on the left. */
+@media (max-width: 1024px) { .cmd-nav  { gap: 14px; font-size: 0.78rem; } }
+@media (max-width: 880px)  { .cmd-nav  { gap: 10px; font-size: 0.74rem; } }
 @media (max-width: 560px)  { .cmd-nav a:not(.nav-gh) { display: none; } }
 
 /* ─────────────  HERO  ───────────── */
@@ -636,7 +649,6 @@ section.band-deep {
   letter-spacing: 0.05em;
 }
 .atmo-svg .ep-from { fill: var(--co2-2); }
-.atmo-svg .ep-to   { fill: var(--cont-2); }
 .atmo-svg .altitude .ax-tick {
   font-size: 9.5px;
   fill: var(--ink-3);
@@ -657,15 +669,19 @@ section.band-deep {
 
 .instrument-panel {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin: 30px 0 16px;
   background: var(--rule);
   padding: 1px;
   border-radius: 4px;
 }
-@media (max-width: 1024px) { .instrument-panel { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 720px)  { .instrument-panel { grid-template-columns: 1fr 1fr; } }
+/* minmax(0, 1fr) lets the columns shrink below their intrinsic content
+   width — without it, the meter labels (e.g. "10–100×") would force the
+   grid wider than the viewport on phones. */
+@media (max-width: 1024px) { .instrument-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px)  { .instrument-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px)  { .instrument-panel { grid-template-columns: minmax(0, 1fr); } }
 
 .ip-card {
   background: var(--void-1);
@@ -878,11 +894,6 @@ section.band-deep {
   background: rgba(16, 242, 168, 0.1);
   border: 1px solid rgba(16, 242, 168, 0.4);
 }
-.status-next {
-  color: var(--co2-2);
-  background: rgba(255, 179, 71, 0.08);
-  border: 1px solid rgba(255, 179, 71, 0.35);
-}
 .tl-card p { margin: 0; font-size: 0.94rem; }
 
 /* ─────────────  CONSTELLATION  ───────────── */
@@ -914,11 +925,13 @@ section.band-deep {
 
 .build-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1fr 1fr;
+  /* minmax(0, …) so the inner <pre> code blocks can shrink + scroll
+     instead of forcing the grid wider than the viewport on phones. */
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
   margin-top: 30px;
 }
-@media (max-width: 880px) { .build-grid { grid-template-columns: 1fr; } }
+@media (max-width: 880px) { .build-grid { grid-template-columns: minmax(0, 1fr); } }
 
 .build-block {
   background: var(--void-1);
@@ -1388,7 +1401,6 @@ section.band-deep {
 .perf-block {
   margin-top: 36px;
 }
-.perf-block:first-of-type { margin-top: 28px; }
 .perf-eyebrow {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72rem;
