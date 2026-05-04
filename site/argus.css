@@ -220,12 +220,13 @@ section.band-deep {
   max-width: 1240px;
   margin: 0 auto;
   padding: 12px clamp(20px, 4vw, 56px);
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   height: 56px;
 }
+.cmd-row .cmd-meta { flex: 0 0 auto; }
+.cmd-row nav.cmd-nav { margin-left: auto; }
 
 .wordmark {
   display: inline-flex;
@@ -256,10 +257,10 @@ section.band-deep {
   display: flex;
   align-items: center;
   gap: 14px;
-  justify-content: center;
   font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--ink-3);
+  white-space: nowrap;
 }
 .meta-pill {
   display: inline-flex;
@@ -298,12 +299,14 @@ section.band-deep {
   transition: color .15s ease;
 }
 .cmd-nav a:hover { color: var(--h2o); }
+.cmd-nav a { white-space: nowrap; }
 .cmd-nav .nav-gh {
   color: var(--ink);
   padding: 5px 11px;
   border: 1px solid var(--rule-2);
   border-radius: 3px;
   margin-left: 6px;
+  white-space: nowrap;
 }
 .cmd-nav .nav-gh:hover {
   border-color: var(--h2o);
@@ -311,13 +314,47 @@ section.band-deep {
   color: var(--h2o-2);
 }
 
-@media (max-width: 1080px) { .cmd-meta { display: none; } }
-/* The nav has 10 anchor items + a github pill — needs progressive
-   shrinking to keep the row inside narrow viewports without wrapping
-   into the brand mark on the left. */
+/* Progressive nav layout. Above 1440 px the meta column shows;
+   below it hides so the nav always has room. At 880 px and below the
+   nav goes compact; at 720 px and below it becomes a second row that
+   horizontally scrolls (so phones still get every section reachable
+   instead of just an isolated github pill). */
+@media (max-width: 1440px) { .cmd-meta { display: none; } }
 @media (max-width: 1024px) { .cmd-nav  { gap: 14px; font-size: 0.78rem; } }
 @media (max-width: 880px)  { .cmd-nav  { gap: 10px; font-size: 0.74rem; } }
-@media (max-width: 560px)  { .cmd-nav a:not(.nav-gh) { display: none; } }
+
+@media (max-width: 720px) {
+  .cmd-row {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 8px;
+    padding-bottom: 10px;
+    position: relative;            /* anchor for the absolute github pill */
+  }
+  .cmd-row nav.cmd-nav {
+    /* Take a full row below the wordmark + github pill */
+    order: 3;
+    flex: 1 1 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;        /* Firefox */
+    padding-bottom: 2px;
+    border-top: 1px solid var(--rule);
+    padding-top: 8px;
+    gap: 16px;
+  }
+  .cmd-row nav.cmd-nav::-webkit-scrollbar { display: none; }
+  /* Pop the github pill out of the scroll strip and pin it to row 1 */
+  .cmd-row nav.cmd-nav .nav-gh {
+    position: absolute;
+    top: 12px;
+    right: clamp(12px, 4vw, 20px);
+    margin-left: 0;
+  }
+  /* Keep the brand row tight on phones */
+  .wm-spectrum { display: none; }
+}
 
 /* ─────────────  HERO  ───────────── */
 

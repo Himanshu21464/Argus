@@ -10,8 +10,8 @@ namespace argus {
 //
 // The kernel models the planet's limb as a stack of concentric spherical
 // shells. Each `Atmosphere` layer becomes one shell, with the layer centre
-// at radius `radius_m[i]`. M2 ships the proper geometric chord through
-// these shells; the M1 stub used a flat 1-km path per layer.
+// at radius `radius_m[i]`. The chord through each shell is the proper
+// geometric chord (not a flat per-layer thickness).
 struct Geometry {
   // Planet "solid" reference radius (m) — corresponds to the bottom layer's
   // pressure (the highest pressure in the atmosphere).

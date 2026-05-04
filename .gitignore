@@ -1,4 +1,5 @@
 build/
+build_san/
 *.o
 *.obj
 *.a

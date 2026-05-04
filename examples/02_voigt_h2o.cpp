@@ -2,9 +2,9 @@
 //
 // Builds a 4-line H2O line list, attaches a LineListOpacity to the
 // transmission model, and prints the resulting transmission spectrum
-// over a coarse JWST-NIRSpec-like wavenumber grid. The spectrum now
-// shows the absorption peaks at the line centres rather than the flat
-// profile of the M1 GreyOpacity stub.
+// over a coarse JWST-NIRSpec-like wavenumber grid. Compared to the
+// flat-profile GreyOpacity baseline (example 01), the spectrum here
+// shows real absorption peaks at the line centres.
 
 #include <iomanip>
 #include <iostream>

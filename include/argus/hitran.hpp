@@ -27,7 +27,7 @@ namespace argus {
 //   46- 55  E_lower       (f10.4, cm^-1)
 //   56- 59  n_air         (f4.2)
 //   60- 67  delta_air     (f8.6, cm^-1 / atm)
-//   ... (quantum / error / ref columns ignored at M2)
+//   ... (quantum / error / ref columns ignored — not needed for cross-section)
 //
 // The parser is tolerant of trailing whitespace / line endings but rejects
 // lines that are too short for the columns we read.

@@ -42,9 +42,10 @@ class OpacityKernel {
   }
 };
 
-// Placeholder Voigt-profile opacity used for tests and the M1 example.
-// Real M3 implementation will replace this with a HITRAN line-list backed
-// CUDA Voigt evaluator.
+// Wavelength-flat (grey) opacity, kept as a baseline for tests and the
+// minimal-example case. Real molecular cross-sections live behind the
+// HITRAN-backed `LineListOpacity` (same `OpacityKernel` interface, so
+// the call site is identical).
 class GreyOpacity final : public OpacityKernel {
  public:
   GreyOpacity(std::string species_key, double sigma_cm2);

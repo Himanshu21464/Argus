@@ -8,8 +8,9 @@
 
 namespace argus {
 
-// Result of a single forward call. Production version carries a tape handle
-// for autograd; the M1 stub carries spectrum samples only.
+// Result of a single forward call — sample values on the wavenumber grid.
+// Reverse-mode autograd lives behind `argus/ad.hpp` (Wengert tape) for
+// HMC and other gradient-driven samplers.
 struct Spectrum {
   std::vector<double> wavenumber_cm;  // [n_wave]
   std::vector<double> values;         // [n_wave] — transit depth or flux

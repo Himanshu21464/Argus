@@ -8,8 +8,9 @@
 
 namespace argus {
 
-// One molecular line — the M2 subset of the HITRAN .par columns we need
-// to evaluate cross-section. M3+ will extend to the full HITRAN row.
+// One molecular line — the HITRAN .par columns required to evaluate the
+// Voigt cross-section. Quantum / error / reference fields are tracked by
+// `HitranRecord` (in hitran.hpp) but not needed here.
 //
 // Units follow HITRAN convention:
 //   nu0_cm           line centre wavenumber (cm^-1)

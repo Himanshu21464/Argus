@@ -73,7 +73,7 @@ std::optional<HitranRecord> Hitran::parse_line(std::string_view raw) {
   if (auto v = parse_int(col(3, 3));   v) rec.isotope_id  = *v; else return std::nullopt;
   if (auto v = parse_double(col(4, 15));  v) rec.line.nu0_cm        = *v; else return std::nullopt;
   if (auto v = parse_double(col(16, 25)); v) rec.line.intensity_cm  = *v; else return std::nullopt;
-  // einstein_A in cols 26-35 ignored at M2.
+  // einstein_A in cols 26-35 ignored — not needed for the Voigt cross-section.
   if (auto v = parse_double(col(36, 40)); v) rec.line.gamma_air_cm  = *v; else return std::nullopt;
   if (auto v = parse_double(col(41, 45)); v) rec.line.gamma_self_cm = *v; else return std::nullopt;
   if (auto v = parse_double(col(46, 55)); v) rec.line.E_lower_cm    = *v; else return std::nullopt;

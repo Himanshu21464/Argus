@@ -14,8 +14,9 @@ namespace argus {
 // To compute d f(x) / dx at x0, evaluate f with `Dual<T>{x0, T(1)}`. The
 // returned Dual carries the derivative in `.d`.
 //
-// M2 ships scalar Dual<double>. M3 will add Dual<Vector> for batched
-// gradients and a reverse-mode tape for many-parameter cases.
+// Scalar Dual<double> covers the small-parameter forward-mode use cases.
+// For many-parameter / reverse-mode gradients, use the Wengert tape in
+// `argus/ad.hpp` instead.
 
 template <typename T>
 struct Dual {
