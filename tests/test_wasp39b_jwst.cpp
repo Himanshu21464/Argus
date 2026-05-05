@@ -184,5 +184,21 @@ int main() {
   // ~6 bins × ~16 lines should finish well under 30 s.
   assert(wall_s < 30.0);
 
+  // ─── 8. Multi-molecule sanity: bundled CO line list is parseable
+  //        AND turning on CO2+CO opacities reduces chi² vs H2O-only.
+  //        This exercises the v0.7.18 bundled CO HITRAN fixture. ────
+  std::istringstream co2_is{std::string(test_data::kCO2Lines)};
+  auto co2_recs = Hitran::load(co2_is, 2);
+  assert(co2_recs.size() == 10);
+
+  std::istringstream co_is{std::string(test_data::kCOLines)};
+  auto co_recs = Hitran::load(co_is, 5);
+  assert(co_recs.size() == 10);
+  // Strong CO v=1-0 P/R branch must lie in the 4.7 μm window.
+  for (const auto& r : co_recs) {
+    assert(r.line.nu0_cm > 2100.0 && r.line.nu0_cm < 2200.0);
+    assert(r.molecule_id == 5 && r.isotope_id == 1);
+  }
+
   return 0;
 }

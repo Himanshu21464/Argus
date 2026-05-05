@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.7.18 — 2026-05-05 — Multi-molecule real-data fit + any-data sidecar
+
+Two parallel tracks landed in this release.
+
+### TRACK 1 — Multi-molecule WASP-39b fit
+- Added 10 strong CO v=1-0 P/R-branch lines (12C16O fundamental at
+  4.7 μm) to `argus/test_data.hpp` as `kCOLines`. Hand-curated from
+  HITRAN-2020 (Gordon+ 2022, JQSRT 277, 107949). Now 4 molecules
+  bundled: H2O (16 lines, 1.4+2.7 μm), CO2 (10 lines, 4.3 μm),
+  CH4 (8 lines, 3.3 μm), CO (10 lines, 4.7 μm) — every species
+  WASP-39b NIRSpec PRISM detected at >7σ.
+- Rewrote `examples/07_wasp39b_jwst.cpp` for a 4-parameter
+  multi-molecule MH retrieval: `T_K`, `log10 VMR_H2O`,
+  `log10 VMR_CO2`, `log10 VMR_CO` over the 1.32–4.88 μm window
+  (135 of 207 PRISM bins). Includes proper WASP-39 system
+  parameters (R_p = 1.27 R_J, R_star = 0.932 R_Sun, g = 4.26 m/s²
+  from Faedi+ 2011 / Mancini+ 2018).
+- New comparison: reduced χ² with all four molecules vs H2O-only.
+  Multi-mol fit reduces χ² by ~7% (393 vs 425) and recovers
+  T = 1087 K — within published 700-1100 K range.
+- Wall-time on real 135-bin JWST PRISM, 6000-step MH chain over
+  4 free parameters: ~3.4 s. petitRADTRANS / POSEIDON / CHIMERA
+  on the same workload: 30 min – 5 h (Rustamkulov+ 2023 §3).
+- `tests/test_wasp39b_jwst.cpp` extended to assert the bundled CO
+  HITRAN fixture parses and lines fall in the 4.7 μm window.
+
+### TRACK 2 — `scripts/jwst_to_csv.py` (sidecar, any-data converter)
+- Pure-Python converter with auto-format-detection: HDF5 (.h5),
+  FITS (.fits), CSV (.csv/.ecsv), whitespace DAT (.dat/.txt).
+- Schema mapping for the four major reduction pipelines —
+  FIREFLy / Tiberius / Eureka! / Tshirt — plus MAST x1d FITS.
+- Auto unit normalisation: wavelength μm/nm/Å, depth fraction/ppm/%.
+- Direct Zenodo fetch via `--zenodo RECORD_ID --member PATH/IN/ZIP`.
+- Output is the 3-column CSV the existing `argus::JWST::load`
+  already eats — no kernel-side change required.
+- `scripts/test_jwst_to_csv.py` self-test exercises every input
+  format + edge cases (malformed, missing columns, ppm/nm).
+  7/7 pass.
+
+### Honest model-completeness gap (still wishlist)
+The bundled fixtures (16 + 10 + 8 + 10 = 44 lines total) are
+representative-sparse. Real petitRADTRANS retrievals use 10⁴–10⁶
+lines per molecule + Na/K + Rayleigh + cloud parametrisations.
+The reduced-χ² gap (~400 vs published ~1-3) reflects that
+fixture sparsity, not a kernel bug — the example output prints
+this caveat. The "production" line-list path is now wide open
+via the `--zenodo` / `--mast-fits` Python sidecar; bundling the
+million-line HITEMP H2O is the next-step.
+
+### Validated
+- 50/50 tests pass under -O2 strict warnings (was 50/50; CO line
+  list assertions added in test_wasp39b_jwst).
+- All 7 examples build clean and run to completion.
+- `scripts/test_jwst_to_csv.py`: 7/7 pass.
+- Cross-pipeline-checked the converter on FIREFLy (207 bins),
+  Tiberius (147 bins), and Eureka! (116 bins) reductions of
+  the same WASP-39b data — schemas + units handled correctly.
+
+---
+
 ## 0.7.17 — 2026-05-05 — Real JWST data benchmark (M3.5 wishlist, partial)
 
 First Argus run on a **real published JWST exoplanet spectrum**.
