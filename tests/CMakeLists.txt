@@ -193,3 +193,7 @@ add_test(NAME hmc_atmosphere COMMAND test_hmc_atmosphere)
 add_executable(test_atmosphere_retrieval_full test_atmosphere_retrieval_full.cpp)
 target_link_libraries(test_atmosphere_retrieval_full PRIVATE argus_core)
 add_test(NAME atmosphere_retrieval_full COMMAND test_atmosphere_retrieval_full)
+
+add_executable(test_wasp39b_jwst test_wasp39b_jwst.cpp)
+target_link_libraries(test_wasp39b_jwst PRIVATE argus_core)
+add_test(NAME wasp39b_jwst COMMAND test_wasp39b_jwst)

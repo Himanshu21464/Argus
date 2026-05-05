@@ -37,6 +37,7 @@ add_library(argus_core STATIC
   src/ad.cpp
   src/lensing.cpp
   src/interferometry.cpp
+  src/jwst_data.cpp
 )
 target_include_directories(argus_core PUBLIC include)
 target_compile_features(argus_core PUBLIC cxx_std_20)
@@ -87,6 +88,14 @@ add_executable(example_06_interferometry
 )
 target_link_libraries(example_06_interferometry PRIVATE argus_core)
 set_target_properties(example_06_interferometry PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)
+
+add_executable(example_07_wasp39b_jwst
+  examples/07_wasp39b_jwst.cpp
+)
+target_link_libraries(example_07_wasp39b_jwst PRIVATE argus_core)
+set_target_properties(example_07_wasp39b_jwst PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
 )
 

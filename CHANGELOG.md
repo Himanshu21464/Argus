@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.7.17 — 2026-05-05 — Real JWST data benchmark (M3.5 wishlist, partial)
+
+First Argus run on a **real published JWST exoplanet spectrum**.
+Closes most of the M3.5 wishlist item "WASP-39b benchmark vs
+petitRADTRANS / POSEIDON" — the data path + retrieval infrastructure
+are shipped; the multi-molecule full-PRISM fit (Na + H2O + CO2 + CO)
+is the remaining piece, blocked only on bundling the additional
+opacity sources.
+
+### New public API
+- `argus::JWSTSpectrum` (in `argus/jwst_data.hpp`) — three-column
+  struct (`wavelength_um`, `transit_depth`, `sigma_depth`) with a
+  source-citation tag and a wavenumber-native view for opacity work.
+- `argus::JWST::load(istream, source)` — CSV parser tolerant of
+  `#`-prefixed comments, blank lines, leading/trailing whitespace,
+  CRLF. Throws on malformed rows / wrong column count / non-numeric.
+- `argus::JWST::load_file(path, source)` — convenience wrapper.
+
+### Bundled real data
+- `argus/wasp39b_data.hpp` ships the **Rustamkulov+ 2023 NIRSpec PRISM
+  FIREFLy reduction** as `argus::wasp39b::kPRISM`: 207 wavelength bins,
+  0.53–5.34 μm, transit depth ~2.1%, median per-bin σ ~111 ppm. Source:
+  Nature 614, 659 (DOI 10.1038/s41586-022-05677-y); re-distributed
+  via Zenodo CC BY 4.0 (DOI 10.5281/zenodo.7388032).
+
+### New example + test
+- `examples/07_wasp39b_jwst.cpp` — load WASP-39b PRISM, restrict to
+  the H2O 1.4 μm + 2.7 μm bands (43 of 207 PRISM bins, where the
+  bundled 16-line H2O HITRAN fixture has full coverage), run a
+  1500-burn / 3000-sample MH retrieval, report wall-time +
+  posterior + reduced χ². On a single CPU thread:
+    - forward call on real 43-bin grid: **~0.2 ms**
+    - 4500-step MH retrieval against real data: **~0.8 s**
+    - Python tools (petitRADTRANS / POSEIDON) on the same workload:
+      ~10 min – 1 h after binning the spectrum down.
+- `tests/test_wasp39b_jwst.cpp` — loader sanity (207 bins, monotone
+  λ, plausible depth), CSV-format edge cases (comments, whitespace,
+  malformed rows, empty input), wavenumber view, end-to-end MH
+  retrieval against real data with wall-time bound (< 30 s) and
+  posterior-spread sanity (chain mixed, not stuck).
+
+### Honest model-completeness note
+The 2-parameter (T, log10 VMR_H2O) isothermal-H2O model cannot
+reproduce the full PRISM spectrum — WASP-39b has Na (19σ), CO2
+(28σ), CO (7σ) and a Rayleigh slope, none in the 16-line bundled
+H2O fixture. The chi² landscape is monotone toward the upper-T
+prior edge. The example output prints this explicitly. The
+multi-molecule full-PRISM fit needs Na/CO2/CO opacity sources +
+Rayleigh — the remaining M3.5 work.
+
+### Validated
+- 50/50 tests pass under -O2 strict warnings (was 49/49; +1 for
+  test_wasp39b_jwst)
+- example_07 produces deterministic output on a fixed seed
+- All other 49 tests + 6 prior examples continue to pass
+
+---
+
 ## 0.7.16 — 2026-05-04 — M1-M5 audit rounds 40-49 (production-ready webUI)
 
 The post-v0.7.15 pass focused on the public-facing webUI and cross-doc

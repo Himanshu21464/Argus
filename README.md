@@ -71,16 +71,19 @@ Argus/
 │   ├── ad.hpp                       reverse-mode autograd (Wengert tape) + Adam/SGD optimizers
 │   ├── lensing.hpp                  SIS / SIE / ExternalShear / CompoundLens + image solver + Fermat time delays
 │   ├── interferometry.hpp           visibility forward (Point + Gaussian sources) + UV coverage
+│   ├── jwst_data.hpp                JWSTSpectrum struct + CSV loader (real JWST data)
+│   ├── wasp39b_data.hpp             bundled real WASP-39b NIRSpec PRISM (Rustamkulov+ 2023)
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based hard tests (49 tests, incl. 2 perf benchmarks)
+├── tests/                           assert-based hard tests (50 tests, incl. 2 perf benchmarks + real JWST WASP-39b)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
 │   ├── 03_real_hitran.cpp           16 real HITRAN H2O lines, JWST-PRISM-shaped spectrum
 │   ├── 04_retrieval.cpp             full M3 pipeline: ensemble MCMC + R̂/ESS + CSV + posterior predictive
 │   ├── 05_lensing.cpp               M4: SIE+shear lens — 4 quad images + 16 pairwise Fermat τ
-│   └── 06_interferometry.cpp        M5: 7-antenna Earth-rotation track + multi-Gaussian visibility forward
+│   ├── 06_interferometry.cpp        M5: 7-antenna Earth-rotation track + multi-Gaussian visibility forward
+│   └── 07_wasp39b_jwst.cpp          REAL JWST data: load WASP-39b PRISM + MH retrieval (~0.8 s)
 ├── site/                            astronomy-themed project site (static HTML/CSS/JS)
 └── docs/
     ├── Astronomy-Compute-Crisis.tex landscape research deck (top-10 problems)
@@ -123,7 +126,7 @@ Numbers asserted by `test_benchmark`, `test_lensing_benchmark`, and
 onward for per-feature deltas.
 
 ### Test suite
-49 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+50 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 

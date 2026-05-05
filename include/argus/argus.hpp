@@ -12,6 +12,7 @@
 #include "hitran.hpp"
 #include "interferometry.hpp"
 #include "ir.hpp"
+#include "jwst_data.hpp"
 #include "line_list.hpp"
 #include "mcmc.hpp"
 #include "nn.hpp"

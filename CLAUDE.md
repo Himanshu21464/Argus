@@ -46,17 +46,18 @@ suggesting architectural changes.
 
 ## Roadmap reference
 
-See README.md "Roadmap" table. **Current state: M1–M5 all shipped (v0.7.16).**
+See README.md "Roadmap" table. **Current state: M1–M5 all shipped (v0.7.17).**
 
-49/49 hard tests pass under
+50/50 hard tests pass under
 `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
-on GCC 15.2; 49/49 also pass clean under
+on GCC 15.2; 50/50 also pass clean under
 `-O1 -fsanitize=address,undefined`.
 
 **Open wishlist** (not yet shipped):
 - M2.5: CUDA-resident Voigt opacity kernel
 - M3.5: ConditionalNF training loop (architecture shipped v0.7.9);
-  WASP-39b benchmark vs petitRADTRANS / POSEIDON
+  WASP-39b multi-molecule (Na+H2O+CO2+CO) full-PRISM fit
+  (real-data infra + H2O-only retrieval shipped v0.7.17)
 - M4.5: real-data fixtures (HE 0435-1223 quad-lens positions);
   AD-templated lens deflection so HMC can climb lens posteriors
 - M5.5: CLEAN-style image reconstruction; self-cal; UV-FITS /
