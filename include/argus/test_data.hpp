@@ -99,4 +99,23 @@ inline constexpr std::string_view kCOLines =
   " 51 2176.284200 1.052E-19 1.052E+020.0520.059  172.98000.69 -0.0050          0 1   1\n"
   " 51 2183.222530 5.123E-20 5.123E+010.0510.058  253.66000.69 -0.0050          0 1   1\n";
 
+// Na D-doublet — 23Na atomic resonance lines that drive WASP-39b's
+// visible spectrum (Rustamkulov+ 2023 detected Na at 19σ in PRISM).
+// HITRAN itself does NOT carry alkali-atom lines (Na/K are in VALD /
+// NIST atomic spectra databases). For Argus's Voigt-line opacity to
+// remain a single integration surface, we encode the two D lines in
+// HITRAN-.par-shaped records using molecule_id=99 (a synthetic ID
+// outside the HITRAN-49 range, signalling "atomic-line subset bundled
+// in test_data"). Intensities are the published room-T oscillator-
+// strength values (Wiese, Smith, Miles 1969 / NIST ASD); gamma_air is
+// approximate (real alkali wing-broadening is non-Voigt — Allard+ 2007
+// — and a true production fit would substitute that profile via a
+// dedicated AlkaliOpacity kernel).
+//
+//   Na D2 line: 5889.951 Å = 16973.366 cm^-1
+//   Na D1 line: 5895.924 Å = 16956.181 cm^-1
+inline constexpr std::string_view kNaDLines =
+  " 9916956.181000 4.892E-19 6.157E+080.1500.150    0.00000.50  0.0000          0 1   1\n"
+  " 9916973.366000 9.784E-19 6.157E+080.1500.150    0.00000.50  0.0000          0 1   1\n";
+
 }  // namespace argus::test_data

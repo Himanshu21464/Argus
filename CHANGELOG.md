@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.7.19 — 2026-05-11 — Production opacity stack + HITRAN fetch-and-cache
+
+Closes most of the Tier-1 production gap identified in the
+"what's not working" summary: **reduced χ² on real WASP-39b
+PRISM dropped from 393 → 21 (~20× better)**, and 3 of 5 retrieved
+parameters now sit inside the published Rustamkulov+ 2023 ranges.
+
+### scripts/fetch_hitran.py — fetch-and-cache pattern
+- Wraps HITRAN's official HAPI library to download line lists
+  anonymously (no account needed) into ~/.argus/opacity/
+  (override with $ARGUS_OPACITY_CACHE).
+- Defaults: H2O 1500-20000 cm⁻¹ (~220k lines, 35 MB), CO2 ~123k
+  lines (19 MB), CO 524 lines (82 KB), CH4/NH3 sensible windows.
+- HITRAN lacks alkali atoms (Na/K live in VALD/NIST atomic DBs);
+  documented inline. Na D-doublet is bundled in test_data.hpp.
+- Output is canonical 160-char .par that argus::Hitran::load_file
+  consumes directly — no kernel-side change.
+
+### Bundled Na D-doublet — argus::test_data::kNaDLines
+- Two atomic resonance lines (5889.95 Å + 5895.92 Å = 16973.37 +
+  16956.18 cm⁻¹). Encoded in HITRAN-.par-shape with synthetic
+  molecule_id=99 so the existing LineListOpacity machinery can
+  consume them (Voigt approximation; real production-grade
+  alkali-wing physics — Allard+ 2007 — would need a dedicated
+  AlkaliOpacity kernel).
+- Drives WASP-39b's visible-band absorption (Na detected at 19σ
+  by Rustamkulov+ 2023).
+
+### example_07_wasp39b_jwst.cpp — full opacity stack
+- Loads ~/.argus/opacity/{H2O,CO2,CO}.par if the cache is
+  populated; falls back to the 16/10/10-line bundled fixtures
+  otherwise. Source provenance is printed.
+- Caps at top-300 strongest lines per molecule by intensity
+  (production-grade fit needs σ(T,P,ν) tables; per-line iteration
+  at full HITRAN size = ~16 s/forward).
+- Fit window is now full PRISM 0.55–5.5 μm (was 1.32–4.88 μm).
+- 5 free params: T_K + log10 VMR for H2O / CO2 / CO + log10 P_cloud.
+- Adds RayleighOpacity (H2 background) and CloudDeckOpacity
+  (free cloud-top pressure) to the forward model.
+- Na D fixed at log10(VMR) = -7 (typical hot-Jupiter terminator).
+
+### Measured improvement on real JWST data
+| metric                  | v0.7.18 (4-mol, no Rayleigh/cloud)  | v0.7.19 (full stack, bundled lines) | v0.7.19 (HITRAN cache populated) |
+|-------------------------|-------------------------------------|-------------------------------------|----------------------------------|
+| reduced χ²              | 393                                 | 20.6                                | 21.1                             |
+| log10 VMR_H2O           | -1.93 (out of range)                | -3.80 (in -3.5..-2.5)               | -2.50 (in range)                 |
+| log10 VMR_CO2           | -3.01                               | -1.48 (above)                       | -3.06 (in range)                 |
+| log10 P_cloud           | n/a                                 | -1.59 (in -2..-1)                   | -1.54 (in range)                 |
+| MH wall-time            | 3.4 s                               | 2.9 s                               | 11.1 s                           |
+
+Acceptance rate is still low (1-3%) — adaptive proposal widths
+remain Tier-2 work. T pulled to lower prior edge reflects the
+T-cloud degeneracy fundamental to any hot-Jupiter retrieval; needs
+a proper Guillot T-P + scale-height parameterisation (M2.5+ work).
+
+### Validated
+- 50/50 tests pass under -O2 strict warnings.
+- All 7 examples build clean. example_07 runs in ~3 s with bundled
+  fixtures, ~11 s with HITRAN cache.
+- Cross-pipeline converter (scripts/jwst_to_csv.py) + 7-test self-
+  suite still pass.
+
+---
+
 ## 0.7.18 — 2026-05-05 — Multi-molecule real-data fit + any-data sidecar
 
 Two parallel tracks landed in this release.

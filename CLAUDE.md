@@ -46,7 +46,7 @@ suggesting architectural changes.
 
 ## Roadmap reference
 
-See README.md "Roadmap" table. **Current state: M1–M5 all shipped (v0.7.18).**
+See README.md "Roadmap" table. **Current state: M1–M5 all shipped (v0.7.19).**
 
 50/50 hard tests pass under
 `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
