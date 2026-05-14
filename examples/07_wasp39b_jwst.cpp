@@ -244,20 +244,26 @@ int main() {
   };
   Retrieval ret(params, wrapped, observed, sigma_obs);
 
-  std::cout << "\n=== MH retrieval against real WASP-39b spectrum ===\n";
-  std::cout << "  chain : 1500 burn + 3000 sample  (5 free params)\n";
+  std::cout << "\n=== MH retrieval against real WASP-39b spectrum (ADAPTIVE proposals) ===\n";
+  std::cout << "  chain : 1500 burn (adaptive) + 3000 sample (frozen)  (5 free params)\n";
   const auto retr_t0 = clock::now();
-  auto result = ret.run_mcmc(
+  auto result = ret.run_mcmc_adaptive(
       /*init=*/{900.0, -3.0, -3.5, -3.8, -2.0},
       /*burn=*/1500,
       /*ns=*/3000,
-      /*proposal_widths=*/{30.0, 0.12, 0.15, 0.20, 0.25},
+      /*initial_widths=*/{50.0, 0.5, 0.5, 0.5, 0.5},   // intentionally wide; adapter shrinks
+      /*target_accept=*/0.30,
+      /*adapt_interval=*/50,
       /*seed=*/2026);
   const auto retr_t1 = clock::now();
   const double retr_s =
       std::chrono::duration<double>(retr_t1 - retr_t0).count();
   std::cout << "  wall-time          : " << retr_s << " s\n";
-  std::cout << "  acceptance         : " << (result.acceptance_rate * 100.0) << "%\n";
+  std::cout << "  sample acceptance  : " << (result.acceptance_rate * 100.0)
+            << "%   (target was 30%)\n";
+  std::cout << "  tuned widths       :";
+  for (double w : result.tuned_widths) std::cout << " " << w;
+  std::cout << "\n";
 
   PosteriorSummary post(params, result.samples);
   std::cout << "\n=== posterior ===\n";

@@ -75,7 +75,7 @@ Argus/
 │   ├── wasp39b_data.hpp             bundled real WASP-39b NIRSpec PRISM (Rustamkulov+ 2023)
 │   └── ir.hpp                       Argus IR (typed physics graph + content addressing)
 ├── src/                             implementations
-├── tests/                           assert-based hard tests (50 tests, incl. 2 perf benchmarks + real JWST WASP-39b)
+├── tests/                           assert-based hard tests (51 tests, incl. 2 perf benchmarks + real JWST WASP-39b)
 ├── examples/
 │   ├── 01_transmission_spectrum.cpp first end-to-end demo (grey opacity)
 │   ├── 02_voigt_h2o.cpp             4-line H2O-like spectrum + autograd demo
@@ -107,8 +107,8 @@ No external runtime dependencies — the kernel is header + CMake.
 | Phase | Window | Status | Deliverable |
 |-------|--------|--------|-------------|
 | **M1** | months 1–3 | ✅ shipped v0.1.0 | Argus IR, atmosphere/opacity/RT scaffolding |
-| **M2** | months 3–6 | ✅ shipped v0.7.10 | Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6), LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS partition functions, self-broadening + pressure shift, Guillot 2010 T-P, gray cloud deck, Rayleigh, real-data tests, finite-diff autograd validation. **Multi-physics capstone** (`test_atmosphere_retrieval_full`) recovers (T_irr, log₁₀VMR_H₂O, log₁₀VMR_CO₂, log₁₀P_cloud) within 3σ from a noisy synthetic JWST-PRISM-shaped spectrum in 1.8 s. CUDA residency (M2.5) and WASP-39b real-data benchmark outstanding. |
-| **M3** | months 6–9 | ✅ shipped v0.7.9 | MCMC + emcee ensemble + HMC (autograd-gradient) + Retrieval API + R̂/ESS + CSV I/O + 3 prior types + posterior-predictive + nn (Linear/Activation/Sequential) + AffineCoupling (Real NVP) + NormalizingFlow with save/load + **ConditionalNormalizingFlow** for amortized SBI + reverse-mode autograd (Wengert tape) + Adam/SGD optimizers + end-to-end NN/flow training. **Atmospheric HMC capstone** (`test_hmc_atmosphere`) runs HMC end-to-end through a Voigt-line atmospheric forward via `Dual<T>` autograd, recovering (T, log₁₀VMR) within 3σ. Remaining for M3.5: ConditionalNF training loop + WASP-39b benchmark vs. POSEIDON/CHIMERA. |
+| **M2** | months 3–6 | ✅ shipped v0.7.10 | Hydrostatic geometry, Hui-Armstrong-Wray Voigt (~1e-6), LineListOpacity, dual-number autograd, HITRAN .par parser, TIPS partition functions, self-broadening + pressure shift, Guillot 2010 T-P, gray cloud deck, Rayleigh, real-data tests, finite-diff autograd validation. **Multi-physics capstone** (`test_atmosphere_retrieval_full`) recovers (T_irr, log₁₀VMR_H₂O, log₁₀VMR_CO₂, log₁₀P_cloud) within 3σ from a noisy synthetic JWST-PRISM-shaped spectrum in 1.8 s. WASP-39b real-data fit shipped v0.7.18–v0.7.19 (3/5 params in published Rustamkulov+ 2023 range, χ² 21). CUDA residency (M2.5) outstanding. |
+| **M3** | months 6–9 | ✅ shipped v0.7.9 | MCMC + emcee ensemble + HMC (autograd-gradient) + Retrieval API + R̂/ESS + CSV I/O + 3 prior types + posterior-predictive + nn (Linear/Activation/Sequential) + AffineCoupling (Real NVP) + NormalizingFlow with save/load + **ConditionalNormalizingFlow** for amortized SBI + reverse-mode autograd (Wengert tape) + Adam/SGD optimizers + end-to-end NN/flow training + **adaptive MH** (v0.7.20: Robbins–Monro × per-dim Welford × Roberts–Rosenthal c_d, `run_mcmc_adaptive` returns tuned widths). **Atmospheric HMC capstone** (`test_hmc_atmosphere`) runs HMC end-to-end through a Voigt-line atmospheric forward via `Dual<T>` autograd, recovering (T, log₁₀VMR) within 3σ. Remaining for M3.5: ConditionalNF training loop + WASP-39b benchmark vs. POSEIDON/CHIMERA. |
 | **M4** | months 9–12 | ✅ shipped v0.7.5 | Strong-lensing pass: SIS + SIE + NFW + ExternalShear + CompoundLens + numerical image solver + lensing potential + Fermat time delays. Two substrate-claim retrievals: SIS recovers (θ_E, lens, source) to 3σ via `EnsembleSampler`; **SIE capstone** recovers all 7 SIE+source params (including q and φ) to 0.5σ via source-plane chi². |
 | **M5** | months 12–18 | ✅ shipped v0.7.6 | Radio-interferometry pass: PointSource + GaussianSource + visibility predictor + UV-coverage primitive (snapshot + Earth-rotation track). Two substrate-claim retrievals: 4-param Gaussian-source recovery to 3σ via single-chain MH; **2-component capstone** recovers 8 params (compact core + extended jet) over a 5-hour Earth-rotation track to 3σ via `EnsembleSampler`. |
 
@@ -126,7 +126,7 @@ Numbers asserted by `test_benchmark`, `test_lensing_benchmark`, and
 onward for per-feature deltas.
 
 ### Test suite
-50 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
+51 tests · all pass under `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`:
 
 **Physics layer (M2):**
 
@@ -155,6 +155,7 @@ onward for per-feature deltas.
 | `test_rayleigh` | λ⁻⁴ scaling exact, T,P-independence, end-to-end Rayleigh slope |
 | `test_hot_jupiter` | comprehensive: Guillot + H2O+CO2+CH4 + cloud + Rayleigh — all bands detected |
 | `test_atmosphere_retrieval_full` | **M2 capstone**: 4-param MH retrieval through the full multi-physics forward (Guillot + H₂O + CO₂ + CH₄ + cloud + Rayleigh); recovers (T_irr, log₁₀VMR_H₂O, log₁₀VMR_CO₂, log₁₀P_cloud) within 3σ in 1.8 s |
+| `test_adaptive_mh` | **M3 self-tuning capstone (v0.7.20)**: Robbins–Monro × per-dim Welford std × Roberts–Rosenthal c_d adapter drives MH sample-phase acceptance from <1% to ~37% starting from 10× too-large initial widths, on both a 5-D Gaussian and a 2-D smooth retrieval, with FROZEN widths in the recorded sample phase |
 
 **Inference layer (M3):**
 

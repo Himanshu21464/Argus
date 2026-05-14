@@ -42,6 +42,32 @@ class MetropolisHastings {
   // the chain before calling sample().
   void burn_in(std::vector<double>& state, std::size_t n_steps);
 
+  // Adaptive burn-in. Same as burn_in() but auto-tunes the proposal
+  // widths during the burn period. Two cooperating mechanisms:
+  //   (a) per-dimension shape: a running Welford estimate of each
+  //       parameter's marginal std is multiplied by the Roberts &
+  //       Rosenthal 2001 optimal factor c_d = 2.38 / √d, so widths
+  //       reshape to the actual posterior aspect ratio rather than
+  //       staying isotropic — this is what makes the adapter useful
+  //       on problems where parameters span very different scales
+  //       (e.g. T_K ~10²–10³ next to log VMRs of order 1).
+  //   (b) global Robbins–Monro safety scale: every `adapt_interval`
+  //       steps the global scale is multiplied by
+  //       exp(η · (rate − target_accept)) with η = 1/√k. This keeps
+  //       the chain unstuck while the per-dim std estimate warms up
+  //       (and rescues it if the chain temporarily stalls and std
+  //       collapses to zero).
+  // For the first `warmup_steps` (default = max(2·adapt_interval, 100))
+  // only the global scale is applied — the per-dim std isn't trustworthy
+  // until the chain has explored a bit. After the burn finishes the
+  // widths are FROZEN and the chain returns to a proper detailed-
+  // balance MH for sample(). See `proposal_widths()` for what the
+  // adapter chose. Default target 0.234 is the Roberts–Rosenthal high-D
+  // optimum.
+  void burn_in_adaptive(std::vector<double>& state, std::size_t n_steps,
+                        double target_accept = 0.234,
+                        std::size_t adapt_interval = 50);
+
   // Run `n_samples` of MH starting from `state` (modified in place).
   // Returns the samples as a [n_samples, n_dim] flat row-major vector
   // alongside the log-posterior at each sample.
@@ -57,6 +83,9 @@ class MetropolisHastings {
 
   std::size_t accepted() const noexcept { return n_accepted_; }
   std::size_t proposed() const noexcept { return n_proposed_; }
+
+  // Inspect the (possibly adaptively-tuned) proposal widths.
+  const std::vector<double>& proposal_widths() const noexcept { return proposal_widths_; }
 
  private:
   bool step(std::vector<double>& state, double& current_logp);

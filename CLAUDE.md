@@ -46,9 +46,9 @@ suggesting architectural changes.
 
 ## Roadmap reference
 
-See README.md "Roadmap" table. **Current state: M1–M5 all shipped (v0.7.19).**
+See README.md "Roadmap" table. **Current state: M1–M5 all shipped (v0.7.20).**
 
-50/50 hard tests pass under
+51/51 hard tests pass under
 `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -O2`
 on GCC 15.2; 50/50 also pass clean under
 `-O1 -fsanitize=address,undefined`.

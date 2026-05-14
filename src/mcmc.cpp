@@ -70,6 +70,102 @@ void MetropolisHastings::burn_in(std::vector<double>& state,
   }
 }
 
+void MetropolisHastings::burn_in_adaptive(std::vector<double>& state,
+                                          std::size_t n_steps,
+                                          double target_accept,
+                                          std::size_t adapt_interval) {
+  if (state.size() != proposal_widths_.size()) {
+    throw std::invalid_argument(
+        "MetropolisHastings::burn_in_adaptive: state.size() != proposal_widths.size()");
+  }
+  if (!(target_accept > 0.0 && target_accept < 1.0)) {
+    throw std::invalid_argument(
+        "MetropolisHastings::burn_in_adaptive: target_accept must be in (0,1)");
+  }
+  if (adapt_interval == 0) {
+    throw std::invalid_argument(
+        "MetropolisHastings::burn_in_adaptive: adapt_interval must be > 0");
+  }
+  double current_logp = log_p_(state);
+  if (!std::isfinite(current_logp)) {
+    throw std::invalid_argument(
+        "MetropolisHastings::burn_in_adaptive: initial state has non-finite log-posterior");
+  }
+  const std::size_t d = state.size();
+  // Welford accumulators for per-dimension running mean/M2 (variance).
+  std::vector<double> run_mean(d, 0.0);
+  std::vector<double> run_M2(d, 0.0);
+  std::size_t n_visited = 0;
+
+  // Wait for some chain progress before trusting the running std.
+  // Below this we only apply the global Robbins–Monro scale.
+  const std::size_t warmup_steps = std::max<std::size_t>(2 * adapt_interval, 100);
+
+  // c_d = 2.38/√d is the Roberts–Rosenthal 2001 high-dim optimal scale
+  // for an MV-Gaussian proposal whose covariance matches the target.
+  const double c_d = 2.38 / std::sqrt(static_cast<double>(d));
+
+  // We don't reset the persistent n_accepted_ / n_proposed_ counters —
+  // they reflect the entire run. Per-window counts shadowed here.
+  std::size_t window_acc = 0;
+  std::size_t window_props = 0;
+  std::size_t window_idx = 1;
+  double global_scale = 1.0;
+  // Pin the initial widths so the global-scale phase rescales them
+  // relative to the user-supplied starting point (not relative to the
+  // already-mutated proposal_widths_ from earlier windows).
+  const std::vector<double> initial_widths = proposal_widths_;
+
+  for (std::size_t i = 0; i < n_steps; ++i) {
+    const std::size_t before_acc = n_accepted_;
+    (void)step(state, current_logp);
+    if (n_accepted_ > before_acc) ++window_acc;
+    ++window_props;
+
+    // Welford update on current state (post-step).
+    ++n_visited;
+    for (std::size_t k = 0; k < d; ++k) {
+      const double delta = state[k] - run_mean[k];
+      run_mean[k] += delta / static_cast<double>(n_visited);
+      const double delta2 = state[k] - run_mean[k];
+      run_M2[k] += delta * delta2;
+    }
+
+    if (window_props == adapt_interval) {
+      const double rate = static_cast<double>(window_acc) /
+                          static_cast<double>(window_props);
+      const double eta = 1.0 / std::sqrt(static_cast<double>(window_idx));
+      global_scale *= std::exp(eta * (rate - target_accept));
+
+      if (n_visited >= warmup_steps && n_visited >= 2) {
+        // Per-dim shape: widths[k] = c_d · running_std[k] · global_scale,
+        // with a small floor relative to the initial width so a stalled
+        // dimension can't lock the chain.
+        const double inv_nm1 = 1.0 / static_cast<double>(n_visited - 1);
+        for (std::size_t k = 0; k < d; ++k) {
+          const double var_k = run_M2[k] * inv_nm1;
+          double std_k = std::sqrt(std::max(var_k, 0.0));
+          // Floor at 1% of the initial width — guards against a
+          // collapsed dimension (e.g. parameter pinned at prior edge)
+          // dragging the proposal scale to zero.
+          const double floor_k = 0.01 * initial_widths[k];
+          if (std_k < floor_k) std_k = floor_k;
+          proposal_widths_[k] = c_d * std_k * global_scale;
+        }
+      } else {
+        // Warmup: just apply the global scale to the user's starting
+        // widths. This lets the chain unstick before we trust the std.
+        for (std::size_t k = 0; k < d; ++k) {
+          proposal_widths_[k] = initial_widths[k] * global_scale;
+        }
+      }
+      window_acc = 0;
+      window_props = 0;
+      ++window_idx;
+    }
+  }
+}
+
 MetropolisHastings::Result MetropolisHastings::sample(
     std::vector<double>& state, std::size_t n_samples) {
   if (state.size() != proposal_widths_.size()) {

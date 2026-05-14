@@ -94,6 +94,24 @@ class Retrieval {
                   std::vector<double> proposal_widths = {},
                   std::uint64_t seed = 0) const;
 
+  // Adaptive variant: during the burn-in phase the proposal widths
+  // are auto-tuned via a Robbins–Monro update so the acceptance rate
+  // converges to `target_accept` (default 0.234, the Roberts–Rosenthal
+  // 2001 high-dim optimum). Widths are FROZEN at the start of the
+  // sample phase so the recorded chain is a proper detailed-balance
+  // MH chain. The returned Result also carries the final tuned
+  // widths in `tuned_widths` for diagnostic / checkpoint use.
+  struct AdaptiveResult : Result {
+    std::vector<double> tuned_widths;     // final per-param σ after burn
+  };
+  AdaptiveResult run_mcmc_adaptive(std::vector<double> init_state,
+                                   std::size_t burn_in_steps,
+                                   std::size_t n_samples,
+                                   std::vector<double> initial_widths = {},
+                                   double target_accept = 0.234,
+                                   std::size_t adapt_interval = 50,
+                                   std::uint64_t seed = 0) const;
+
   const std::vector<Parameter>& parameters() const noexcept { return params_; }
 
   // Run the forward model at each (thinned) posterior sample to build

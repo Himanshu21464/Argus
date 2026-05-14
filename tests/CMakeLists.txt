@@ -197,3 +197,7 @@ add_test(NAME atmosphere_retrieval_full COMMAND test_atmosphere_retrieval_full)
 add_executable(test_wasp39b_jwst test_wasp39b_jwst.cpp)
 target_link_libraries(test_wasp39b_jwst PRIVATE argus_core)
 add_test(NAME wasp39b_jwst COMMAND test_wasp39b_jwst)
+
+add_executable(test_adaptive_mh test_adaptive_mh.cpp)
+target_link_libraries(test_adaptive_mh PRIVATE argus_core)
+add_test(NAME adaptive_mh COMMAND test_adaptive_mh)

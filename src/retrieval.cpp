@@ -245,4 +245,55 @@ Retrieval::Result Retrieval::run_mcmc(
   return out;
 }
 
+Retrieval::AdaptiveResult Retrieval::run_mcmc_adaptive(
+    std::vector<double> init_state,
+    std::size_t burn_in_steps,
+    std::size_t n_samples,
+    std::vector<double> initial_widths,
+    double target_accept,
+    std::size_t adapt_interval,
+    std::uint64_t seed) const {
+  if (init_state.size() != params_.size()) {
+    throw std::invalid_argument(
+        "Retrieval::run_mcmc_adaptive: init_state.size() does not match parameter count");
+  }
+  if (initial_widths.empty()) {
+    initial_widths.resize(params_.size());
+    for (std::size_t i = 0; i < params_.size(); ++i) {
+      initial_widths[i] = (params_[i].prior_max - params_[i].prior_min) / 40.0;
+    }
+  } else if (initial_widths.size() != params_.size()) {
+    throw std::invalid_argument(
+        "Retrieval::run_mcmc_adaptive: initial_widths.size() does not match parameter count");
+  }
+
+  auto logp = [this](const std::vector<double>& s) {
+    return this->log_posterior(s);
+  };
+  MetropolisHastings sampler(logp, initial_widths, seed);
+
+  if (burn_in_steps > 0) {
+    sampler.burn_in_adaptive(init_state, burn_in_steps,
+                             target_accept, adapt_interval);
+  }
+  // Reset the persistent counters so the reported acceptance rate
+  // reflects the FROZEN-width sampling phase only — that's the rate
+  // that matters for downstream mixing diagnostics.
+  const auto burn_acc  = sampler.accepted();
+  const auto burn_prop = sampler.proposed();
+  auto mh = sampler.sample(init_state, n_samples);
+
+  AdaptiveResult out;
+  out.samples         = std::move(mh.samples);
+  out.log_posteriors  = std::move(mh.log_posteriors);
+  // Acceptance during the sample phase only.
+  const auto sample_acc  = sampler.accepted()  - burn_acc;
+  const auto sample_prop = sampler.proposed() - burn_prop;
+  out.acceptance_rate = sample_prop > 0
+      ? static_cast<double>(sample_acc) / static_cast<double>(sample_prop)
+      : 0.0;
+  out.tuned_widths    = sampler.proposal_widths();
+  return out;
+}
+
 }  // namespace argus

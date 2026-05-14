@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.7.20 — 2026-05-14 — Adaptive MH proposal tuning (M2/M3 capstone)
+
+Ships the Tier-2 work flagged at the bottom of v0.7.19: a
+self-tuning Metropolis-Hastings burn-in so retrievals on
+ill-conditioned posteriors no longer require hand-tuning the
+per-parameter proposal widths.
+
+### MetropolisHastings::burn_in_adaptive
+- Two cooperating mechanisms:
+  - **Per-dimension shape** via a running Welford estimate of each
+    parameter's marginal std, scaled by the Roberts–Rosenthal 2001
+    optimal factor c_d = 2.38/√d. Widths reshape to the actual
+    posterior aspect ratio — critical when parameters span very
+    different scales (e.g. T_K ~10²–10³ next to log VMRs of order
+    unity, as in WASP-39b).
+  - **Global Robbins–Monro safety scale**, η = 1/√k, exp(η·(rate −
+    target)) per `adapt_interval`. Keeps the chain unstuck while
+    the running std warms up and rescues collapsed dimensions.
+- After `warmup_steps = max(2·adapt_interval, 100)` the per-dim
+  std drives the proposal; before that only the global scale
+  applies. Widths are FROZEN at burn end, so the recorded sample
+  phase is a proper detailed-balance MH chain.
+- Per-dim floor at 1 % of the user's initial width guards against
+  a parameter pinned at a prior edge collapsing the proposal scale.
+
+### Retrieval::run_mcmc_adaptive
+- Returns `AdaptiveResult { samples, log_posteriors, acceptance_rate,
+  tuned_widths }`. `acceptance_rate` is reported over the SAMPLE
+  phase only — that's the rate that matters for downstream mixing.
+- Same defaults as `burn_in_adaptive`; initial widths default to
+  (prior_max − prior_min) / 40 when omitted.
+
+### Validated on test_adaptive_mh
+- **5-D N(0, I) Gaussian** starting from 10× too-large widths:
+  the adapter drives sample-phase acceptance from < 1 % to **0.37**
+  and recovers the posterior mean to within 0.2 of zero on each
+  axis (4000 samples).
+- **2-D smooth retrieval** starting from initial widths = half the
+  prior box: adapter shrinks both widths, sample acceptance
+  lands in the reasonable-MH band, chain mixes.
+
+### example_07_wasp39b_jwst — switched to adaptive
+Initial widths {50, 0.5, 0.5, 0.5, 0.5} (intentionally far too wide)
+tune to {3.04, 0.045, 0.031, 0.036, 0.015} — note the order-of-
+magnitude separation across parameters that a global-scalar
+adapter cannot recover. **log10 VMR_CO2 moves from −2.42 (out of
+range) to −3.13 (closer to the literature −4.5..−3.5 band).**
+χ² stable at 21.2.
+
+### Known limitation
+WASP-39b sample acceptance is still 3.4 % — but this is now
+bounded by the T-cloud degeneracy (chain pins at the lower T
+prior edge), not by MH tuning. Resolving requires a proper
+Guillot T-P parameterisation (M2.5+ work, see roadmap).
+
+### Validated
+- 51/51 tests pass under -O2 strict warnings (was 50; +1 for the
+  new `test_adaptive_mh`).
+- Adaptive run is bit-deterministic given a fixed seed.
+
+---
+
 ## 0.7.19 — 2026-05-11 — Production opacity stack + HITRAN fetch-and-cache
 
 Closes most of the Tier-1 production gap identified in the
