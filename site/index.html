@@ -3,6 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- ─────── Security meta block ───────
+       Mirrors site/_headers; meta is the offline / non-Netlify fallback.
+       script-src allows cdnjs (Three.js is pinned with SRI integrity);
+       inline-speculation-rules keeps speculation-rules JSON tags
+       working; upgrade-insecure-requests forces HTTPS for stragglers.
+       frame-ancestors is intentionally absent here (meta-ignored per
+       CSP spec) — carried by the HTTP header alongside X-Frame-Options. -->
+  <meta name="color-scheme" content="dark light">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdnjs.cloudflare.com 'inline-speculation-rules'; connect-src 'self'; media-src 'self'; object-src 'none'; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), bluetooth=(), serial=(), magnetometer=(), gyroscope=(), accelerometer=(), display-capture=(), midi=(), autoplay=(), picture-in-picture=(), encrypted-media=(), fullscreen=(self), web-share=(self), idle-detection=(), screen-wake-lock=(), xr-spatial-tracking=()">
+
   <title>Argus — a differentiable astrophysical inference kernel</title>
   <meta name="description" content="The C++ kernel that compiles JWST spectra into atmospheres, lensed-image positions into mass models, and visibilities into sky brightness — three physics layers, one substrate.">
   <meta name="theme-color" content="#000510">
